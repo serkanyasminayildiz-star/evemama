@@ -1,18 +1,24 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
-const Iyzipay = require("iyzipay");
+import * as crypto from "crypto";
 
-const iyzipay = new Iyzipay({
-  apiKey: process.env.IYZICO_API_KEY,
-  secretKey: process.env.IYZICO_SECRET_KEY,
-  uri: process.env.IYZICO_BASE_URL,
-});
+const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
+const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
+const IYZICO_BASE_URL = process.env.IYZICO_BASE_URL || "https://sandbox-api.iyzipay.com";
+
+function generateAuthString(body: string): string {
+  const randomKey = Math.random().toString(36).substring(2);
+  const dataToEncrypt = IYZICO_API_KEY + randomKey + IYZICO_SECRET_KEY + body;
+  const hash = crypto.createHash("sha1").update(dataToEncrypt).digest("base64");
+  const authString = `apiKey:${IYZICO_API_KEY}&randomKey:${randomKey}&signature:${hash}`;
+  return "IYZWSv2 " + Buffer.from(authString).toString("base64");
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { items, buyer, totalPrice } = body;
 
-  const request = {
+  const requestBody = {
     locale: "tr",
     conversationId: Date.now().toString(),
     price: totalPrice.toFixed(2),
@@ -20,7 +26,7 @@ export async function POST(req: NextRequest) {
     currency: "TRY",
     basketId: "B" + Date.now(),
     paymentGroup: "PRODUCT",
-    callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/odeme/sonuc`,
+    callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://evemama.net"}/odeme/sonuc`,
     enabledInstallments: [1, 2, 3, 6, 9, 12],
     buyer: {
       id: buyer.id || "1",
@@ -54,13 +60,22 @@ export async function POST(req: NextRequest) {
     })),
   };
 
-  return new Promise((resolve) => {
-    iyzipay.checkoutFormInitialize.create(request, (err: any, result: any) => {
-      if (err) {
-        resolve(NextResponse.json({ error: err.message }, { status: 500 }));
-      } else {
-        resolve(NextResponse.json(result));
-      }
+  const bodyStr = JSON.stringify(requestBody);
+
+  try {
+    const response = await fetch(`${IYZICO_BASE_URL}/payment/iyzipos/checkoutform/initialize/auth/ecom`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": generateAuthString(bodyStr),
+        "x-iyzi-rnd": Math.random().toString(36).substring(2),
+      },
+      body: bodyStr,
     });
-  });
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
