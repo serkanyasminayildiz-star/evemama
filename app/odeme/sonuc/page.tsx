@@ -1,3 +1,4 @@
+export conts runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 const Iyzipay = require("iyzipay");
 
