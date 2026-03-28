@@ -17,6 +17,10 @@ function generateAuthString(body: string): string {
 export async function POST(req: NextRequest) {
   const { token } = await req.json();
 
+  if (!token) {
+    return NextResponse.json({ status: "error", message: "Token is required" });
+  }
+
   const requestBody = { locale: "tr", token };
   const bodyStr = JSON.stringify(requestBody);
 
@@ -32,8 +36,13 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await response.json();
-    return NextResponse.json(data);
+
+    if (data.status === "success") {
+      return NextResponse.json({ status: "success", paymentStatus: data.paymentStatus });
+    } else {
+      return NextResponse.json({ status: "error", message: data.errorMessage || "Payment verification failed" });
+    }
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ status: "error", message: err.message });
   }
 }
