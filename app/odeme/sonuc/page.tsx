@@ -65,10 +65,3 @@ export default function OdemeSonuc() {
     </main>
   );
 }
-```
-
-**Ctrl+S** bas! Sonra terminalde:
-```
-git add .
-git commit -m "iyzipay temizlendi"
-git push
