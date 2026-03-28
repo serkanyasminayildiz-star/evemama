@@ -37,10 +37,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-```
-
-**Ctrl+S** bas, sonra:
-```
-git add .
-git commit -m "iyzipay http ile guncellendi"
-git push
