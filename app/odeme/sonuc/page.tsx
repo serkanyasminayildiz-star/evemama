@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function OdemeSonuc() {
+function OdemeSonucIcerik() {
   const searchParams = useSearchParams();
   const [durum, setDurum] = useState<"yukleniyor" | "basarili" | "basarisiz">("yukleniyor");
 
@@ -63,5 +63,17 @@ export default function OdemeSonuc() {
         </a>
       </div>
     </main>
+  );
+}
+
+export default function OdemeSonuc() {
+  return (
+    <Suspense fallback={
+      <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontSize: 48 }}>⏳</div>
+      </main>
+    }>
+      <OdemeSonucIcerik />
+    </Suspense>
   );
 }
