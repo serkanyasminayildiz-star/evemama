@@ -59,7 +59,9 @@ export async function POST(req: NextRequest) {
       price: (item.price * item.quantity).toFixed(2),
     })),
   };
-
+  console.log("API KEY:", IYZICO_API_KEY ? "VAR" : "YOK");
+  console.log("SECRET:", IYZICO_SECRET_KEY ? "VAR" : "YOK");
+  console.log("BASE URL:", IYZICO_BASE_URL);
   const bodyStr = JSON.stringify(requestBody);
 
   try {
