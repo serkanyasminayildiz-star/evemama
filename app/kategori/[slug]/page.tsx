@@ -29,12 +29,10 @@ export default function KategoriSayfasi() {
         setKategori(kat);
         if (!kat) return;
 
-        // Alt kategorileri çek
         supabase.from("kategoriler").select("*")
           .eq("ust_kategori_id", kat.id).eq("aktif", true).order("sira")
           .then(({ data: altKat }) => setAltKategoriler(altKat || []));
 
-        // Bu kategorinin ve alt kategorilerinin ürünlerini çek
         supabase.from("kategoriler").select("id")
           .or(`id.eq.${kat.id},ust_kategori_id.eq.${kat.id}`)
           .then(({ data: katIds }) => {
@@ -42,11 +40,12 @@ export default function KategoriSayfasi() {
             supabase.from("urunler")
               .select("*, markalar(ad), kategoriler(ad, slug)")
               .in("kategori_id", idList)
-              .eq("aktif", true)
-              .then(({ data: urunData }) => {
+              .neq("aktif", false)
+              .gt("stok", 0)
+              .then(({ data: urunData, error }) => {
+                console.log("Ürünler:", urunData?.length, "Hata:", error);
                 setUrunler(urunData || []);
                 setFiltrelenmis(urunData || []);
-                // Markaları çıkar
                 const markaSet = new Set(urunData?.map((u: any) => u.markalar?.ad).filter(Boolean));
                 setMarkalar(Array.from(markaSet) as string[]);
                 setYukleniyor(false);
@@ -98,7 +97,6 @@ export default function KategoriSayfasi() {
 
         {/* Sol: Filtreler */}
         <div>
-          {/* Alt Kategoriler */}
           {altKategoriler.length > 0 && (
             <div style={{ background: "white", borderRadius: 20, padding: "20px", marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <div style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E", marginBottom: 12 }}>📁 Alt Kategoriler</div>
@@ -119,7 +117,6 @@ export default function KategoriSayfasi() {
             </div>
           )}
 
-          {/* Markalar */}
           {markalar.length > 0 && (
             <div style={{ background: "white", borderRadius: 20, padding: "20px", marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <div style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E", marginBottom: 12 }}>🏷️ Markalar</div>
@@ -136,7 +133,6 @@ export default function KategoriSayfasi() {
             </div>
           )}
 
-          {/* Sıralama */}
           <div style={{ background: "white", borderRadius: 20, padding: "20px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E", marginBottom: 12 }}>🔃 Sıralama</div>
             {[
@@ -162,7 +158,6 @@ export default function KategoriSayfasi() {
             </h1>
           </div>
 
-          {/* Alt Kategori Hızlı Seçim */}
           {altKategoriler.length > 0 && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
               <button onClick={() => setSeciliAltKat("")}
@@ -171,7 +166,7 @@ export default function KategoriSayfasi() {
               </button>
               {altKategoriler.map((alt, i) => (
                 <button key={i} onClick={() => setSeciliAltKat(alt.slug)}
-                  style={{ padding: "8px 16px", borderRadius: 50, border: `2px solid ${seciliAltKat === alt.slug ? "#E8845A" : "#E8D5B7"}`, background: seciliAltKat === alt.slug ? "#E8845A" : "white", color: seciliAltKat === alt.slug ? "white" : "#5C3D2E", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all .2s" }}>
+                  style={{ padding: "8px 16px", borderRadius: 50, border: `2px solid ${seciliAltKat === alt.slug ? "#E8845A" : "#E8D5B7"}`, background: seciliAltKat === alt.slug ? "#E8845A" : "white", color: seciliAltKat === alt.slug ? "white" : "#5C3D2E", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                   {alt.ad}
                 </button>
               ))}
@@ -221,7 +216,7 @@ export default function KategoriSayfasi() {
                       {urun.indirimli_fiyat && <span style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.4, textDecoration: "line-through", marginLeft: 4 }}>₺{urun.fiyat.toFixed(2)}</span>}
                     </div>
                     <button onClick={() => handleEkle(urun)} disabled={urun.stok === 0}
-                      style={{ background: eklendi === urun.id ? "#8BAF8E" : urun.stok === 0 ? "#ccc" : "#E8845A", color: "white", border: "none", borderRadius: 50, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: urun.stok === 0 ? "not-allowed" : "pointer", transition: "all .2s" }}
+                      style={{ background: eklendi === urun.id ? "#8BAF8E" : urun.stok === 0 ? "#ccc" : "#E8845A", color: "white", border: "none", borderRadius: 50, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: urun.stok === 0 ? "not-allowed" : "pointer" }}
                       onMouseDown={e => { if (urun.stok > 0) e.currentTarget.style.transform = "scale(0.95)"; }}
                       onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}>
                       {eklendi === urun.id ? "✅" : "+ Sepet"}
@@ -232,7 +227,6 @@ export default function KategoriSayfasi() {
             </div>
           )}
 
-          {/* Sayfalama */}
           {toplamSayfa > 1 && (
             <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 32 }}>
               <button onClick={() => setSayfa(s => Math.max(1, s - 1))} disabled={sayfa === 1}
