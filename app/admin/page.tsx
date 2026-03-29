@@ -18,6 +18,8 @@ export default function Admin() {
   const [kuponlar, setKuponlar] = useState<any[]>([]);
   const [kargoAyar, setKargoAyar] = useState<any>(null);
   const [siteAyarlari, setSiteAyarlari] = useState<any>({});
+  const [blogSorular, setBlogSorular] = useState<any[]>([]);
+  const [cevaplar, setCevaplar] = useState<{ [key: number]: string }>({});
   const [yukleniyor, setYukleniyor] = useState(false);
   const [aramaMetni, setAramaMetni] = useState("");
   const [duzenleUrun, setDuzenleUrun] = useState<any>(null);
@@ -96,13 +98,19 @@ export default function Admin() {
     setSiteAyarlari(obj);
   };
 
+  const blogSorulariYukle = async () => {
+    const { data } = await supabase.from("blog_sorular").select("*").order("created_at", { ascending: false });
+    setBlogSorular(data || []);
+  };
+
   useEffect(() => {
-    if (giris) { kategorileriYukle(); markalariYukle(); bannerlariYukle(); kuponlariYukle(); kargoYukle(); siteAyarlariYukle(); }
+    if (giris) { kategorileriYukle(); markalariYukle(); bannerlariYukle(); kuponlariYukle(); kargoYukle(); siteAyarlariYukle(); blogSorulariYukle(); }
   }, [giris]);
 
   useEffect(() => {
     if (aktifSayfa === "urunler") urunleriYukle();
     if (aktifSayfa === "siparisler") siparisleriYukle();
+    if (aktifSayfa === "blog") blogSorulariYukle();
   }, [aktifSayfa]);
 
   const urunSil = async (id: number) => {
@@ -249,7 +257,31 @@ export default function Admin() {
     goster("✅ Ayar kaydedildi");
   };
 
+  const soruOnayla = async (id: number, onaylandi: boolean) => {
+    await supabase.from("blog_sorular").update({ onaylandi }).eq("id", id);
+    blogSorulariYukle();
+    goster(onaylandi ? "✅ Soru onaylandı" : "✅ Soru gizlendi");
+  };
+
+  const soruCevapla = async (id: number) => {
+    const cevap = cevaplar[id];
+    if (!cevap?.trim()) return;
+    await supabase.from("blog_sorular").update({ cevap, onaylandi: true }).eq("id", id);
+    setCevaplar(prev => { const y = { ...prev }; delete y[id]; return y; });
+    blogSorulariYukle();
+    goster("✅ Cevap kaydedildi ve soru yayınlandı");
+  };
+
+  const soruSil = async (id: number) => {
+    if (!confirm("Bu soruyu silmek istediğinizden emin misiniz?")) return;
+    await supabase.from("blog_sorular").delete().eq("id", id);
+    blogSorulariYukle();
+    goster("✅ Soru silindi");
+  };
+
   const filtrelenmisUrunler = urunler.filter(u => u.ad?.toLowerCase().includes(aramaMetni.toLowerCase()));
+  const bekleyenSorular = blogSorular.filter(s => !s.onaylandi);
+  const onaylananSorular = blogSorular.filter(s => s.onaylandi);
 
   const etiketRenk: any = {
     "yeni": "#4CAF50", "indirim": "#E8845A", "cok-satan": "#9C27B0",
@@ -279,6 +311,7 @@ export default function Admin() {
     { id: "markalar", icon: "🏷️", ad: "Markalar" },
     { id: "bannerlar", icon: "🖼️", ad: "Bannerlar" },
     { id: "kuponlar", icon: "🎟️", ad: "Kuponlar" },
+    { id: "blog", icon: "📝", ad: "Blog Soruları", badge: bekleyenSorular.length },
     { id: "kargo", icon: "🚀", ad: "Kargo Ayarları" },
     { id: "ayarlar", icon: "⚙️", ad: "Site Ayarları" },
   ];
@@ -300,8 +333,13 @@ export default function Admin() {
         <nav style={{ padding: "12px 10px" }}>
           {menuler.map(m => (
             <button key={m.id} onClick={() => setAktifSayfa(m.id)}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", background: aktifSayfa === m.id ? "rgba(232,132,90,0.15)" : "none", border: "none", borderLeft: aktifSayfa === m.id ? "3px solid #E8845A" : "3px solid transparent", borderRadius: 0, cursor: "pointer", color: aktifSayfa === m.id ? "#E8845A" : "#FDF6EE", fontSize: 13, fontWeight: aktifSayfa === m.id ? 700 : 400, marginBottom: 2, fontFamily: "inherit", textAlign: "left", opacity: aktifSayfa === m.id ? 1 : 0.65 }}>
-              <span style={{ fontSize: 16 }}>{m.icon}</span> {m.ad}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", background: aktifSayfa === m.id ? "rgba(232,132,90,0.15)" : "none", border: "none", borderLeft: aktifSayfa === m.id ? "3px solid #E8845A" : "3px solid transparent", borderRadius: 0, cursor: "pointer", color: aktifSayfa === m.id ? "#E8845A" : "#FDF6EE", fontSize: 13, fontWeight: aktifSayfa === m.id ? 700 : 400, marginBottom: 2, fontFamily: "inherit", textAlign: "left", opacity: aktifSayfa === m.id ? 1 : 0.65, justifyContent: "space-between" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 16 }}>{m.icon}</span> {m.ad}
+              </span>
+              {m.badge && m.badge > 0 && (
+                <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 10, padding: "1px 6px", fontWeight: 700 }}>{m.badge}</span>
+              )}
             </button>
           ))}
         </nav>
@@ -325,7 +363,7 @@ export default function Admin() {
                 { icon: "📦", ad: "Toplam Ürün", deger: istatistikler.urunler, renk: "#E8845A" },
                 { icon: "🛒", ad: "Sipariş", deger: istatistikler.siparisler, renk: "#8BAF8E" },
                 { icon: "📁", ad: "Kategori", deger: istatistikler.kategoriler, renk: "#5C3D2E" },
-                { icon: "🏷️", ad: "Marka", deger: istatistikler.markalar, renk: "#9C27B0" },
+                { icon: "📝", ad: "Bekleyen Soru", deger: bekleyenSorular.length, renk: "#9C27B0" },
               ].map((kart, i) => (
                 <div key={i} style={{ background: "white", borderRadius: 18, padding: "20px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>{kart.icon}</div>
@@ -340,7 +378,7 @@ export default function Admin() {
                 {menuler.filter(m => m.id !== "dashboard").map((item, i) => (
                   <button key={i} onClick={() => setAktifSayfa(item.id)}
                     style={{ background: "#FDF6EE", border: "2px solid #E8D5B7", borderRadius: 12, padding: "12px 18px", fontSize: 13, fontWeight: 600, color: "#5C3D2E", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 7 }}>
-                    {item.icon} {item.ad}
+                    {item.icon} {item.ad} {item.badge && item.badge > 0 ? <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 11, padding: "1px 6px" }}>{item.badge}</span> : null}
                   </button>
                 ))}
               </div>
@@ -352,8 +390,6 @@ export default function Admin() {
         {aktifSayfa === "urunler" && (
           <div>
             <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: "#2C1A0E", marginBottom: 24 }}>Ürün Yönetimi</h1>
-
-            {/* Yeni Ürün */}
             <div style={{ background: "white", borderRadius: 18, padding: "22px", marginBottom: 20, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E", marginBottom: 14 }}>➕ Yeni Ürün Ekle</h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
@@ -386,7 +422,6 @@ export default function Admin() {
               <button onClick={urunEkle} style={btnStyle()}>Ürün Ekle →</button>
             </div>
 
-            {/* Toplu İşlem */}
             <div style={{ background: "white", borderRadius: 18, padding: "22px", marginBottom: 20, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", border: "2px solid #E8D5B7" }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E", marginBottom: 14 }}>
                 ⚡ Toplu İşlem {seciliUrunler.length > 0 && <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 12, padding: "2px 10px", marginLeft: 8 }}>{seciliUrunler.length} seçili</span>}
@@ -418,13 +453,10 @@ export default function Admin() {
                   </select>
                 )}
                 <button onClick={topluIslemUygula} style={btnStyle()}>Uygula</button>
-                {seciliUrunler.length > 0 && (
-                  <button onClick={() => setSeciliUrunler([])} style={btnStyle("#999")}>Seçimi Temizle</button>
-                )}
+                {seciliUrunler.length > 0 && <button onClick={() => setSeciliUrunler([])} style={btnStyle("#999")}>Seçimi Temizle</button>}
               </div>
             </div>
 
-            {/* Ürün Listesi */}
             <div style={{ background: "white", borderRadius: 18, padding: "22px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
                 <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E" }}>Ürünler ({filtrelenmisUrunler.length})</h2>
@@ -435,7 +467,6 @@ export default function Admin() {
                 </div>
               </div>
 
-              {/* Ürün Düzenle Modal */}
               {duzenleUrun && (
                 <div style={{ background: "#FDF6EE", borderRadius: 16, padding: "20px", marginBottom: 20, border: "2px solid #E8845A" }}>
                   <h3 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E", marginBottom: 14 }}>✏️ Ürün Düzenle: {duzenleUrun.ad?.substring(0, 40)}</h3>
@@ -661,7 +692,6 @@ export default function Admin() {
         {aktifSayfa === "bannerlar" && (
           <div>
             <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: "#2C1A0E", marginBottom: 24 }}>Banner Yönetimi</h1>
-
             <div style={{ background: "white", borderRadius: 18, padding: "22px", marginBottom: 20, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E", marginBottom: 14 }}>➕ Yeni Banner Ekle</h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
@@ -680,34 +710,26 @@ export default function Admin() {
               </div>
               <button onClick={bannerEkle} style={btnStyle()}>Banner Ekle →</button>
             </div>
-
             <div style={{ background: "white", borderRadius: 18, padding: "22px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E", marginBottom: 16 }}>Mevcut Bannerlar ({bannerlar.length})</h2>
               {bannerlar.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "40px 0", opacity: 0.4 }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>🖼️</div>
-                  <div>Henüz banner eklenmedi</div>
-                </div>
-              ) : (
-                bannerlar.map((banner, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px", background: "#FDF6EE", borderRadius: 14, marginBottom: 10 }}>
-                    <div style={{ width: 60, height: 40, borderRadius: 10, background: banner.renk, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
-                      {banner.emoji}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#2C1A0E" }}>{banner.baslik}</div>
-                      <div style={{ fontSize: 12, opacity: 0.5 }}>{banner.alt_baslik} • {banner.link} {banner.kod && `• Kod: ${banner.kod}`}</div>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={() => bannerToggle(banner.id, banner.aktif)}
-                        style={{ background: banner.aktif ? "#E8F5E9" : "#FFEBEE", color: banner.aktif ? "#2E7D32" : "#C62828", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                        {banner.aktif ? "✅ Aktif" : "❌ Pasif"}
-                      </button>
-                      <button onClick={() => bannerSil(banner.id)} style={{ background: "#FFEBEE", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", color: "#C62828", fontWeight: 700 }}>🗑️ Sil</button>
-                    </div>
+                <div style={{ textAlign: "center", padding: "40px 0", opacity: 0.4 }}><div style={{ fontSize: 40, marginBottom: 12 }}>🖼️</div><div>Henüz banner eklenmedi</div></div>
+              ) : bannerlar.map((banner, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px", background: "#FDF6EE", borderRadius: 14, marginBottom: 10 }}>
+                  <div style={{ width: 60, height: 40, borderRadius: 10, background: banner.renk, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{banner.emoji}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "#2C1A0E" }}>{banner.baslik}</div>
+                    <div style={{ fontSize: 12, opacity: 0.5 }}>{banner.alt_baslik} • {banner.link} {banner.kod && `• Kod: ${banner.kod}`}</div>
                   </div>
-                ))
-              )}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => bannerToggle(banner.id, banner.aktif)}
+                      style={{ background: banner.aktif ? "#E8F5E9" : "#FFEBEE", color: banner.aktif ? "#2E7D32" : "#C62828", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      {banner.aktif ? "✅ Aktif" : "❌ Pasif"}
+                    </button>
+                    <button onClick={() => bannerSil(banner.id)} style={{ background: "#FFEBEE", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", color: "#C62828", fontWeight: 700 }}>🗑️ Sil</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -716,11 +738,10 @@ export default function Admin() {
         {aktifSayfa === "kuponlar" && (
           <div>
             <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: "#2C1A0E", marginBottom: 24 }}>Kupon Yönetimi</h1>
-
             <div style={{ background: "white", borderRadius: 18, padding: "22px", marginBottom: 20, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E", marginBottom: 14 }}>➕ Yeni Kupon Oluştur</h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                <input placeholder="Kupon Kodu * (örn: KEDI30)" value={yeniKupon.kod} onChange={e => setYeniKupon({ ...yeniKupon, kod: e.target.value.toUpperCase() })} style={inputStyle} />
+                <input placeholder="Kupon Kodu *" value={yeniKupon.kod} onChange={e => setYeniKupon({ ...yeniKupon, kod: e.target.value.toUpperCase() })} style={inputStyle} />
                 <select value={yeniKupon.indirim_tipi} onChange={e => setYeniKupon({ ...yeniKupon, indirim_tipi: e.target.value })} style={inputStyle}>
                   <option value="yuzde">Yüzde İndirim (%)</option>
                   <option value="tl">TL İndirim</option>
@@ -732,14 +753,10 @@ export default function Admin() {
               </div>
               <button onClick={kuponEkle} style={btnStyle()}>Kupon Oluştur →</button>
             </div>
-
             <div style={{ background: "white", borderRadius: 18, padding: "22px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E", marginBottom: 16 }}>Mevcut Kuponlar</h2>
               {kuponlar.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "40px 0", opacity: 0.4 }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>🎟️</div>
-                  <div>Henüz kupon yok</div>
-                </div>
+                <div style={{ textAlign: "center", padding: "40px 0", opacity: 0.4 }}><div style={{ fontSize: 40, marginBottom: 12 }}>🎟️</div><div>Henüz kupon yok</div></div>
               ) : (
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
@@ -774,6 +791,81 @@ export default function Admin() {
           </div>
         )}
 
+        {/* BLOG SORULARI */}
+        {aktifSayfa === "blog" && (
+          <div>
+            <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: "#2C1A0E", marginBottom: 24 }}>
+              Blog Soru Yönetimi
+              {bekleyenSorular.length > 0 && <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 14, padding: "3px 12px", marginLeft: 12 }}>{bekleyenSorular.length} bekliyor</span>}
+            </h1>
+
+            {/* Bekleyen Sorular */}
+            {bekleyenSorular.length > 0 && (
+              <div style={{ background: "white", borderRadius: 18, padding: "22px", marginBottom: 24, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", border: "2px solid #F4C09A" }}>
+                <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E", marginBottom: 16 }}>⏳ Onay Bekleyen Sorular ({bekleyenSorular.length})</h2>
+                {bekleyenSorular.map((s) => (
+                  <div key={s.id} style={{ background: "#FFF8E8", borderRadius: 14, padding: "18px", marginBottom: 14, border: "1px solid #F4C09A" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                      <div>
+                        <span style={{ fontWeight: 700, fontSize: 14, color: "#5C3D2E" }}>{s.ad}</span>
+                        <span style={{ background: "#FFF5F0", color: "#E8845A", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 50, marginLeft: 8 }}>{s.kategori}</span>
+                        <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.5, marginTop: 2 }}>{new Date(s.created_at).toLocaleDateString("tr-TR")}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => soruOnayla(s.id, true)} style={{ background: "#E8F5E9", color: "#2E7D32", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✅ Onayla</button>
+                        <button onClick={() => soruSil(s.id)} style={{ background: "#FFEBEE", color: "#C62828", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🗑️ Sil</button>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 14, color: "#5C3D2E", fontWeight: 600, marginBottom: 12 }}>❓ {s.soru}</p>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <textarea
+                        placeholder="Cevabınızı yazın... (kaydet aynı zamanda onaylar)"
+                        value={cevaplar[s.id] || ""}
+                        onChange={e => setCevaplar(prev => ({ ...prev, [s.id]: e.target.value }))}
+                        rows={3}
+                        style={{ flex: 1, padding: "10px 14px", border: "2px solid #E8D5B7", borderRadius: 10, fontSize: 13, outline: "none", fontFamily: "inherit", resize: "vertical" as const }}
+                      />
+                      <button onClick={() => soruCevapla(s.id)} disabled={!cevaplar[s.id]?.trim()}
+                        style={{ background: !cevaplar[s.id]?.trim() ? "#ccc" : "#E8845A", color: "white", border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: !cevaplar[s.id]?.trim() ? "not-allowed" : "pointer", whiteSpace: "nowrap", alignSelf: "flex-start" }}>
+                        💾 Cevapla & Yayınla
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Yayındaki Sorular */}
+            <div style={{ background: "white", borderRadius: 18, padding: "22px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
+              <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E", marginBottom: 16 }}>✅ Yayındaki Sorular ({onaylananSorular.length})</h2>
+              {onaylananSorular.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0", opacity: 0.4 }}><div style={{ fontSize: 40, marginBottom: 12 }}>💬</div><div>Henüz yayınlanan soru yok</div></div>
+              ) : onaylananSorular.map((s) => (
+                <div key={s.id} style={{ background: "#F9FBF9", borderRadius: 14, padding: "16px", marginBottom: 12, border: "1px solid #E8D5B7" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                    <div>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: "#5C3D2E" }}>{s.ad}</span>
+                      <span style={{ background: "#E8F5E9", color: "#2E7D32", fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 50, marginLeft: 8 }}>{s.kategori}</span>
+                      <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.4, marginTop: 2 }}>{new Date(s.created_at).toLocaleDateString("tr-TR")}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => soruOnayla(s.id, false)} style={{ background: "#FFF5F0", color: "#E8845A", border: "none", borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Gizle</button>
+                      <button onClick={() => soruSil(s.id)} style={{ background: "#FFEBEE", color: "#C62828", border: "none", borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🗑️</button>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 13, color: "#5C3D2E", fontWeight: 600, marginBottom: s.cevap ? 8 : 0 }}>❓ {s.soru}</p>
+                  {s.cevap && (
+                    <div style={{ background: "#FFF5F0", borderRadius: 10, padding: "10px 12px", borderLeft: "3px solid #E8845A" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#E8845A", marginBottom: 3 }}>💬 Cevap</div>
+                      <p style={{ fontSize: 12, color: "#5C3D2E", lineHeight: 1.6, margin: 0 }}>{s.cevap}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* KARGO AYARLARI */}
         {aktifSayfa === "kargo" && (
           <div>
@@ -801,14 +893,12 @@ export default function Admin() {
         {aktifSayfa === "ayarlar" && (
           <div>
             <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: "#2C1A0E", marginBottom: 24 }}>Site Ayarları</h1>
-
-            {/* İyzico */}
             <div style={{ background: "white", borderRadius: 18, padding: "24px", marginBottom: 20, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E", marginBottom: 16 }}>💳 İyzico Ödeme Ayarları</h2>
               {[
                 { key: "iyzico_api_key", label: "API Key" },
                 { key: "iyzico_secret_key", label: "Secret Key" },
-                { key: "iyzico_base_url", label: "Base URL (sandbox veya live)" },
+                { key: "iyzico_base_url", label: "Base URL" },
               ].map(({ key, label }) => (
                 <div key={key} style={{ marginBottom: 14 }}>
                   <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", display: "block", marginBottom: 6, opacity: 0.7 }}>{label}</label>
@@ -819,8 +909,6 @@ export default function Admin() {
                 </div>
               ))}
             </div>
-
-            {/* Havale */}
             <div style={{ background: "white", borderRadius: 18, padding: "24px", marginBottom: 20, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E", marginBottom: 16 }}>🏦 Havale / EFT Bilgileri</h2>
               {[
@@ -837,12 +925,10 @@ export default function Admin() {
                 </div>
               ))}
             </div>
-
-            {/* İletişim */}
             <div style={{ background: "white", borderRadius: 18, padding: "24px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#2C1A0E", marginBottom: 16 }}>📞 İletişim Bilgileri</h2>
               {[
-                { key: "whatsapp_no", label: "WhatsApp Numarası (örn: 905xxxxxxxxx)" },
+                { key: "whatsapp_no", label: "WhatsApp Numarası" },
                 { key: "site_email", label: "Site E-posta" },
               ].map(({ key, label }) => (
                 <div key={key} style={{ marginBottom: 14 }}>
