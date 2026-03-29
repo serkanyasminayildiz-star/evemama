@@ -17,7 +17,10 @@ export async function GET() {
   const items = (urunler || []).map((u) => {
     const fiyat = (u.indirimli_fiyat || u.fiyat).toFixed(2);
     const normalFiyat = parseFloat(u.fiyat).toFixed(2);
-    const resim = (u.resim_url || "").replace(/&/g, "&amp;");
+    const resim = (u.resim_url || "")
+  .replace(/<[^>]*>/g, "")
+  .replace(/&/g, "&amp;")
+  .trim();
     const kategori = u.kategoriler?.ad || "Evcil Hayvan";
     const marka = (u.markalar?.ad || "evemama").replace(/&/g, "&amp;");
     const baslik = (u.ad || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
