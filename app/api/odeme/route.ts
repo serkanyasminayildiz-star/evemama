@@ -7,12 +7,10 @@ const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
 const IYZICO_BASE_URL = process.env.IYZICO_BASE_URL || "https://api.iyzipay.com";
 
 function generateAuthString(randomKey: string, body: string): string {
-  const dataToEncrypt = IYZICO_API_KEY + randomKey + IYZICO_SECRET_KEY + body;
-  const hash = crypto.createHmac("sha256", IYZICO_SECRET_KEY)
-    .update(dataToEncrypt)
-    .digest("hex");
-  const authString = `apiKey:${IYZICO_API_KEY}&randomKey:${randomKey}&signature:${hash}`;
-  return "IYZWSv2 " + Buffer.from(authString).toString("base64");
+  const hashStr = IYZICO_SECRET_KEY + randomKey + body;
+  const hash = crypto.createHash("sha1").update(hashStr, "utf8").digest("base64");
+  const authStr = `apiKey:${IYZICO_API_KEY}&randomKey:${randomKey}&signature:${hash}`;
+  return "IYZWSv2 " + Buffer.from(authStr, "utf8").toString("base64");
 }
 
 export async function POST(req: NextRequest) {
@@ -79,14 +77,8 @@ export async function POST(req: NextRequest) {
 
     const data = await response.json();
     console.log("İyzico yanıt:", JSON.stringify(data));
-    
-    if (data.status === "failure") {
-      return NextResponse.json({ error: data.errorMessage, errorCode: data.errorCode }, { status: 400 });
-    }
-    
     return NextResponse.json(data);
   } catch (err: any) {
-    console.log("Hata:", err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
