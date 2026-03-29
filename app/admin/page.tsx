@@ -20,6 +20,9 @@ export default function Admin() {
   const [yeniUrun, setYeniUrun] = useState({ ad: "", fiyat: "", stok: "", resim_url: "", kategori_id: "", marka_id: "", kisa_aciklama: "" });
   const [bildirim, setBildirim] = useState("");
 
+  const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 14px", border: "2px solid #E8D5B7", borderRadius: 10, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 10 };
+  const btnStyle = (renk = "#E8845A"): React.CSSProperties => ({ background: renk, color: "white", border: "none", borderRadius: 10, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" });
+
   const goster = (mesaj: string) => {
     setBildirim(mesaj);
     setTimeout(() => setBildirim(""), 3000);
@@ -111,8 +114,7 @@ export default function Admin() {
       .replace(/ç/g,"c").replace(/ğ/g,"g").replace(/ı/g,"i").replace(/ö/g,"o").replace(/ş/g,"s").replace(/ü/g,"u")
       .replace(/[^a-z0-9\s-]/g,"").trim().replace(/\s+/g,"-") + "-" + Date.now();
     await supabase.from("urunler").insert({
-      ad: yeniUrun.ad,
-      slug,
+      ad: yeniUrun.ad, slug,
       fiyat: parseFloat(yeniUrun.fiyat),
       stok: parseInt(yeniUrun.stok) || 0,
       resim_url: yeniUrun.resim_url || null,
@@ -134,18 +136,21 @@ export default function Admin() {
 
   const filtrelenmisUrunler = urunler.filter(u => u.ad?.toLowerCase().includes(aramaMetni.toLowerCase()));
 
-  const inputStyle = { width: "100%", padding: "10px 14px", border: "2px solid #E8D5B7", borderRadius: 10, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const, marginBottom: 10 };
-  const btnStyle = (renk = "#E8845A") => ({ background: renk, color: "white", border: "none", borderRadius: 10, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" });
-
   if (!giris) return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
       <div style={{ background: "white", borderRadius: 24, padding: "48px 40px", maxWidth: 400, width: "100%", boxShadow: "0 20px 60px rgba(92,61,46,0.1)", textAlign: "center" }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
         <div style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>Admin Paneli</div>
         <div style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.5, marginBottom: 28 }}>evemama.net yönetim paneli</div>
-        <input type="password" value={sifre} onChange={e => setSifre(e.target.value)}
+        <input
+          type="password"
+          value={sifre}
+          onChange={e => setSifre(e.target.value)}
           onKeyDown={e => e.key === "Enter" && handleGiris()}
-          placeholder="Şifrenizi girin" style={{ ...inputStyle, textAlign: "center", fontSize: 16 }} />
+          placeholder="Şifrenizi girin"
+          autoFocus
+          style={{ ...inputStyle, textAlign: "center", fontSize: 16 }}
+        />
         {hataMesaji && <div style={{ color: "#E57373", fontSize: 13, marginBottom: 12 }}>{hataMesaji}</div>}
         <button onClick={handleGiris} style={{ ...btnStyle(), width: "100%", padding: "14px", fontSize: 15 }}>Giriş Yap →</button>
       </div>
@@ -163,7 +168,6 @@ export default function Admin() {
   return (
     <main style={{ minHeight: "100vh", background: "#F5F0EB", fontFamily: "sans-serif", display: "flex" }}>
 
-      {/* Bildirim */}
       {bildirim && (
         <div style={{ position: "fixed", top: 20, right: 20, background: "#5C3D2E", color: "white", padding: "12px 20px", borderRadius: 12, fontSize: 14, fontWeight: 600, zIndex: 999, boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
           {bildirim}
@@ -236,8 +240,6 @@ export default function Admin() {
         {aktifSayfa === "urunler" && (
           <div>
             <h1 style={{ fontFamily: "Georgia, serif", fontSize: 28, fontWeight: 700, color: "#2C1A0E", marginBottom: 24 }}>Ürün Yönetimi</h1>
-
-            {/* Yeni Ürün Ekle */}
             <div style={{ background: "white", borderRadius: 20, padding: "24px", marginBottom: 24, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#2C1A0E", marginBottom: 16 }}>➕ Yeni Ürün Ekle</h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -258,7 +260,6 @@ export default function Admin() {
               <button onClick={urunEkle} style={btnStyle()}>Ürün Ekle →</button>
             </div>
 
-            {/* Ürün Listesi */}
             <div style={{ background: "white", borderRadius: 20, padding: "24px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <h2 style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#2C1A0E" }}>Ürünler ({filtrelenmisUrunler.length})</h2>
