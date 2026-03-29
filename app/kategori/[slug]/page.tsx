@@ -8,6 +8,7 @@ export default function KategoriSayfasi() {
   const { slug } = useParams();
   const [kategori, setKategori] = useState<any>(null);
   const [altKategoriler, setAltKategoriler] = useState<any[]>([]);
+  const [tumKategoriler, setTumKategoriler] = useState<any[]>([]);
   const [urunler, setUrunler] = useState<any[]>([]);
   const [filtrelenmis, setFiltrelenmis] = useState<any[]>([]);
   const [markalar, setMarkalar] = useState<any[]>([]);
@@ -29,6 +30,9 @@ export default function KategoriSayfasi() {
       const { data: kat } = await supabase.from("kategoriler").select("*").eq("slug", slug).single();
       if (!kat) { setYukleniyor(false); return; }
       setKategori(kat);
+
+      const { data: tumKatData } = await supabase.from("kategoriler").select("*");
+      setTumKategoriler(tumKatData || []);
 
       const { data: altKat } = await supabase.from("kategoriler").select("*")
         .eq("ust_kategori_id", kat.id).eq("aktif", true).order("sira");
@@ -67,13 +71,22 @@ export default function KategoriSayfasi() {
   useEffect(() => {
     let sonuc = [...urunler];
     if (seciliMarka) sonuc = sonuc.filter(u => u.markalar?.ad === seciliMarka);
-    if (seciliAltKat) sonuc = sonuc.filter(u => u.kategoriler?.slug === seciliAltKat);
+    if (seciliAltKat) {
+      const altSluglar = (s: string): string[] => {
+        const kat = tumKategoriler.find(k => k.slug === s);
+        if (!kat) return [s];
+        const altlar = tumKategoriler.filter(k => k.ust_kategori_id === kat.id);
+        return [s, ...altlar.flatMap(a => altSluglar(a.slug))];
+      };
+      const sluglar = altSluglar(seciliAltKat);
+      sonuc = sonuc.filter(u => sluglar.includes(u.kategoriler?.slug));
+    }
     if (siralama === "ucuz") sonuc.sort((a, b) => (a.indirimli_fiyat || a.fiyat) - (b.indirimli_fiyat || b.fiyat));
     if (siralama === "pahali") sonuc.sort((a, b) => (b.indirimli_fiyat || b.fiyat) - (a.indirimli_fiyat || a.fiyat));
     if (siralama === "az") sonuc.sort((a, b) => a.ad.localeCompare(b.ad));
     setFiltrelenmis(sonuc);
     setSayfa(1);
-  }, [seciliMarka, seciliAltKat, siralama, urunler]);
+  }, [seciliMarka, seciliAltKat, siralama, urunler, tumKategoriler]);
 
   const handleEkle = (urun: any) => {
     addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url });
@@ -94,7 +107,13 @@ export default function KategoriSayfasi() {
             Tümü ({urunler.length})
           </div>
           {altKategoriler.map((alt, i) => {
-            const sayi = urunler.filter(u => u.kategoriler?.slug === alt.slug).length;
+            const altSluglar = (s: string): string[] => {
+              const k = tumKategoriler.find(k => k.slug === s);
+              if (!k) return [s];
+              const altlar = tumKategoriler.filter(a => a.ust_kategori_id === k.id);
+              return [s, ...altlar.flatMap(a => altSluglar(a.slug))];
+            };
+            const sayi = urunler.filter(u => altSluglar(alt.slug).includes(u.kategoriler?.slug)).length;
             return (
               <div key={i} onClick={() => { setSeciliAltKat(alt.slug); setFiltrePanelAcik(false); }}
                 style={{ padding: "8px 12px", borderRadius: 10, cursor: "pointer", background: seciliAltKat === alt.slug ? "#FFF5F0" : "none", color: seciliAltKat === alt.slug ? "#E8845A" : "#5C3D2E", fontWeight: seciliAltKat === alt.slug ? 700 : 400, fontSize: 14, marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
@@ -146,21 +165,14 @@ export default function KategoriSayfasi() {
         .filtre-btn-mob { display: none; }
         .filtre-overlay { display: none; }
         .header-kat { padding: 16px 48px; }
-
         @media (max-width: 768px) {
           .kat-layout { grid-template-columns: 1fr !important; padding: 0 14px 96px; }
           .urun-grid-kat { grid-template-columns: repeat(2,1fr) !important; gap: 10px; }
           .filtre-panel-desktop { display: none; }
           .filtre-btn-mob { display: flex; }
           .header-kat { padding: 13px 16px !important; }
-          .filtre-overlay {
-            display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 400;
-          }
-          .filtre-drawer {
-            position: fixed; bottom: 0; left: 0; right: 0; z-index: 500;
-            background: #FDF6EE; border-radius: 24px 24px 0 0;
-            padding: 20px 16px 40px; max-height: 80vh; overflow-y: auto;
-          }
+          .filtre-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 400; }
+          .filtre-drawer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 500; background: #FDF6EE; border-radius: 24px 24px 0 0; padding: 20px 16px 40px; max-height: 80vh; overflow-y: auto; }
         }
         @media (max-width: 480px) {
           .urun-grid-kat { grid-template-columns: repeat(2,1fr) !important; }
