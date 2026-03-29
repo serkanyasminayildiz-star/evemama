@@ -32,13 +32,25 @@ export default function KategoriSayfasi() {
           .eq("ust_kategori_id", kat.id).eq("aktif", true).order("sira")
           .then(({ data: altKat }) => setAltKategoriler(altKat || []));
         supabase.from("kategoriler").select("id")
-          .or(`id.eq.${kat.id},ust_kategori_id.eq.${kat.id}`)
-          .then(({ data: katIds }) => {
-            const idList = katIds?.map(k => k.id) || [kat.id];
-            supabase.from("urunler")
-              .select("*, markalar(ad), kategoriler(ad, slug)")
-              .in("kategori_id", idList)
-              .neq("aktif", false)
+  .or(`id.eq.${kat.id},ust_kategori_id.eq.${kat.id}`)
+  .then(async ({ data: katIds }) => {
+    const idList = katIds?.map(k => k.id) || [kat.id];
+    
+    // Alt kategorilerin de alt kategorilerini çek
+    const { data: altAltKatIds } = await supabase
+      .from("kategoriler")
+      .select("id")
+      .in("ust_kategori_id", idList);
+    
+    const tumIdler = [
+      ...idList,
+      ...(altAltKatIds?.map(k => k.id) || [])
+    ];
+
+    supabase.from("urunler")
+      .select("*, markalar(ad), kategoriler(ad, slug)")
+      .in("kategori_id", tumIdler)
+      .neq("aktif", false)
               .then(({ data: urunData }) => {
                 setUrunler(urunData || []);
                 setFiltrelenmis(urunData || []);
