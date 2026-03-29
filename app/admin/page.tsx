@@ -148,10 +148,25 @@ export default function Admin() {
           onChange={e => setSifre(e.target.value)}
           onKeyDown={e => e.key === "Enter" && handleGiris()}
           placeholder="Şifrenizi girin"
-          autoFocus
-          style={{ ...inputStyle, textAlign: "center", fontSize: 16 }}
-        />
-        {hataMesaji && <div style={{ color: "#E57373", fontSize: 13, marginBottom: 12 }}>{hataMesaji}</div>}
+          style={{
+          width: "100%",
+          padding: "14px 18px",
+          border: "2px solid #E8D5B7",
+          borderRadius: 10,
+          fontSize: 16,
+          outline: "none",
+          fontFamily: "inherit",
+          boxSizing: "border-box" as const,
+          marginBottom: 10,
+          textAlign: "center",
+          background: "white",
+         color: "#2C1A0E",
+         WebkitAppearance: "none",
+         position: "relative",
+         zIndex: 10,
+      }}
+/>
+          {hataMesaji && <div style={{ color: "#E57373", fontSize: 13, marginBottom: 12 }}>{hataMesaji}</div>}
         <button onClick={handleGiris} style={{ ...btnStyle(), width: "100%", padding: "14px", fontSize: 15 }}>Giriş Yap →</button>
       </div>
     </main>
