@@ -16,28 +16,31 @@ export async function GET() {
 
   const items = (urunler || []).map((u) => {
     const fiyat = (u.indirimli_fiyat || u.fiyat).toFixed(2);
-    const normalFiyat = u.fiyat.toFixed(2);
-    const resim = u.resim_url || "";
+    const normalFiyat = parseFloat(u.fiyat).toFixed(2);
+    const resim = (u.resim_url || "").replace(/&/g, "&amp;");
     const kategori = u.kategoriler?.ad || "Evcil Hayvan";
-    const marka = u.markalar?.ad || "evemama";
+    const marka = (u.markalar?.ad || "evemama").replace(/&/g, "&amp;");
+    const baslik = (u.ad || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const aciklama = (u.kisa_aciklama || u.ad || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-    return `
-  <item>
-    <g:id>${u.id}</g:id>
-    <g:title><![CDATA[${u.ad}]]></g:title>
-    <g:description><![CDATA[${u.kisa_aciklama || u.ad}]]></g:description>
-    <g:link>https://evemama.net/urun/${u.slug}</g:link>
-    <g:image_link>${resim}</g:image_link>
-    <g:availability>${u.stok > 0 ? "in stock" : "out of stock"}</g:availability>
-    <g:price>${normalFiyat} TRY</g:price>
-    ${u.indirimli_fiyat ? `<g:sale_price>${fiyat} TRY</g:sale_price>` : ""}
-    <g:brand>${marka}</g:brand>
-    <g:condition>new</g:condition>
-    <g:product_type><![CDATA[${kategori}]]></g:product_type>
-    <g:google_product_category>Animals &amp; Pet Supplies</g:google_product_category>
-    <g:identifier_exists>no</g:identifier_exists>
-    <g:mpn>${u.id}</g:mpn>
-  </item>`;
+    return [
+      "  <item>",
+      `    <g:id>${u.id}</g:id>`,
+      `    <g:title><![CDATA[${baslik}]]></g:title>`,
+      `    <g:description><![CDATA[${aciklama}]]></g:description>`,
+      `    <g:link>https://evemama.net/urun/${u.slug}</g:link>`,
+      `    <g:image_link>${resim}</g:image_link>`,
+      `    <g:availability>in stock</g:availability>`,
+      `    <g:price>${normalFiyat} TRY</g:price>`,
+      u.indirimli_fiyat ? `    <g:sale_price>${fiyat} TRY</g:sale_price>` : "",
+      `    <g:brand><![CDATA[${marka}]]></g:brand>`,
+      `    <g:condition>new</g:condition>`,
+      `    <g:product_type><![CDATA[${kategori}]]></g:product_type>`,
+      `    <g:google_product_category>Animals &amp; Pet Supplies</g:google_product_category>`,
+      `    <g:identifier_exists>no</g:identifier_exists>`,
+      `    <g:mpn>${u.id}</g:mpn>`,
+      "  </item>",
+    ].filter(Boolean).join("\n");
   }).join("\n");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
