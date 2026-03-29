@@ -27,6 +27,10 @@ export default function Home() {
   // Slug içinde geçen kelimelere göre görsel ata — DB slug'u ne olursa olsun eşleşir
   const getKatGorsel = (slug: string): { bg: string; emoji: string } => {
     const s = slug.toLowerCase();
+    if (s.includes("kampanya") || s.includes("firsat") || s.includes("indirim")) return { bg: "linear-gradient(135deg,#FFE8D0,#FF6B35)", emoji: "🏷️" };
+    if (s.includes("en-cok") || s.includes("encok") || s.includes("populer") || s.includes("bestseller")) return { bg: "linear-gradient(135deg,#FFF0C0,#F4C04A)", emoji: "⭐" };
+    if (s.includes("kiyafet") || s.includes("giysi") || s.includes("mont") || s.includes("kazak")) return { bg: "linear-gradient(135deg,#F0E0FF,#C088E8)", emoji: "👕" };
+    if (s.includes("tasma") || s.includes("patrol")) return { bg: "linear-gradient(135deg,#E0F0FF,#6A9EE8)", emoji: "🦮" };
     if (s.includes("kedi") && s.includes("kum")) return { bg: "linear-gradient(135deg,#F5ECD7,#C8A86A)", emoji: "🪨" };
     if (s.includes("kedi") && (s.includes("mama") || s.includes("yem"))) return { bg: "linear-gradient(135deg,#FFE8D0,#E8845A)", emoji: "🥩" };
     if (s.includes("kedi")) return { bg: "linear-gradient(135deg,#FFF0E0,#F4C09A)", emoji: "🐱" };
@@ -86,7 +90,17 @@ export default function Home() {
     // En çok ürünü olan 6 grubu göster
     return Object.values(gruplar)
       .filter(g => g.urunler.length >= 2)
-      .sort((a, b) => b.urunler.length - a.urunler.length)
+      .sort((a, b) => {
+  const oncelik = (slug: string) => {
+    if (slug.includes("kedi") && slug.includes("mama")) return 0;
+    if (slug.includes("kopek") && slug.includes("mama")) return 1;
+    if (slug.includes("kedi")) return 2;
+    if (slug.includes("kopek")) return 3;
+    return 99;
+  };
+  const fark = oncelik(a.slug) - oncelik(b.slug);
+  return fark !== 0 ? fark : b.urunler.length - a.urunler.length;
+})
       .slice(0, 6);
   })();
 
