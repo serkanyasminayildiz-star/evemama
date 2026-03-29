@@ -24,42 +24,44 @@ export default function KategoriSayfasi() {
   useEffect(() => {
     if (!slug) return;
     setYukleniyor(true);
-    supabase.from("kategoriler").select("*").eq("slug", slug).single()
-      .then(({ data: kat }) => {
-        setKategori(kat);
-        if (!kat) return;
-        supabase.from("kategoriler").select("*")
-          .eq("ust_kategori_id", kat.id).eq("aktif", true).order("sira")
-          .then(({ data: altKat }) => setAltKategoriler(altKat || []));
-        supabase.from("kategoriler").select("id")
-  .or(`id.eq.${kat.id},ust_kategori_id.eq.${kat.id}`)
-  .then(async ({ data: katIds }) => {
-    const idList = katIds?.map(k => k.id) || [kat.id];
-    
-    // Alt kategorilerin de alt kategorilerini çek
-    const { data: altAltKatIds } = await supabase
-      .from("kategoriler")
-      .select("id")
-      .in("ust_kategori_id", idList);
-    
-    const tumIdler = [
-      ...idList,
-      ...(altAltKatIds?.map(k => k.id) || [])
-    ];
 
-    supabase.from("urunler")
-      .select("*, markalar(ad), kategoriler(ad, slug)")
-      .in("kategori_id", tumIdler)
-      .neq("aktif", false)
-              .then(({ data: urunData }) => {
-                setUrunler(urunData || []);
-                setFiltrelenmis(urunData || []);
-                const markaSet = new Set(urunData?.map((u: any) => u.markalar?.ad).filter(Boolean));
-                setMarkalar(Array.from(markaSet) as string[]);
-                setYukleniyor(false);
-              });
-          });
-      });
+    const veriYukle = async () => {
+      const { data: kat } = await supabase.from("kategoriler").select("*").eq("slug", slug).single();
+      if (!kat) { setYukleniyor(false); return; }
+      setKategori(kat);
+
+      const { data: altKat } = await supabase.from("kategoriler").select("*")
+        .eq("ust_kategori_id", kat.id).eq("aktif", true).order("sira");
+      setAltKategoriler(altKat || []);
+
+      const { data: seviye1 } = await supabase.from("kategoriler").select("id")
+        .or(`id.eq.${kat.id},ust_kategori_id.eq.${kat.id}`);
+      const idler1 = seviye1?.map(k => k.id) || [kat.id];
+
+      const { data: seviye2 } = await supabase.from("kategoriler").select("id")
+        .in("ust_kategori_id", idler1);
+      const idler2 = seviye2?.map(k => k.id) || [];
+
+      const { data: seviye3 } = await supabase.from("kategoriler").select("id")
+        .in("ust_kategori_id", [...idler1, ...idler2]);
+      const idler3 = seviye3?.map(k => k.id) || [];
+
+      const tumIdler = [...new Set([...idler1, ...idler2, ...idler3])];
+
+      const { data: urunData } = await supabase.from("urunler")
+        .select("*, markalar(ad), kategoriler(ad, slug)")
+        .in("kategori_id", tumIdler)
+        .neq("aktif", false)
+        .limit(1000);
+
+      setUrunler(urunData || []);
+      setFiltrelenmis(urunData || []);
+      const markaSet = new Set(urunData?.map((u: any) => u.markalar?.ad).filter(Boolean));
+      setMarkalar(Array.from(markaSet) as string[]);
+      setYukleniyor(false);
+    };
+
+    veriYukle();
   }, [slug]);
 
   useEffect(() => {
@@ -165,7 +167,6 @@ export default function KategoriSayfasi() {
         }
       `}</style>
 
-      {/* Mobil filtre overlay */}
       {filtrePanelAcik && (
         <>
           <div className="filtre-overlay" onClick={() => setFiltrePanelAcik(false)} />
@@ -179,9 +180,7 @@ export default function KategoriSayfasi() {
         </>
       )}
 
-      {/* Header */}
-      <header style={{ background: "white", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100 }}
-        className="header-kat">
+      <header style={{ background: "white", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100 }} className="header-kat">
         <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
           evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span>
         </a>
@@ -190,34 +189,28 @@ export default function KategoriSayfasi() {
         </a>
       </header>
 
-      {/* Breadcrumb */}
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "12px 16px", fontSize: 13, color: "#5C3D2E", opacity: 0.6 }}>
         <a href="/" style={{ color: "#E8845A", textDecoration: "none" }}>Ana Sayfa</a>
         {kategori && <> / <span>{kategori.ad}</span></>}
       </div>
 
       <div className="kat-layout">
-
-        {/* Sol: Filtreler — sadece desktop */}
         <div className="filtre-panel-desktop">
           <FiltrePaneli />
         </div>
 
-        {/* Sağ: Ürünler */}
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 12 }}>
             <h1 style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", margin: 0 }}>
               {kategori?.ad}
               <span style={{ fontSize: 13, fontWeight: 400, opacity: 0.5, marginLeft: 8 }}>({filtrelenmis.length})</span>
             </h1>
-            {/* Mobil filtre butonu */}
             <button className="filtre-btn-mob" onClick={() => setFiltrePanelAcik(true)}
               style={{ display: "none", alignItems: "center", gap: 6, background: "white", border: "2px solid #E8D5B7", borderRadius: 50, padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#5C3D2E", cursor: "pointer", flexShrink: 0 }}>
               🔧 Filtre {(seciliMarka || seciliAltKat || siralama !== "varsayilan") ? "●" : ""}
             </button>
           </div>
 
-          {/* Alt kategori hızlı seçim */}
           {altKategoriler.length > 0 && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, overflowX: "auto", paddingBottom: 4 }}>
               <button onClick={() => setSeciliAltKat("")}
@@ -285,7 +278,6 @@ export default function KategoriSayfasi() {
             </div>
           )}
 
-          {/* Sayfalama */}
           {toplamSayfa > 1 && (
             <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 28, flexWrap: "wrap" }}>
               <button onClick={() => setSayfa(s => Math.max(1, s - 1))} disabled={sayfa === 1}
@@ -307,7 +299,6 @@ export default function KategoriSayfasi() {
         </div>
       </div>
 
-      {/* Mobil bottom nav */}
       <nav style={{ display: "none" }} className="mob-bottom">
         <style>{`.mob-bottom { display: none; } @media(max-width:768px){ .mob-bottom { display: grid !important; grid-template-columns: repeat(4,1fr); position: fixed; bottom: 0; left: 0; right: 0; z-index: 300; background: rgba(253,246,238,0.97); backdrop-filter: blur(14px); border-top: 1px solid rgba(92,61,46,.08); padding: 8px 0 20px; } }`}</style>
         <a href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
