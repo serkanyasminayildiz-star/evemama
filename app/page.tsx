@@ -578,7 +578,7 @@ export default function Home() {
             ))}
           </div>
           <div className="footer-bot">
-            <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.28 }}>© 2025 evemama.net — Tüm hakları saklıdır.</div>
+            <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.28 }}>⭐ Yıldız Yazılım tarafından hazırlanmıştır — Tüm hakları saklıdır. | Serkan Yıldız: 0534 748 80 01</div>
             <div style={{ display: "flex", gap: 10 }}>
               {["📸", "🐦", "📘"].map((s, i) => (
                 <button key={i} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,.07)", border: "none", cursor: "pointer", fontSize: 15, color: "white" }}
