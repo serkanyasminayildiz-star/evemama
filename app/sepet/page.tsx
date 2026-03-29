@@ -6,11 +6,22 @@ export default function Sepet() {
   const { items, removeItem, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
   const [silindi, setSilindi] = useState<number | null>(null);
   const [eklendi, setEklendi] = useState<number | null>(null);
-  const [butonBasildi, setButonBasildi] = useState(false);
 
   const kargoUcreti = totalPrice >= 1000 ? 0 : 29.90;
-  const genelToplam = totalPrice + kargoUcreti;
   const kargoyaKalan = 1000 - totalPrice;
+
+  // Otomatik indirim hesapla
+  const indirimMiktari = totalPrice >= 10000 ? 500 : totalPrice >= 5000 ? 200 : 0;
+  const indirimAciklama = totalPrice >= 10000 ? "10.000₺ üzeri alışveriş indirimi 🎉" : totalPrice >= 5000 ? "5.000₺ üzeri alışveriş indirimi 🎁" : "";
+
+  // Sonraki indirim basamağı
+  const sonrakiIndirim = totalPrice < 5000
+    ? { hedef: 5000, indirim: 200, kalan: 5000 - totalPrice }
+    : totalPrice < 10000
+    ? { hedef: 10000, indirim: 500, kalan: 10000 - totalPrice }
+    : null;
+
+  const genelToplam = totalPrice + kargoUcreti - indirimMiktari;
 
   const handleArtir = (id: number, quantity: number) => {
     setEklendi(id);
@@ -32,9 +43,8 @@ export default function Sepet() {
         <a href="/" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>← Alışverişe Devam</a>
       </header>
 
-      {/* 1000₺ Kargo Reklamı */}
       <div style={{ background: "linear-gradient(135deg, #5C3D2E, #8B5E42)", padding: "12px 24px", textAlign: "center", color: "white", fontSize: 13, fontWeight: 600 }}>
-        🚀 1000₺ ve üzeri alışverişlerde <strong>ÜCRETSİZ KARGO!</strong> Fırsatı kaçırma 🐾
+        🚀 1000₺ üzeri ücretsiz kargo &nbsp;|&nbsp; 🎁 5000₺ alışverişe 200₺ indirim &nbsp;|&nbsp; 🎉 10.000₺ alışverişe 500₺ indirim
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", padding: "24px" }}>
@@ -72,9 +82,7 @@ export default function Sepet() {
           <div style={{ maxWidth: 400, margin: "0 auto", background: "rgba(255,255,255,0.2)", borderRadius: 50, height: 8, overflow: "hidden" }}>
             <div style={{ width: `${Math.min((totalPrice / 1000) * 100, 100)}%`, height: "100%", background: "#E8845A", borderRadius: 50, transition: "width .4s ease" }} />
           </div>
-          <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: 4 }}>
-            ₺{totalPrice.toFixed(2)} / ₺1000
-          </div>
+          <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: 4 }}>₺{totalPrice.toFixed(2)} / ₺1000</div>
         </div>
       ) : (
         <div style={{ background: "linear-gradient(135deg, #8BAF8E, #5C8C60)", padding: "12px 24px", textAlign: "center", color: "white", fontSize: 13, fontWeight: 600 }}>
@@ -82,7 +90,31 @@ export default function Sepet() {
         </div>
       )}
 
-      {/* Mobil uyumlu grid */}
+      {/* Sonraki indirim bildirimi */}
+      {sonrakiIndirim && (
+        <div style={{ background: "linear-gradient(135deg,#FFF5E0,#FFE8C0)", padding: "12px 24px", textAlign: "center" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 6 }}>
+            🎁 <strong style={{ color: "#E8845A" }}>₺{sonrakiIndirim.kalan.toFixed(2)}</strong> daha ekle, <strong>{sonrakiIndirim.indirim}₺ indirim</strong> kazan!
+          </div>
+          <div style={{ maxWidth: 400, margin: "0 auto", background: "rgba(92,61,46,0.12)", borderRadius: 50, height: 8, overflow: "hidden" }}>
+            <div style={{
+              width: `${Math.min((totalPrice / sonrakiIndirim.hedef) * 100, 100)}%`,
+              height: "100%", background: "#E8845A", borderRadius: 50, transition: "width .4s ease"
+            }} />
+          </div>
+          <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.6, marginTop: 4 }}>
+            ₺{totalPrice.toFixed(2)} / ₺{sonrakiIndirim.hedef.toLocaleString("tr-TR")}
+          </div>
+        </div>
+      )}
+
+      {/* İndirim kazanıldı bildirimi */}
+      {indirimMiktari > 0 && (
+        <div style={{ background: "linear-gradient(135deg,#E8F5E9,#C8E6C9)", padding: "12px 24px", textAlign: "center", color: "#2E7D32", fontSize: 13, fontWeight: 700 }}>
+          🎉 Tebrikler! <strong>{indirimMiktari}₺ indirim</strong> kazandınız — sepetinize otomatik uygulandı!
+        </div>
+      )}
+
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "16px" }}>
 
         {/* Ürün Listesi */}
@@ -106,7 +138,6 @@ export default function Sepet() {
               transform: eklendi === item.id ? "scale(1.01)" : "scale(1)",
               transition: "all .25s"
             }}>
-              {/* Resim */}
               <div style={{ width: 64, height: 64, background: "#FDF6EE", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                 {item.resim_url ? (
                   <img src={item.resim_url} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6, mixBlendMode: "multiply" }} />
@@ -115,13 +146,11 @@ export default function Sepet() {
                 )}
               </div>
 
-              {/* Bilgi */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: "Georgia, serif", fontSize: 13, fontWeight: 700, color: "#5C3D2E", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
                 <div style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 700, color: "#E8845A" }}>₺{item.price}</div>
               </div>
 
-              {/* Adet */}
               <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#FDF6EE", borderRadius: 50, padding: "3px 6px" }}>
                 <button onClick={() => handleAzalt(item.id, item.quantity)}
                   style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "white", cursor: "pointer", fontSize: 16, fontWeight: 700, color: "#5C3D2E", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(92,61,46,0.1)", transition: "transform .15s" }}
@@ -134,12 +163,10 @@ export default function Sepet() {
                   onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}>+</button>
               </div>
 
-              {/* Toplam */}
               <div style={{ fontFamily: "Georgia, serif", fontSize: 14, fontWeight: 700, color: "#5C3D2E", minWidth: 60, textAlign: "right" }}>
                 ₺{(item.price * item.quantity).toFixed(2)}
               </div>
 
-              {/* Sil */}
               <button onClick={() => { setSilindi(item.id); setTimeout(() => { removeItem(item.id); setSilindi(null); }, 300); }}
                 style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, opacity: 0.3, padding: 4, transition: "all .2s", flexShrink: 0 }}
                 onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "scale(1.2)"; }}
@@ -158,6 +185,14 @@ export default function Sepet() {
             <span>{totalItems} ürün</span>
             <span>₺{totalPrice.toFixed(2)}</span>
           </div>
+
+          {indirimMiktari > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 14 }}>
+              <span style={{ color: "#2E7D32", fontWeight: 600 }}>🎁 {indirimAciklama}</span>
+              <span style={{ color: "#2E7D32", fontWeight: 700 }}>−₺{indirimMiktari.toFixed(2)}</span>
+            </div>
+          )}
+
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, fontSize: 14, color: "#5C3D2E" }}>
             <span>Kargo</span>
             <span style={{ color: kargoUcreti === 0 ? "#8BAF8E" : "#5C3D2E", fontWeight: kargoUcreti === 0 ? 700 : 400 }}>
@@ -171,9 +206,22 @@ export default function Sepet() {
             </div>
           )}
 
+          {sonrakiIndirim && (
+            <div style={{ background: "#FFF8E8", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#5C3D2E", textAlign: "center", border: "1.5px dashed #F4C09A" }}>
+              🎁 <strong>₺{sonrakiIndirim.kalan.toFixed(2)}</strong> daha ekle, <strong>{sonrakiIndirim.indirim}₺ indirim</strong> kazan!
+            </div>
+          )}
+
           <div style={{ borderTop: "2px solid #FDF6EE", paddingTop: 16, display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
             <span style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E" }}>Toplam</span>
-            <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#E8845A" }}>₺{genelToplam.toFixed(2)}</span>
+            <div style={{ textAlign: "right" }}>
+              {indirimMiktari > 0 && (
+                <div style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.4, textDecoration: "line-through", marginBottom: 2 }}>
+                  ₺{(totalPrice + kargoUcreti).toFixed(2)}
+                </div>
+              )}
+              <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#E8845A" }}>₺{genelToplam.toFixed(2)}</span>
+            </div>
           </div>
 
           <a href="/odeme"
