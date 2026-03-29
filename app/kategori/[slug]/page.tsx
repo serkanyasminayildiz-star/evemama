@@ -39,7 +39,6 @@ export default function KategoriSayfasi() {
               .select("*, markalar(ad), kategoriler(ad, slug)")
               .in("kategori_id", idList)
               .neq("aktif", false)
-              .gt("stok", 0)
               .then(({ data: urunData }) => {
                 setUrunler(urunData || []);
                 setFiltrelenmis(urunData || []);
