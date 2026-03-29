@@ -24,7 +24,6 @@ export default function Home() {
     { badge: "🚀 Ücretsiz Kargo", baslik: "1000₺ üzeri", italik: "aynı gün kargo", alt: "Saat 14:00'a kadar verilen siparişlerde geçerli", kod: "📦 Hemen sipariş ver", emoji: "📦", bg: "linear-gradient(135deg,#DDD4F4,#A89AE0,#7B6EC8)", link: "/urunler" },
   ];
 
-  // Slug içinde geçen kelimelere göre görsel ata — DB slug'u ne olursa olsun eşleşir
   const getKatGorsel = (slug: string): { bg: string; emoji: string } => {
     const s = slug.toLowerCase();
     if (s.includes("kampanya") || s.includes("firsat") || s.includes("indirim")) return { bg: "linear-gradient(135deg,#FFE8D0,#FF6B35)", emoji: "🏷️" };
@@ -38,7 +37,7 @@ export default function Home() {
     if (s.includes("kopek")) return { bg: "linear-gradient(135deg,#E0F0E8,#8BAF8E)", emoji: "🐶" };
     if (s.includes("odul") || s.includes("odül") || s.includes("treat")) return { bg: "linear-gradient(135deg,#FFF0D0,#F4C04A)", emoji: "🎁" };
     if (s.includes("oyun")) return { bg: "linear-gradient(135deg,#FFE0F0,#E88AAA)", emoji: "🎾" };
-    if (s.includes("aksesuar") || s.includes("tasma") || s.includes("tasma")) return { bg: "linear-gradient(135deg,#E8E0FF,#9A88E8)", emoji: "🎀" };
+    if (s.includes("aksesuar")) return { bg: "linear-gradient(135deg,#E8E0FF,#9A88E8)", emoji: "🎀" };
     if (s.includes("saglik") || s.includes("sağlık") || s.includes("vitamin") || s.includes("ilac")) return { bg: "linear-gradient(135deg,#D8F8F0,#4AB8A0)", emoji: "💊" };
     if (s.includes("bakim") || s.includes("bakım") || s.includes("sham") || s.includes("tuy")) return { bg: "linear-gradient(135deg,#FFF0F8,#E88AB8)", emoji: "✨" };
     if (s.includes("kus") || s.includes("kuş")) return { bg: "linear-gradient(135deg,#E0F4FF,#7BC8E8)", emoji: "🦜" };
@@ -78,7 +77,6 @@ export default function Home() {
     return () => clearInterval(slideInterval.current);
   }, []);
 
-  // Ürünleri gerçek kategoriye göre grupla
   const urunGruplari = (() => {
     const gruplar: { [slug: string]: { ad: string; slug: string; urunler: any[] } } = {};
     oneCikanlar.forEach(u => {
@@ -87,20 +85,19 @@ export default function Home() {
       if (!gruplar[kat.slug]) gruplar[kat.slug] = { ad: kat.ad, slug: kat.slug, urunler: [] };
       if (gruplar[kat.slug].urunler.length < 4) gruplar[kat.slug].urunler.push(u);
     });
-    // En çok ürünü olan 6 grubu göster
     return Object.values(gruplar)
       .filter(g => g.urunler.length >= 2)
       .sort((a, b) => {
-  const oncelik = (slug: string) => {
-    if (slug.includes("kedi") && slug.includes("mama")) return 0;
-    if (slug.includes("kopek") && slug.includes("mama")) return 1;
-    if (slug.includes("kedi")) return 2;
-    if (slug.includes("kopek")) return 3;
-    return 99;
-  };
-  const fark = oncelik(a.slug) - oncelik(b.slug);
-  return fark !== 0 ? fark : b.urunler.length - a.urunler.length;
-})
+        const oncelik = (slug: string) => {
+          if (slug.includes("kedi") && slug.includes("mama")) return 0;
+          if (slug.includes("kopek") && slug.includes("mama")) return 1;
+          if (slug.includes("kedi")) return 2;
+          if (slug.includes("kopek")) return 3;
+          return 99;
+        };
+        const fark = oncelik(a.slug) - oncelik(b.slug);
+        return fark !== 0 ? fark : b.urunler.length - a.urunler.length;
+      })
       .slice(0, 6);
   })();
 
@@ -120,6 +117,13 @@ export default function Home() {
 
   const slide = slides[aktifSlide];
 
+  const kaydiCubukMetinler = [
+    "🚀 1000₺ üzeri ücretsiz kargo",
+    "💳 Taksitli alışveriş imkânı",
+    "🎁 5000₺ alışverişe 200₺ indirim — Kod: INDIRIM200",
+    "🎉 10.000₺ üzeri alışverişe 500₺ indirim — Kod: INDIRIM500",
+  ];
+
   return (
     <main style={{ fontFamily: "sans-serif", background: "#FDF6EE", color: "#2C1A0E", overflowX: "hidden" }}>
 
@@ -134,7 +138,10 @@ export default function Home() {
         .banner-emoji-el { position: absolute; right: 40px; bottom: 0; font-size: 160px; line-height: 1; animation: floatAnim 3s ease-in-out infinite; }
         @keyframes floatAnim { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-16px) rotate(3deg)} }
         @keyframes slideIn { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes kaydir { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
         .banner-inner { animation: slideIn 0.45s ease; }
+        .kayan-icerik { display: inline-flex; animation: kaydir 28s linear infinite; white-space: nowrap; }
+        .kayan-icerik:hover { animation-play-state: paused; }
         .hero-right { display: flex; flex-direction: column; gap: 16px; }
         .kat-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; }
         .kat-card { border-radius: 20px; overflow: hidden; text-decoration: none; transition: transform .2s, box-shadow .2s; display: block; }
@@ -203,6 +210,22 @@ export default function Home() {
           .banner-emoji-el { font-size: 70px !important; }
         }
       `}</style>
+
+      {/* KAYAN BİLGİLENDİRME ÇUBUĞU */}
+      <div style={{ background: "#2C1A0E", overflow: "hidden", height: 36, display: "flex", alignItems: "center" }}>
+        <div className="kayan-icerik">
+          {[...Array(2)].map((_, ki) => (
+            <div key={ki} style={{ display: "inline-flex", alignItems: "center" }}>
+              {kaydiCubukMetinler.map((metin, i) => (
+                <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 24, padding: "0 32px", fontSize: 12, fontWeight: 600, color: "#F4C09A", letterSpacing: "0.3px" }}>
+                  {metin}
+                  <span style={{ color: "#E8845A", opacity: 0.5 }}>✦</span>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* MOBİL MENÜ */}
       <div className={`mob-overlay${mobMenuAcik ? " acik" : ""}`} onClick={() => setMobMenuAcik(false)} />
@@ -404,7 +427,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ÖNE ÇIKAN ÜRÜNLER — DB'den gelen gerçek kategorilere göre */}
+      {/* ÖNE ÇIKAN ÜRÜNLER */}
       <div style={{ background: "#FFFCF8", padding: "48px 0" }}>
         <div className="urun-section" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 36 }}>
@@ -422,7 +445,6 @@ export default function Home() {
               const g = getKatGorsel(grup.slug);
               return (
                 <div key={ki} style={{ marginBottom: 52 }}>
-                  {/* Kategori Başlığı */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <div style={{ width: 48, height: 48, borderRadius: 16, background: g.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, boxShadow: "0 4px 12px rgba(92,61,46,0.1)", flexShrink: 0 }}>
