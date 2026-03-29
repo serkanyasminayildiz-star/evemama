@@ -252,6 +252,7 @@ export default function Home() {
           { href: "/kategori/kopek", label: "🐶 Köpek" },
           { href: "/urunler", label: "🛍️ Tüm Ürünler" },
           { href: "/kampanyalar", label: "🏷️ Kampanyalar" },
+          { href: "/blog", label: "📝 Blog" },
           { href: "/hakkimizda", label: "ℹ️ Hakkımızda" },
           { href: "/iletisim", label: "📞 İletişim" },
         ].map((item, i) => (
@@ -338,6 +339,7 @@ export default function Home() {
             })}
             <a href="/urunler" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>🛍️ Tüm Ürünler</a>
             <a href="/kampanyalar" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>🏷️ Kampanyalar</a>
+            <a href="/blog" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>📝 Blog</a>
           </div>
         </nav>
       </header>
@@ -559,10 +561,17 @@ export default function Home() {
           <div className="footer-grid">
             <div>
               <div style={{ fontFamily: "Georgia,serif", fontSize: 22, fontWeight: 700, color: "#FDF6EE", marginBottom: 12 }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></div>
-              <p style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.4, lineHeight: 1.7, maxWidth: 240 }}>Evcil dostlarınız için en kaliteli ürünleri en uygun fiyatlarla sunuyoruz.</p>
+              <p style={{ fontSize: 12, color: "#FDF6EE", opacity: 0.4, lineHeight: 1.8, maxWidth: 260 }}>
+                Evcil dostlarınız için en kaliteli ürünleri en uygun fiyatlarla sunuyoruz.<br /><br />
+                <strong style={{ opacity: 0.7, fontSize: 11 }}>TNB Pet Mamaları ve Aksesuarları İthalat İhracat San. ve Tic. Ltd. Şti.</strong><br />
+                Vergi No: 9381208717 — Kadifekale V.D.<br />
+                Atilla Mah. 349 Sok. No:55/A Konak / İzmir<br />
+                📞 0534 748 80 01<br />
+                ✉️ info@evemama.net
+              </p>
             </div>
             {[
-              { title: "Hızlı Linkler", links: [{ ad: "Hakkımızda", href: "/hakkimizda" }, { ad: "Tüm Ürünler", href: "/urunler" }, { ad: "Kampanyalar", href: "/kampanyalar" }, { ad: "İletişim", href: "/iletisim" }] },
+              { title: "Hızlı Linkler", links: [{ ad: "Hakkımızda", href: "/hakkimizda" }, { ad: "Tüm Ürünler", href: "/urunler" }, { ad: "Kampanyalar", href: "/kampanyalar" }, { ad: "Blog", href: "/blog" }, { ad: "İletişim", href: "/iletisim" }] },
               { title: "Kategoriler", links: kategoriler.slice(0, 4).map(k => ({ ad: k.ad, href: `/kategori/${k.slug}` })) },
               { title: "Yardım & Destek", links: [{ ad: "Sıkça Sorulan Sorular", href: "/sikca-sorulan-sorular" }, { ad: "İade & Değişim", href: "/iade" }, { ad: "Kargo & Teslimat", href: "/kargo" }, { ad: "İletişim", href: "/iletisim" }] },
               { title: "Yasal", links: [{ ad: "Kullanım Koşulları", href: "/kullanim-kosullari" }, { ad: "Gizlilik Politikası", href: "/gizlilik" }, { ad: "KVKK Aydınlatma", href: "/kvkk" }, { ad: "Çerez Politikası", href: "/cerez-politikasi" }, { ad: "Mesafeli Satış", href: "/mesafeli-satis" }] },
@@ -578,7 +587,10 @@ export default function Home() {
             ))}
           </div>
           <div className="footer-bot">
-            <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.28 }}>⭐ Yıldız Yazılım tarafından hazırlanmıştır — Tüm hakları saklıdır. | Serkan Yıldız: 0534 748 80 01</div>
+            <div>
+              <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.28 }}>© 2025 evemama.net — Tüm hakları saklıdır.</div>
+              <div style={{ fontSize: 12, color: "#FDF6EE", opacity: 0.2, marginTop: 6 }}>⭐ Yıldız Yazılım tarafından hazırlanmıştır — Serkan Yıldız: 0534 748 80 01</div>
+            </div>
             <div style={{ display: "flex", gap: 10 }}>
               {["📸", "🐦", "📘"].map((s, i) => (
                 <button key={i} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,.07)", border: "none", cursor: "pointer", fontSize: 15, color: "white" }}
@@ -593,8 +605,8 @@ export default function Home() {
       <nav className="bottom-nav">
         <a href="/" className="bnav-item"><span className="bnav-icon">🏠</span><span className="bnav-label aktif">Anasayfa</span></a>
         <a href="/urunler" className="bnav-item"><span className="bnav-icon">🔍</span><span className="bnav-label">Ara</span></a>
-        <a href="/favoriler" className="bnav-item"><span className="bnav-icon">❤️</span><span className="bnav-label">Favoriler</span></a>
-        <a href="/sepet" className="bnav-item"><span className="bnav-icon">👤</span><span className="bnav-label">Hesabım</span></a>
+        <a href="/blog" className="bnav-item"><span className="bnav-icon">📝</span><span className="bnav-label">Blog</span></a>
+        <a href="/sepet" className="bnav-item"><span className="bnav-icon">🛒</span><span className="bnav-label">Sepet</span></a>
       </nav>
 
     </main>
