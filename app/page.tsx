@@ -94,6 +94,7 @@ export default function Home() {
   const oncelik = (slug: string) => {
     if (slug.includes("kedi") && slug.includes("mama")) return 0;
     if (slug.includes("kopek") && slug.includes("mama")) return 1;
+    if (slug.includes("kedi")) return 2;
     if (slug.includes("kopek")) return 3;
     return 99;
   };
