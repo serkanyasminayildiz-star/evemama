@@ -19,21 +19,12 @@ export default function UrunDetay() {
 
   useEffect(() => {
     if (!slug) return;
-    supabase
-      .from("urunler")
-      .select("*, kategoriler(ad, slug), markalar(ad)")
-      .eq("slug", slug)
-      .single()
+    supabase.from("urunler").select("*, kategoriler(ad, slug), markalar(ad)").eq("slug", slug).single()
       .then(({ data }) => {
         setUrun(data);
         setYukleniyor(false);
         if (data?.kategori_id) {
-          supabase
-            .from("urunler")
-            .select("*")
-            .eq("kategori_id", data.kategori_id)
-            .neq("slug", slug)
-            .limit(4)
+          supabase.from("urunler").select("*").eq("kategori_id", data.kategori_id).neq("slug", slug).limit(4)
             .then(({ data: benzer }) => setBenzerUrunler(benzer || []));
         }
       });
@@ -42,12 +33,7 @@ export default function UrunDetay() {
   const handleSepet = () => {
     if (!urun) return;
     for (let i = 0; i < adet; i++) {
-      addItem({
-        id: urun.id,
-        name: urun.ad,
-        price: urun.indirimli_fiyat || urun.fiyat,
-        emoji: "🐾",
-      });
+      addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url });
     }
     setEklendi(true);
     setTimeout(() => setEklendi(false), 2500);
@@ -55,13 +41,7 @@ export default function UrunDetay() {
 
   const handleYorumGonder = () => {
     if (!yeniYorum.ad || !yeniYorum.yorum) return;
-    setYorumlar(prev => [...prev, {
-      id: Date.now(),
-      ad: yeniYorum.ad,
-      puan: yeniYorum.puan,
-      yorum: yeniYorum.yorum,
-      tarih: new Date().toLocaleDateString("tr-TR")
-    }]);
+    setYorumlar(prev => [...prev, { id: Date.now(), ad: yeniYorum.ad, puan: yeniYorum.puan, yorum: yeniYorum.yorum, tarih: new Date().toLocaleDateString("tr-TR") }]);
     setYeniYorum({ ad: "", puan: 5, yorum: "" });
     setYorumGonderildi(true);
     setTimeout(() => setYorumGonderildi(false), 3000);
@@ -69,42 +49,45 @@ export default function UrunDetay() {
 
   if (yukleniyor) return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
-        <div style={{ fontFamily: "Georgia, serif", fontSize: 18, color: "#5C3D2E" }}>Yükleniyor...</div>
-      </div>
+      <div style={{ textAlign: "center" }}><div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div><div style={{ fontFamily: "Georgia, serif", fontSize: 18, color: "#5C3D2E" }}>Yükleniyor...</div></div>
     </main>
   );
 
   if (!urun) return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>😢</div>
-        <div style={{ fontFamily: "Georgia, serif", fontSize: 18, color: "#5C3D2E", marginBottom: 20 }}>Ürün bulunamadı</div>
-        <a href="/" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>← Ana Sayfaya Dön</a>
-      </div>
+      <div style={{ textAlign: "center" }}><div style={{ fontSize: 48, marginBottom: 16 }}>😢</div><div style={{ fontFamily: "Georgia, serif", fontSize: 18, color: "#5C3D2E", marginBottom: 20 }}>Ürün bulunamadı</div><a href="/" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>← Ana Sayfaya Dön</a></div>
     </main>
   );
 
-  const indirimOrani = urun.indirimli_fiyat
-    ? Math.round(((urun.fiyat - urun.indirimli_fiyat) / urun.fiyat) * 100)
-    : 0;
-
+  const indirimOrani = urun.indirimli_fiyat ? Math.round(((urun.fiyat - urun.indirimli_fiyat) / urun.fiyat) * 100) : 0;
   const kargoUcreti = (totalPrice + (urun.indirimli_fiyat || urun.fiyat) * adet) >= 1000 ? 0 : 29.90;
   const kargoyaKalan = 1000 - totalPrice;
 
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
 
+      <style>{`
+        .urun-layout { max-width: 1100px; margin: 0 auto; padding: 0 24px 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+        .urun-header { padding: 16px 48px; }
+        .benzer-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+        .sekme-btn { padding: 14px 28px; font-size: 14px; }
+        @media (max-width: 768px) {
+          .urun-layout { grid-template-columns: 1fr !important; gap: 20px !important; padding: 0 14px 96px !important; }
+          .urun-header { padding: 13px 16px !important; }
+          .benzer-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+          .sekme-btn { padding: 12px 16px !important; font-size: 13px !important; }
+        }
+      `}</style>
+
       {/* Header */}
-      <header style={{ background: "white", padding: "16px 48px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100 }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
+      <header className="urun-header" style={{ background: "white", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100 }}>
+        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
           evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span>
         </a>
-        <a href="/sepet" style={{ background: "#5C3D2E", color: "white", padding: "10px 20px", borderRadius: 50, textDecoration: "none", fontSize: 13, fontWeight: 700 }}>🛒 Sepete Git</a>
+        <a href="/sepet" style={{ background: "#5C3D2E", color: "white", padding: "9px 18px", borderRadius: 50, textDecoration: "none", fontSize: 13, fontWeight: 700 }}>🛒 Sepet</a>
       </header>
 
-      {/* 1000₺ Kargo Bildirimi */}
+      {/* Kargo Bildirimi */}
       {kargoyaKalan > 0 ? (
         <div style={{ background: "linear-gradient(135deg, #5C3D2E, #8B5E42)", padding: "10px 24px", textAlign: "center" }}>
           <div style={{ color: "white", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
@@ -121,14 +104,14 @@ export default function UrunDetay() {
       )}
 
       {/* Breadcrumb */}
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 24px", fontSize: 13, color: "#5C3D2E", opacity: 0.6 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "12px 16px", fontSize: 13, color: "#5C3D2E", opacity: 0.6, overflowX: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         <a href="/" style={{ color: "#E8845A", textDecoration: "none" }}>Ana Sayfa</a>
         {urun.kategoriler && <> / <a href={`/kategori/${urun.kategoriler.slug}`} style={{ color: "#E8845A", textDecoration: "none" }}>{urun.kategoriler.ad}</a></>}
-        / {urun.ad}
+        / <span style={{ opacity: 0.7 }}>{urun.ad.substring(0, 30)}{urun.ad.length > 30 ? "..." : ""}</span>
       </div>
 
       {/* Ana İçerik */}
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 48px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48 }}>
+      <div className="urun-layout">
 
         {/* Sol: Görsel */}
         <div>
@@ -144,43 +127,34 @@ export default function UrunDetay() {
         {/* Sağ: Bilgiler */}
         <div>
           {urun.markalar && (
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#8BAF8E", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 8 }}>
-              {urun.markalar.ad}
-            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#8BAF8E", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 8 }}>{urun.markalar.ad}</div>
           )}
 
-          <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: "#5C3D2E", marginBottom: 12, lineHeight: 1.3 }}>
-            {urun.ad}
-          </h1>
+          <h1 style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 700, color: "#5C3D2E", marginBottom: 12, lineHeight: 1.3 }}>{urun.ad}</h1>
 
-          {/* Puan Özeti */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <div style={{ display: "flex", gap: 2 }}>
-              {[1,2,3,4,5].map(s => (
-                <span key={s} style={{ fontSize: 16, color: s <= 4 ? "#E8845A" : "#E8D5B7" }}>★</span>
-              ))}
+              {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 16, color: s <= 4 ? "#E8845A" : "#E8D5B7" }}>★</span>)}
             </div>
             <span style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.6 }}>({yorumlar.length} yorum)</span>
           </div>
 
           {urun.kisa_aciklama && (
-            <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.65, lineHeight: 1.7, marginBottom: 20 }}>
-              {urun.kisa_aciklama}
-            </p>
+            <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.65, lineHeight: 1.7, marginBottom: 20 }}>{urun.kisa_aciklama}</p>
           )}
 
           {/* Fiyat */}
           <div style={{ marginBottom: 20 }}>
             {urun.indirimli_fiyat ? (
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "Georgia, serif", fontSize: 36, fontWeight: 700, color: "#E8845A" }}>₺{urun.indirimli_fiyat.toFixed(2)}</span>
-                <span style={{ fontFamily: "Georgia, serif", fontSize: 20, color: "#5C3D2E", opacity: 0.4, textDecoration: "line-through" }}>₺{urun.fiyat.toFixed(2)}</span>
+                <span style={{ fontFamily: "Georgia, serif", fontSize: 34, fontWeight: 700, color: "#E8845A" }}>₺{urun.indirimli_fiyat.toFixed(2)}</span>
+                <span style={{ fontFamily: "Georgia, serif", fontSize: 18, color: "#5C3D2E", opacity: 0.4, textDecoration: "line-through" }}>₺{urun.fiyat.toFixed(2)}</span>
                 <span style={{ background: "#E8845A", color: "white", fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 50 }}>%{indirimOrani} İndirim</span>
               </div>
             ) : (
-              <span style={{ fontFamily: "Georgia, serif", fontSize: 36, fontWeight: 700, color: "#5C3D2E" }}>₺{urun.fiyat.toFixed(2)}</span>
+              <span style={{ fontFamily: "Georgia, serif", fontSize: 34, fontWeight: 700, color: "#5C3D2E" }}>₺{urun.fiyat.toFixed(2)}</span>
             )}
-            <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.45, marginTop: 4 }}>KDV Dahil (%{urun.kdv_orani})</div>
+            <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.45, marginTop: 4 }}>KDV Dahil</div>
           </div>
 
           {/* Stok */}
@@ -198,7 +172,7 @@ export default function UrunDetay() {
             )}
           </div>
 
-          {/* Adet Seçici */}
+          {/* Adet */}
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E" }}>Adet:</span>
             <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FDF6EE", borderRadius: 50, padding: "4px 8px" }}>
@@ -212,56 +186,50 @@ export default function UrunDetay() {
 
           {/* Sepete Ekle */}
           <button onClick={handleSepet} disabled={urun.stok === 0}
-            style={{ width: "100%", background: eklendi ? "#8BAF8E" : urun.stok === 0 ? "#ccc" : "#E8845A", color: "white", border: "none", borderRadius: 16, padding: "18px", fontSize: 16, fontWeight: 700, cursor: urun.stok === 0 ? "not-allowed" : "pointer", fontFamily: "inherit", marginBottom: 12, boxShadow: "0 8px 20px rgba(232,132,90,0.3)", transition: "all .3s" }}
-            onMouseDown={e => { if (urun.stok > 0) e.currentTarget.style.transform = "scale(0.98)"; }}
-            onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}>
+            style={{ width: "100%", background: eklendi ? "#8BAF8E" : urun.stok === 0 ? "#ccc" : "#E8845A", color: "white", border: "none", borderRadius: 16, padding: "16px", fontSize: 16, fontWeight: 700, cursor: urun.stok === 0 ? "not-allowed" : "pointer", fontFamily: "inherit", marginBottom: 12, boxShadow: "0 8px 20px rgba(232,132,90,0.3)", transition: "all .3s" }}>
             {eklendi ? "✅ Sepete Eklendi!" : urun.stok === 0 ? "Stokta Yok" : `🛒 Sepete Ekle (${adet} adet)`}
           </button>
 
           <a href="/sepet"
-            style={{ display: "block", width: "100%", background: "white", color: "#5C3D2E", border: "2px solid #E8D5B7", borderRadius: 16, padding: "15px", fontSize: 15, fontWeight: 700, textAlign: "center", textDecoration: "none", boxSizing: "border-box" as const, transition: "all .2s" }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = "#E8845A"}
-            onMouseLeave={e => e.currentTarget.style.borderColor = "#E8D5B7"}>
+            style={{ display: "block", width: "100%", background: "white", color: "#5C3D2E", border: "2px solid #E8D5B7", borderRadius: 16, padding: "14px", fontSize: 15, fontWeight: 700, textAlign: "center", textDecoration: "none", boxSizing: "border-box" as const }}>
             Sepete Git →
           </a>
 
-          {/* Kargo & Teslimat Bilgisi */}
-          <div style={{ marginTop: 20, background: "white", borderRadius: 16, padding: "18px 20px" }}>
+          {/* Kargo Bilgisi */}
+          <div style={{ marginTop: 20, background: "white", borderRadius: 16, padding: "16px 18px" }}>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 14, fontWeight: 700, color: "#5C3D2E", marginBottom: 12 }}>🚚 Kargo & Teslimat</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#5C3D2E" }}>
-                <span style={{ fontSize: 18 }}>⚡</span>
-                <span><strong>Aynı Gün Kargo</strong> — Saat 14:00'a kadar verilen siparişler bugün kargoya verilir</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#5C3D2E" }}>
-                <span style={{ fontSize: 18 }}>🎁</span>
-                <span><strong>1000₺ Üzeri Ücretsiz Kargo</strong> — {kargoUcreti === 0 ? "Siparişiniz ücretsiz kargo kapsamında!" : `₺${kargoyaKalan.toFixed(2)} daha ekleyin`}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#5C3D2E" }}>
-                <span style={{ fontSize: 18 }}>↩️</span>
-                <span><strong>14 Gün İade Garantisi</strong> — Koşulsuz iade hakkı</span>
-              </div>
+              {[
+                { icon: "⚡", text: <><strong>Aynı Gün Kargo</strong> — Saat 14:00'a kadar verilen siparişler bugün kargoya verilir</> },
+                { icon: "🎁", text: <><strong>1000₺ Üzeri Ücretsiz Kargo</strong> — {kargoUcreti === 0 ? "Siparişiniz kapsam dahilinde!" : `₺${kargoyaKalan.toFixed(2)} daha ekleyin`}</> },
+                { icon: "↩️", text: <><strong>14 Gün İade Garantisi</strong> — Koşulsuz iade hakkı</> },
+              ].map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: "#5C3D2E" }}>
+                  <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
+                  <span style={{ lineHeight: 1.5 }}>{item.text}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Sekmeler: Açıklama & Yorumlar */}
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 48px" }}>
-        <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #E8D5B7", marginBottom: 28 }}>
+      {/* Sekmeler */}
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 14px 48px" }}>
+        <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #E8D5B7", marginBottom: 28, overflowX: "auto" }}>
           {[
-            { id: "aciklama", label: "📋 Ürün Açıklaması" },
+            { id: "aciklama", label: "📋 Açıklama" },
             { id: "yorumlar", label: `⭐ Yorumlar (${yorumlar.length})` }
           ].map(sekme => (
-            <button key={sekme.id} onClick={() => setAktifSekme(sekme.id as any)}
-              style={{ padding: "14px 28px", fontSize: 14, fontWeight: 700, border: "none", background: "none", cursor: "pointer", color: aktifSekme === sekme.id ? "#E8845A" : "#5C3D2E", opacity: aktifSekme === sekme.id ? 1 : 0.5, borderBottom: aktifSekme === sekme.id ? "2px solid #E8845A" : "2px solid transparent", marginBottom: -2, transition: "all .2s" }}>
+            <button key={sekme.id} onClick={() => setAktifSekme(sekme.id as any)} className="sekme-btn"
+              style={{ fontWeight: 700, border: "none", background: "none", cursor: "pointer", color: aktifSekme === sekme.id ? "#E8845A" : "#5C3D2E", opacity: aktifSekme === sekme.id ? 1 : 0.5, borderBottom: aktifSekme === sekme.id ? "2px solid #E8845A" : "2px solid transparent", marginBottom: -2, transition: "all .2s", whiteSpace: "nowrap", fontFamily: "inherit" }}>
               {sekme.label}
             </button>
           ))}
         </div>
 
         {aktifSekme === "aciklama" && (
-          <div style={{ background: "white", borderRadius: 24, padding: "32px" }}>
+          <div style={{ background: "white", borderRadius: 24, padding: "24px" }}>
             {urun.aciklama ? (
               <div style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: urun.aciklama }} />
             ) : (
@@ -272,19 +240,16 @@ export default function UrunDetay() {
 
         {aktifSekme === "yorumlar" && (
           <div>
-            {/* Mevcut Yorumlar */}
             {yorumlar.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}>
                 {yorumlar.map(y => (
-                  <div key={y.id} style={{ background: "white", borderRadius: 20, padding: "20px 24px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
+                  <div key={y.id} style={{ background: "white", borderRadius: 20, padding: "18px 20px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                       <div style={{ fontWeight: 700, color: "#5C3D2E" }}>{y.ad}</div>
                       <div style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.5 }}>{y.tarih}</div>
                     </div>
                     <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
-                      {[1,2,3,4,5].map(s => (
-                        <span key={s} style={{ color: s <= y.puan ? "#E8845A" : "#E8D5B7" }}>★</span>
-                      ))}
+                      {[1,2,3,4,5].map(s => <span key={s} style={{ color: s <= y.puan ? "#E8845A" : "#E8D5B7" }}>★</span>)}
                     </div>
                     <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.6, margin: 0 }}>{y.yorum}</p>
                   </div>
@@ -298,39 +263,27 @@ export default function UrunDetay() {
               </div>
             )}
 
-            {/* Yorum Formu */}
-            <div style={{ background: "white", borderRadius: 24, padding: "28px" }}>
+            <div style={{ background: "white", borderRadius: 24, padding: "24px" }}>
               <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 20 }}>✍️ Yorum Yaz</div>
-
               {yorumGonderildi && (
-                <div style={{ background: "#E8F5E9", color: "#2E7D32", padding: "12px 16px", borderRadius: 12, marginBottom: 16, fontSize: 14 }}>
-                  ✅ Yorumunuz için teşekkürler!
-                </div>
+                <div style={{ background: "#E8F5E9", color: "#2E7D32", padding: "12px 16px", borderRadius: 12, marginBottom: 16, fontSize: 14 }}>✅ Yorumunuz için teşekkürler!</div>
               )}
-
               <input value={yeniYorum.ad} onChange={e => setYeniYorum({ ...yeniYorum, ad: e.target.value })}
                 placeholder="Adınız *" style={{ width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const, marginBottom: 12 }} />
-
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 8 }}>Puanınız:</div>
                 <div style={{ display: "flex", gap: 6 }}>
                   {[1,2,3,4,5].map(s => (
                     <button key={s} onClick={() => setYeniYorum({ ...yeniYorum, puan: s })}
-                      style={{ fontSize: 28, background: "none", border: "none", cursor: "pointer", color: s <= yeniYorum.puan ? "#E8845A" : "#E8D5B7", transition: "transform .15s" }}
-                      onMouseEnter={e => e.currentTarget.style.transform = "scale(1.2)"}
-                      onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>★</button>
+                      style={{ fontSize: 28, background: "none", border: "none", cursor: "pointer", color: s <= yeniYorum.puan ? "#E8845A" : "#E8D5B7" }}>★</button>
                   ))}
                 </div>
               </div>
-
               <textarea value={yeniYorum.yorum} onChange={e => setYeniYorum({ ...yeniYorum, yorum: e.target.value })}
                 placeholder="Yorumunuz *" rows={4}
-                style={{ width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const, marginBottom: 16, resize: "vertical" }} />
-
+                style={{ width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const, marginBottom: 16, resize: "vertical" as const }} />
               <button onClick={handleYorumGonder}
-                style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 12, padding: "14px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 6px 16px rgba(232,132,90,0.3)", transition: "all .2s" }}
-                onMouseDown={e => e.currentTarget.style.transform = "scale(0.97)"}
-                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}>
+                style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 12, padding: "14px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                 Yorum Gönder ✨
               </button>
             </div>
@@ -340,29 +293,25 @@ export default function UrunDetay() {
 
       {/* Benzer Ürünler */}
       {benzerUrunler.length > 0 && (
-        <div style={{ background: "white", padding: "48px 0" }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
-            <h2 style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 700, color: "#5C3D2E", marginBottom: 24 }}>
+        <div style={{ background: "white", padding: "40px 0" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 14px" }}>
+            <h2 style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", marginBottom: 20 }}>
               Benzer <span style={{ color: "#E8845A", fontStyle: "italic" }}>Ürünler</span>
             </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+            <div className="benzer-grid">
               {benzerUrunler.map(u => (
                 <a key={u.id} href={`/urun/${u.slug}`}
-                  style={{ background: "#FDF6EE", borderRadius: 20, overflow: "hidden", textDecoration: "none", display: "block", transition: "transform .2s, box-shadow .2s" }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(92,61,46,0.1)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
-                  <div style={{ height: 140, background: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  style={{ background: "#FDF6EE", borderRadius: 18, overflow: "hidden", textDecoration: "none", display: "block" }}>
+                  <div style={{ height: 130, background: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {u.resim_url ? (
-                      <img src={urun.resim_url} alt={urun.ad} style={{ width: "100%", height: "100%", objectFit: "contain", padding: 16, mixBlendMode: "multiply" }} />
+                      <img src={u.resim_url} alt={u.ad} style={{ width: "100%", height: "100%", objectFit: "contain", padding: 12, mixBlendMode: "multiply" }} />
                     ) : (
-                      <div style={{ fontSize: 48, opacity: 0.2 }}>🐾</div>
+                      <div style={{ fontSize: 40, opacity: 0.2 }}>🐾</div>
                     )}
                   </div>
-                  <div style={{ padding: "12px 14px 16px" }}>
-                    <div style={{ fontFamily: "Georgia, serif", fontSize: 14, fontWeight: 700, color: "#5C3D2E", marginBottom: 6, lineHeight: 1.3 }}>{u.ad}</div>
-                    <div style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#E8845A" }}>
-                      ₺{(u.indirimli_fiyat || u.fiyat).toFixed(2)}
-                    </div>
+                  <div style={{ padding: "10px 12px 14px" }}>
+                    <div style={{ fontFamily: "Georgia, serif", fontSize: 13, fontWeight: 700, color: "#5C3D2E", marginBottom: 4, lineHeight: 1.3 }}>{u.ad.substring(0, 40)}{u.ad.length > 40 ? "..." : ""}</div>
+                    <div style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 700, color: "#E8845A" }}>₺{(u.indirimli_fiyat || u.fiyat).toFixed(2)}</div>
                   </div>
                 </a>
               ))}
@@ -370,6 +319,23 @@ export default function UrunDetay() {
           </div>
         </div>
       )}
+
+      {/* Mobil bottom nav */}
+      <style>{`.urun-bottom-nav { display: none; } @media(max-width:768px){ .urun-bottom-nav { display: grid !important; grid-template-columns: repeat(4,1fr); position: fixed; bottom: 0; left: 0; right: 0; z-index: 300; background: rgba(253,246,238,0.97); backdrop-filter: blur(14px); border-top: 1px solid rgba(92,61,46,.08); padding: 8px 0 20px; } }`}</style>
+      <nav className="urun-bottom-nav" style={{ display: "none" }}>
+        <a href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+          <span style={{ fontSize: 22 }}>🏠</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Anasayfa</span>
+        </a>
+        <a href="/urunler" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+          <span style={{ fontSize: 22 }}>🛍️</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Ürünler</span>
+        </a>
+        <a href="/favoriler" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+          <span style={{ fontSize: 22 }}>❤️</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Favoriler</span>
+        </a>
+        <a href="/sepet" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+          <span style={{ fontSize: 22 }}>🛒</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Sepet</span>
+        </a>
+      </nav>
 
     </main>
   );
