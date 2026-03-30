@@ -589,6 +589,14 @@ export default function Home() {
           <div className="footer-bot">
             <div>
                <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.28 }}>⭐ Yıldız Yazılım tarafından hazırlanmıştır — Tüm hakları saklıdır. | Serkan Yıldız: 0534 748 80 01</div>
+               <a 
+               href="https://portal-etbis.ticaret.gov.tr/portal/business/certificate?businessSiteId=902a36a2-e806-43c6-89f6-a6f9be6687a9"
+               target="_blank"
+              rel="noopener noreferrer"
+           style={{ color: "#FDF6EE", opacity: 0.6, fontSize: 12, textDecoration: "none" }}
+             >
+             🏛️ ETBİS Kayıt No: 5455865771
+             </a>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               {["📸", "🐦", "📘"].map((s, i) => (
