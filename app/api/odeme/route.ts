@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     currency: "TRY",
     basketId: "B" + conversationId,
     paymentGroup: "PRODUCT",
-    callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://evemama.net"}/odeme/sonuc`,
+    callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://evemama.net"}/api/odeme/sonuc`,
     enabledInstallments: [1, 2, 3, 6, 9, 12],
     buyer: {
       id: buyer.id || "1",
