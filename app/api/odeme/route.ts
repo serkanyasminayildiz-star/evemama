@@ -1,10 +1,16 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
+import { createClient } from "@supabase/supabase-js";
 
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
 const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
 const IYZICO_BASE_URL = process.env.IYZICO_BASE_URL || "https://api.iyzipay.com";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const ENDPOINT = "/payment/iyzipos/checkoutform/initialize/auth/ecom";
 
@@ -34,7 +40,6 @@ export async function POST(req: NextRequest) {
   const conversationId = Date.now().toString();
   const randomString = generateRandomString();
 
-  // Basket items toplamını hesapla
   const basketItems = items.map((item: any) => ({
     id: item.id.toString(),
     name: item.name,
@@ -43,13 +48,12 @@ export async function POST(req: NextRequest) {
     price: (item.price * item.quantity).toFixed(2),
   }));
 
-  // İyzico price = basket items toplamı olmalı (kargo hariç)
-  const basketTotal = items.reduce((sum: number, item: any) => 
+  const basketTotal = items.reduce((sum: number, item: any) =>
     sum + (item.price * item.quantity), 0
   );
-  
+
   const priceStr = basketTotal.toFixed(2);
-  const paidPriceStr = totalPrice.toFixed(2); // kargo dahil toplam
+  const paidPriceStr = totalPrice.toFixed(2);
 
   const requestBody = {
     locale: "tr",
@@ -103,6 +107,24 @@ export async function POST(req: NextRequest) {
 
     const data = await response.json();
     console.log("İyzico yanıt:", JSON.stringify(data));
+
+    // Token ile birlikte müşteri bilgilerini geçici olarak kaydet
+    if (data.token) {
+      await supabase.from("odeme_gecici").upsert({
+        token: data.token,
+        ad: buyer.name,
+        soyad: buyer.surname,
+        email: buyer.email,
+        telefon: buyer.phone || "",
+        adres: buyer.address,
+        sehir: buyer.city,
+        toplam: parseFloat(paidPriceStr),
+        ara_toplam: parseFloat(priceStr),
+        urunler: JSON.stringify(items),
+        created_at: new Date().toISOString(),
+      }, { onConflict: "token" });
+    }
+
     return NextResponse.json(data);
   } catch (err: any) {
     console.log("Hata:", err.message);

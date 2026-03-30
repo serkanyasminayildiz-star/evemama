@@ -63,10 +63,16 @@ export async function POST(req: NextRequest) {
 
     if (data.status === "success" && data.paymentStatus === "SUCCESS") {
       
-      // Sipariş numarası oluştur
       const siparisNo = "EVE" + Date.now().toString().slice(-8);
 
-      // Supabase'e sipariş kaydet
+      // Geçici tablodan müşteri bilgilerini al
+      const { data: gecici } = await supabase
+        .from("odeme_gecici")
+        .select("*")
+        .eq("token", token)
+        .single();
+
+      // Siparişi kaydet
       const { error } = await supabase.from("siparisler").insert({
         siparis_no: siparisNo,
         durum: "hazirlaniyor",
@@ -75,6 +81,13 @@ export async function POST(req: NextRequest) {
         toplam: data.paidPrice,
         ara_toplam: data.price,
         iyzico_token: token,
+        ad: gecici?.ad || "",
+        soyad: gecici?.soyad || "",
+        email: gecici?.email || "",
+        telefon: gecici?.telefon || "",
+        adres: gecici?.adres || "",
+        sehir: gecici?.sehir || "",
+        urunler: gecici?.urunler || null,
         created_at: new Date().toISOString(),
       });
 
@@ -82,6 +95,8 @@ export async function POST(req: NextRequest) {
         console.log("Sipariş kayıt hatası:", error.message);
       } else {
         console.log("Sipariş kaydedildi:", siparisNo);
+        // Geçici kaydı sil
+        await supabase.from("odeme_gecici").delete().eq("token", token);
       }
 
       return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarili&siparis=${siparisNo}`, { status: 303 });
