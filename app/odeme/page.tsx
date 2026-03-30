@@ -33,7 +33,14 @@ export default function Odeme() {
         body: JSON.stringify({ items, totalPrice: genelToplam, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.address, city: form.city } }),
       });
       const data = await res.json();
-      if (data.checkoutFormContent) {
+      if (data.status === "success" && data.paymentPageUrl) {
+  window.location.href = data.paymentPageUrl;
+} else if (data.checkoutFormContent) {
+```
+
+Yani iyzico'nun ödeme sayfasına direkt yönlendireceğiz. **Command+S** bas, push yap!
+```
+git commit -m "iyzico odeme sayfasina yonlendirme"
         const div = document.createElement("div");
         div.innerHTML = data.checkoutFormContent;
         document.body.appendChild(div);
