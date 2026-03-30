@@ -5,6 +5,7 @@ import * as crypto from "crypto";
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
 const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
 const IYZICO_BASE_URL = process.env.IYZICO_BASE_URL || "https://api.iyzipay.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://evemama.net";
 
 const ENDPOINT = "/payment/iyzipos/checkoutform/auth/ecom/detail";
 
@@ -33,12 +34,11 @@ export async function POST(req: NextRequest) {
     const token = formData.get("token") as string;
 
     if (!token) {
-      return NextResponse.redirect(new URL("/odeme/sonuc?durum=basarisiz", req.url));
+      return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz`, { status: 303 });
     }
 
     const randomString = generateRandomString();
     const requestBody = { locale: "tr", token };
-
     const authHeader = generateAuth(randomString, ENDPOINT, requestBody);
 
     const response = await fetch(`${IYZICO_BASE_URL}${ENDPOINT}`, {
@@ -56,12 +56,12 @@ export async function POST(req: NextRequest) {
     console.log("Sonuç yanıt:", JSON.stringify(data));
 
     if (data.status === "success" && data.paymentStatus === "SUCCESS") {
-      return NextResponse.redirect(new URL("/odeme/sonuc?durum=basarili", req.url));
+      return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarili`, { status: 303 });
     } else {
-      return NextResponse.redirect(new URL("/odeme/sonuc?durum=basarisiz", req.url));
+      return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz`, { status: 303 });
     }
   } catch (err: any) {
     console.log("Hata:", err.message);
-    return NextResponse.redirect(new URL("/odeme/sonuc?durum=basarisiz", req.url));
+    return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz`, { status: 303 });
   }
 }
