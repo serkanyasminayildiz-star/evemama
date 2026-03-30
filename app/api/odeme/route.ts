@@ -1,10 +1,28 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
+import { createClient } from "@supabase/supabase-js";
 
-const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
-const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
-const IYZICO_BASE_URL = process.env.IYZICO_BASE_URL || "https://api.iyzipay.com";
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+async function getIyzicoConfig() {
+  const { data } = await supabaseAdmin
+    .from("site_ayarlari")
+    .select("anahtar, deger")
+    .in("anahtar", ["iyzico_api_key", "iyzico_secret_key", "iyzico_base_url"]);
+
+  const config: any = {};
+  data?.forEach((row: any) => { config[row.anahtar] = row.deger; });
+
+  return {
+    apiKey: config.iyzico_api_key || process.env.IYZICO_API_KEY || "",
+    secretKey: config.iyzico_secret_key || process.env.IYZICO_SECRET_KEY || "",
+    baseUrl: config.iyzico_base_url || process.env.IYZICO_BASE_URL || "https://api.iyzipay.com",
+  };
+}
 
 function generatePKIString(params: any): string {
   function serialize(obj: any): string {
@@ -36,14 +54,16 @@ function generatePKIString(params: any): string {
   return '[' + serialize(obj) + ']';
 }
 
-function generateAuthString(randomKey: string, pkiString: string): string {
-  const dataToHash = IYZICO_SECRET_KEY + randomKey + pkiString;
+function generateAuthString(apiKey: string, secretKey: string, randomKey: string, pkiString: string): string {
+  const dataToHash = secretKey + randomKey + pkiString;
   const hash = crypto.createHash("sha1").update(dataToHash, "utf8").digest("base64");
-  const authContent = `apiKey:${IYZICO_API_KEY}&randomKey:${randomKey}&signature:${hash}`;
+  const authContent = `apiKey:${apiKey}&randomKey:${randomKey}&signature:${hash}`;
   return "IYZWSv2 " + Buffer.from(authContent, "utf8").toString("base64");
 }
 
 export async function POST(req: NextRequest) {
+  const { apiKey, secretKey, baseUrl } = await getIyzicoConfig();
+
   const body = await req.json();
   const { items, buyer, totalPrice } = body;
 
@@ -93,13 +113,15 @@ export async function POST(req: NextRequest) {
   };
 
   const pkiString = generatePKIString(requestBody);
-  const authString = generateAuthString(randomKey, pkiString);
+  const authString = generateAuthString(apiKey, secretKey, randomKey, pkiString);
 
+  console.log("API Key:", apiKey ? "✅ var" : "❌ yok");
+  console.log("Secret Key:", secretKey ? "✅ var" : "❌ yok");
+  console.log("Base URL:", baseUrl);
   console.log("PKI:", pkiString);
-  console.log("Auth:", authString);
 
   try {
-    const response = await fetch(`${IYZICO_BASE_URL}/payment/iyzipos/checkoutform/initialize/auth/ecom`, {
+    const response = await fetch(`${baseUrl}/payment/iyzipos/checkoutform/initialize/auth/ecom`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
