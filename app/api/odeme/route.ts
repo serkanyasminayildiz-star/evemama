@@ -34,11 +34,28 @@ export async function POST(req: NextRequest) {
   const conversationId = Date.now().toString();
   const randomString = generateRandomString();
 
+  // Basket items toplamını hesapla
+  const basketItems = items.map((item: any) => ({
+    id: item.id.toString(),
+    name: item.name,
+    category1: "Evcil Hayvan",
+    itemType: "PHYSICAL",
+    price: (item.price * item.quantity).toFixed(2),
+  }));
+
+  // İyzico price = basket items toplamı olmalı (kargo hariç)
+  const basketTotal = items.reduce((sum: number, item: any) => 
+    sum + (item.price * item.quantity), 0
+  );
+  
+  const priceStr = basketTotal.toFixed(2);
+  const paidPriceStr = totalPrice.toFixed(2); // kargo dahil toplam
+
   const requestBody = {
     locale: "tr",
     conversationId,
-    price: totalPrice.toFixed(2),
-    paidPrice: totalPrice.toFixed(2),
+    price: priceStr,
+    paidPrice: paidPriceStr,
     currency: "TRY",
     basketId: "B" + conversationId,
     paymentGroup: "PRODUCT",
@@ -67,19 +84,10 @@ export async function POST(req: NextRequest) {
       country: "Turkey",
       address: buyer.address,
     },
-    basketItems: items.map((item: any) => ({
-      id: item.id.toString(),
-      name: item.name,
-      category1: "Evcil Hayvan",
-      itemType: "PHYSICAL",
-      price: (item.price * item.quantity).toFixed(2),
-    })),
+    basketItems,
   };
 
   const authHeader = generateAuth(randomString, ENDPOINT, requestBody);
-
-  console.log("Random:", randomString);
-  console.log("Auth:", authHeader);
 
   try {
     const response = await fetch(`${IYZICO_BASE_URL}${ENDPOINT}`, {
