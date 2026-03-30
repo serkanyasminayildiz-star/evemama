@@ -1,74 +1,38 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
+const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
+const IYZICO_BASE_URL = process.env.IYZICO_BASE_URL || "https://api.iyzipay.com";
 
-async function getIyzicoConfig() {
-  const { data } = await supabaseAdmin
-    .from("site_ayarlari")
-    .select("anahtar, deger")
-    .in("anahtar", ["iyzico_api_key", "iyzico_secret_key", "iyzico_base_url"]);
+const ENDPOINT = "/payment/iyzipos/checkoutform/initialize/auth/ecom";
 
-  const config: any = {};
-  data?.forEach((row: any) => { config[row.anahtar] = row.deger; });
-
-  return {
-    apiKey: config.iyzico_api_key || process.env.IYZICO_API_KEY || "",
-    secretKey: config.iyzico_secret_key || process.env.IYZICO_SECRET_KEY || "",
-    baseUrl: config.iyzico_base_url || process.env.IYZICO_BASE_URL || "https://api.iyzipay.com",
-  };
+function generateRandomString(): string {
+  return process.hrtime()[0] + Math.random().toString(8).slice(2);
 }
 
-function generatePKIString(params: any): string {
-  function serialize(obj: any): string {
-    if (obj === null || obj === undefined) return '';
-    if (typeof obj !== 'object') return String(obj);
-    if (Array.isArray(obj)) {
-      return obj.map(item => {
-        if (typeof item === 'object') {
-          return '[' + Object.entries(item).map(([k, v]) => `${k}=${serialize(v)}`).join(', ') + ']';
-        }
-        return String(item);
-      }).join(', ');
-    }
-    return Object.entries(obj).map(([k, v]) => {
-      if (Array.isArray(v)) {
-        return `${k}=[${v.map(item => {
-          if (typeof item === 'object') {
-            return '[' + Object.entries(item).map(([ik, iv]) => `${ik}=${serialize(iv)}`).join(', ') + ']';
-          }
-          return String(item);
-        }).join(', ')}]`;
-      }
-      if (typeof v === 'object' && v !== null) {
-        return Object.entries(v).map(([ik, iv]) => `${ik}=${serialize(iv)}`).join(', ');
-      }
-      return `${k}=${serialize(v)}`;
-    }).join(', ');
-  }
-  return '[' + serialize(obj) + ']';
-}
+function generateAuth(randomString: string, uri: string, body: any): string {
+  const signature = crypto
+    .createHmac("sha256", IYZICO_SECRET_KEY)
+    .update(randomString + uri + JSON.stringify(body))
+    .digest("hex");
 
-function generateAuthString(apiKey: string, secretKey: string, randomKey: string, pkiString: string): string {
-  const dataToHash = secretKey + randomKey + pkiString;
-  const hash = crypto.createHash("sha1").update(dataToHash, "utf8").digest("base64");
-  const authContent = `apiKey:${apiKey}&randomKey:${randomKey}&signature:${hash}`;
-  return "IYZWSv2 " + Buffer.from(authContent, "utf8").toString("base64");
+  const authParams = [
+    `apiKey:${IYZICO_API_KEY}`,
+    `randomKey:${randomString}`,
+    `signature:${signature}`,
+  ].join("&");
+
+  return "IYZWSv2 " + Buffer.from(authParams).toString("base64");
 }
 
 export async function POST(req: NextRequest) {
-  const { apiKey, secretKey, baseUrl } = await getIyzicoConfig();
-
   const body = await req.json();
   const { items, buyer, totalPrice } = body;
 
-  const randomKey = Math.random().toString(36).substring(2);
   const conversationId = Date.now().toString();
+  const randomString = generateRandomString();
 
   const requestBody = {
     locale: "tr",
@@ -112,22 +76,19 @@ export async function POST(req: NextRequest) {
     })),
   };
 
-  const pkiString = generatePKIString(requestBody);
-  const authString = generateAuthString(apiKey, secretKey, randomKey, pkiString);
+  const authHeader = generateAuth(randomString, ENDPOINT, requestBody);
 
-  console.log("API Key:", apiKey ? "✅ var" : "❌ yok");
-  console.log("Secret Key:", secretKey ? "✅ var" : "❌ yok");
-  console.log("Base URL:", baseUrl);
-  console.log("PKI:", pkiString);
+  console.log("Random:", randomString);
+  console.log("Auth:", authHeader);
 
   try {
-    const response = await fetch(`${baseUrl}/payment/iyzipos/checkoutform/initialize/auth/ecom`, {
+    const response = await fetch(`${IYZICO_BASE_URL}${ENDPOINT}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": authString,
-        "x-iyzi-rnd": randomKey,
-        "x-iyzi-client-version": "iyzipay-node-2.0.48",
+        "Authorization": authHeader,
+        "x-iyzi-rnd": randomString,
+        "x-iyzi-client-version": "iyzipay-node-2.0.65",
       },
       body: JSON.stringify(requestBody),
     });
