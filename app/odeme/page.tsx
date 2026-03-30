@@ -34,18 +34,7 @@ export default function Odeme() {
       });
       const data = await res.json();
       if (data.status === "success" && data.paymentPageUrl) {
-  window.location.href = data.paymentPageUrl;
-} else if (data.checkoutFormContent) {
-```
-
-Yani iyzico'nun ödeme sayfasına direkt yönlendireceğiz. **Command+S** bas, push yap!
-```
-git commit -m "iyzico odeme sayfasina yonlendirme"
-        const div = document.createElement("div");
-        div.innerHTML = data.checkoutFormContent;
-        document.body.appendChild(div);
-        const script = div.querySelector("script");
-        if (script) { const newScript = document.createElement("script"); newScript.src = script.src; document.body.appendChild(newScript); }
+        window.location.href = data.paymentPageUrl;
       } else {
         setHata("Ödeme başlatılamadı: " + (data.errorMessage || "Bilinmeyen hata"));
       }
@@ -94,9 +83,7 @@ git commit -m "iyzico odeme sayfasina yonlendirme"
 
       <div className="odeme-layout">
 
-        {/* Sol: Form */}
         <div>
-          {/* Teslimat Bilgileri */}
           <div style={{ background: "white", borderRadius: 20, padding: "24px", marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 18 }}>👤 Teslimat Bilgileri</div>
             <div className="ad-soyad-grid">
@@ -109,7 +96,6 @@ git commit -m "iyzico odeme sayfasina yonlendirme"
             <input name="city" placeholder="Şehir *" value={form.city} onChange={handleChange} style={{ ...inputStyle, marginBottom: 0 }} />
           </div>
 
-          {/* Ödeme Yöntemi */}
           <div style={{ background: "white", borderRadius: 20, padding: "24px", marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 18 }}>💳 Ödeme Yöntemi</div>
             <div className="odeme-yontem-grid">
@@ -154,23 +140,22 @@ git commit -m "iyzico odeme sayfasina yonlendirme"
             )}
           </div>
 
-          {/* Sözleşmeler */}
           <div style={{ background: "white", borderRadius: 20, padding: "24px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E", marginBottom: 16 }}>📋 Sözleşmeler</div>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
               <input type="checkbox" checked={sozlesme} onChange={e => setSozlesme(e.target.checked)}
                 style={{ width: 18, height: 18, marginTop: 2, accentColor: "#E8845A", flexShrink: 0, cursor: "pointer" }} />
               <span style={{ fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
-                <a href="#" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Mesafeli Satış Sözleşmesi</a>'ni ve{" "}
-                <a href="#" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Ön Bilgilendirme Formu</a>'nu okudum, onaylıyorum. <span style={{ color: "red" }}>*</span>
+                <a href="/mesafeli-satis" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Mesafeli Satış Sözleşmesi</a>'ni ve{" "}
+                <a href="/kullanim-kosullari" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Ön Bilgilendirme Formu</a>'nu okudum, onaylıyorum. <span style={{ color: "red" }}>*</span>
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
               <input type="checkbox" checked={aydinlatma} onChange={e => setAydinlatma(e.target.checked)}
                 style={{ width: 18, height: 18, marginTop: 2, accentColor: "#E8845A", flexShrink: 0, cursor: "pointer" }} />
               <span style={{ fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
-                <a href="#" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>KVKK Aydınlatma Metni</a>'ni okudum,{" "}
-                <a href="#" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Gizlilik Politikası</a>'nı kabul ediyorum. <span style={{ color: "red" }}>*</span>
+                <a href="/kvkk" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>KVKK Aydınlatma Metni</a>'ni okudum,{" "}
+                <a href="/gizlilik" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Gizlilik Politikası</a>'nı kabul ediyorum. <span style={{ color: "red" }}>*</span>
               </span>
             </div>
             {hata && (
@@ -181,13 +166,12 @@ git commit -m "iyzico odeme sayfasina yonlendirme"
           </div>
         </div>
 
-        {/* Sağ: Sipariş Özeti */}
         <div className="ozet-sticky">
           <div style={{ background: "white", borderRadius: 20, padding: "24px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)", marginBottom: 14 }}>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 16 }}>🧾 Sipariş Özeti</div>
             {items.map(item => (
               <div key={item.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 13, color: "#5C3D2E" }}>
-                <span style={{ flex: 1, paddingRight: 8 }}>{item.emoji} {item.name.substring(0, 30)}{item.name.length > 30 ? "..." : ""} <span style={{ opacity: 0.5 }}>x{item.quantity}</span></span>
+                <span style={{ flex: 1, paddingRight: 8 }}>{item.name.substring(0, 30)}{item.name.length > 30 ? "..." : ""} <span style={{ opacity: 0.5 }}>x{item.quantity}</span></span>
                 <span style={{ fontWeight: 700, flexShrink: 0 }}>₺{(item.price * item.quantity).toFixed(2)}</span>
               </div>
             ))}
@@ -228,7 +212,6 @@ git commit -m "iyzico odeme sayfasina yonlendirme"
         </div>
       </div>
 
-      {/* Mobil bottom nav */}
       <style>{`.odeme-bottom-nav { display: none; } @media(max-width:768px){ .odeme-bottom-nav { display: grid !important; grid-template-columns: repeat(4,1fr); position: fixed; bottom: 0; left: 0; right: 0; z-index: 300; background: rgba(253,246,238,0.97); backdrop-filter: blur(14px); border-top: 1px solid rgba(92,61,46,.08); padding: 8px 0 20px; } }`}</style>
       <nav className="odeme-bottom-nav" style={{ display: "none" }}>
         <a href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
