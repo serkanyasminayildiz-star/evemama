@@ -578,47 +578,127 @@ export default function Admin() {
                   <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
                   <div style={{ fontFamily: "Georgia, serif", fontSize: 18, color: "#5C3D2E" }}>Henüz sipariş yok</div>
                 </div>
-              ) : (
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr style={{ background: "#FDF6EE" }}>
-                        {["Sipariş No", "Müşteri", "Tutar", "Durum", "Tarih", "Güncelle"].map(h => (
-                          <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, textTransform: "uppercase" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {siparisler.map((siparis) => (
-                        <tr key={siparis.id} style={{ borderBottom: "1px solid #F0E8E0" }}>
-                          <td style={{ padding: "12px", fontSize: 13, fontWeight: 700, color: "#5C3D2E" }}>#{siparis.siparis_no}</td>
-                          <td style={{ padding: "12px", fontSize: 13 }}>{siparis.ad} {siparis.soyad}<br /><span style={{ fontSize: 11, opacity: 0.5 }}>{siparis.email}</span></td>
-                          <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#E8845A" }}>₺{parseFloat(siparis.toplam || 0).toFixed(2)}</td>
-                          <td style={{ padding: "12px" }}>
-                            <span style={{ background: siparis.durum === "tamamlandi" ? "#E8F5E9" : siparis.durum === "iptal" ? "#FFEBEE" : "#FFF5F0", color: siparis.durum === "tamamlandi" ? "#2E7D32" : siparis.durum === "iptal" ? "#C62828" : "#E8845A", padding: "4px 10px", borderRadius: 50, fontSize: 12, fontWeight: 700 }}>
-                              {siparis.durum}
-                            </span>
-                          </td>
-                          <td style={{ padding: "12px", fontSize: 12, opacity: 0.6 }}>{new Date(siparis.created_at).toLocaleDateString("tr-TR")}</td>
-                          <td style={{ padding: "12px" }}>
-                            <select onChange={e => siparisGuncelle(siparis.id, e.target.value)} value={siparis.durum}
-                              style={{ padding: "6px 10px", border: "2px solid #E8D5B7", borderRadius: 8, fontSize: 12, outline: "none" }}>
-                              <option value="beklemede">Beklemede</option>
-                              <option value="hazirlaniyor">Hazırlanıyor</option>
-                              <option value="kargoda">Kargoda</option>
-                              <option value="tamamlandi">Tamamlandı</option>
-                              <option value="iptal">İptal</option>
-                            </select>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              ) : siparisler.map((siparis) => (
+                <div key={siparis.id} style={{ background: "#FDF6EE", borderRadius: 16, padding: "18px", marginBottom: 14, border: "1px solid #E8D5B7" }}>
+                  {/* Üst satır */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                    <div>
+                      <span style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 700, color: "#5C3D2E" }}>#{siparis.siparis_no}</span>
+                      <span style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.5, marginLeft: 10 }}>{new Date(siparis.created_at).toLocaleDateString("tr-TR")} {new Date(siparis.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {/* Ödeme durumu */}
+                      <span style={{
+                        background: siparis.odeme_durumu === "odendi" ? "#E8F5E9" : siparis.odeme_durumu === "iptal" ? "#FFEBEE" : "#FFF8E1",
+                        color: siparis.odeme_durumu === "odendi" ? "#2E7D32" : siparis.odeme_durumu === "iptal" ? "#C62828" : "#F57F17",
+                        padding: "4px 12px", borderRadius: 50, fontSize: 12, fontWeight: 700
+                      }}>
+                        {siparis.odeme_durumu === "odendi" ? "💳 Ödendi" : siparis.odeme_durumu === "iptal" ? "❌ İptal" : "⏳ Beklemede"}
+                      </span>
+                      {/* Sipariş durumu */}
+                      <span style={{
+                        background: siparis.durum === "tamamlandi" ? "#E8F5E9" : siparis.durum === "iptal" ? "#FFEBEE" : siparis.durum === "kargoda" ? "#E3F2FD" : "#FFF5F0",
+                        color: siparis.durum === "tamamlandi" ? "#2E7D32" : siparis.durum === "iptal" ? "#C62828" : siparis.durum === "kargoda" ? "#1565C0" : "#E8845A",
+                        padding: "4px 12px", borderRadius: 50, fontSize: 12, fontWeight: 700
+                      }}>
+                        {siparis.durum === "hazirlaniyor" ? "🔧 Hazırlanıyor" : siparis.durum === "kargoda" ? "🚚 Kargoda" : siparis.durum === "tamamlandi" ? "✅ Tamamlandı" : siparis.durum === "iptal" ? "❌ İptal" : "⏳ Beklemede"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Müşteri ve tutar bilgisi */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+                    <div style={{ background: "white", borderRadius: 10, padding: "10px 14px" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#5C3D2E", opacity: 0.5, marginBottom: 3, textTransform: "uppercase" }}>Müşteri</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#2C1A0E" }}>{siparis.ad} {siparis.soyad}</div>
+                      <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.6 }}>{siparis.email}</div>
+                    </div>
+                    <div style={{ background: "white", borderRadius: 10, padding: "10px 14px" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#5C3D2E", opacity: 0.5, marginBottom: 3, textTransform: "uppercase" }}>Tutar</div>
+                      <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#E8845A" }}>₺{parseFloat(siparis.toplam || 0).toFixed(2)}</div>
+                      <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.6 }}>{siparis.odeme_yontemi === "kredi_karti" ? "💳 Kredi Kartı" : "🏦 Havale/EFT"}</div>
+                    </div>
+                    <div style={{ background: "white", borderRadius: 10, padding: "10px 14px" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#5C3D2E", opacity: 0.5, marginBottom: 3, textTransform: "uppercase" }}>Adres</div>
+                      <div style={{ fontSize: 11, color: "#2C1A0E" }}>{siparis.adres || "-"}</div>
+                      <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.6 }}>{siparis.sehir}</div>
+                    </div>
+                  </div>
+
+                  {/* Durum değiştirme ve paketleme fişi */}
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    <select
+                      value={siparis.durum}
+                      onChange={e => siparisGuncelle(siparis.id, e.target.value)}
+                      style={{ padding: "8px 12px", border: "2px solid #E8D5B7", borderRadius: 10, fontSize: 13, outline: "none", fontFamily: "inherit", cursor: "pointer", background: "white" }}>
+                      <option value="beklemede">⏳ Beklemede</option>
+                      <option value="hazirlaniyor">🔧 Hazırlanıyor</option>
+                      <option value="kargoda">🚚 Kargoda</option>
+                      <option value="tamamlandi">✅ Tamamlandı</option>
+                      <option value="iptal">❌ İptal</option>
+                      <option value="iade">↩️ İade Edildi</option>
+                    </select>
+
+                    <select
+                      value={siparis.odeme_durumu || "beklemede"}
+                      onChange={async (e) => {
+                        await supabase.from("siparisler").update({ odeme_durumu: e.target.value }).eq("id", siparis.id);
+                        siparisleriYukle();
+                        goster("✅ Ödeme durumu güncellendi");
+                      }}
+                      style={{ padding: "8px 12px", border: "2px solid #E8D5B7", borderRadius: 10, fontSize: 13, outline: "none", fontFamily: "inherit", cursor: "pointer", background: "white" }}>
+                      <option value="beklemede">⏳ Ödeme Bekliyor</option>
+                      <option value="odendi">💳 Ödendi</option>
+                      <option value="iptal">❌ İptal</option>
+                      <option value="iade">↩️ İade</option>
+                    </select>
+
+                    <button
+                      onClick={() => {
+                        const w = window.open("", "_blank");
+                        if (!w) return;
+                        w.document.write(`
+                          <html><head><title>Paketleme Fişi - #${siparis.siparis_no}</title>
+                          <style>
+                            body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; }
+                            h2 { border-bottom: 2px solid #333; padding-bottom: 8px; }
+                            .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eee; }
+                            .label { font-weight: bold; color: #555; font-size: 12px; }
+                            .value { font-size: 12px; }
+                            .total { font-size: 16px; font-weight: bold; color: #E8845A; margin-top: 10px; }
+                            @media print { button { display: none; } }
+                          </style></head>
+                          <body>
+                            <h2>🐾 evemama.net</h2>
+                            <h3>Paketleme Fişi</h3>
+                            <div class="row"><span class="label">Sipariş No</span><span class="value">#${siparis.siparis_no}</span></div>
+                            <div class="row"><span class="label">Tarih</span><span class="value">${new Date(siparis.created_at).toLocaleDateString("tr-TR")}</span></div>
+                            <div class="row"><span class="label">Müşteri</span><span class="value">${siparis.ad || ""} ${siparis.soyad || ""}</span></div>
+                            <div class="row"><span class="label">E-posta</span><span class="value">${siparis.email || ""}</span></div>
+                            <div class="row"><span class="label">Adres</span><span class="value">${siparis.adres || ""} ${siparis.sehir || ""}</span></div>
+                            <div class="row"><span class="label">Ödeme</span><span class="value">${siparis.odeme_yontemi === "kredi_karti" ? "Kredi Kartı" : "Havale/EFT"}</span></div>
+                            <br/>
+                            <div class="total">Toplam: ₺${parseFloat(siparis.toplam || 0).toFixed(2)}</div>
+                            <br/>
+                            <button onclick="window.print()">🖨️ Yazdır</button>
+                          </body></html>
+                        `);
+                        w.document.close();
+                      }}
+                      style={{ background: "#5C3D2E", color: "white", border: "none", borderRadius: 10, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      🖨️ Paketleme Fişi
+                    </button>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         )}
+```
+
+**Command+S** bas, push yap!
+```
+git commit -m "siparis yonetimi guncellendi"
 
         {/* KATEGORİLER */}
         {aktifSayfa === "kategoriler" && (
