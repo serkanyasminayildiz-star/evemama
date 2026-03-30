@@ -15,6 +15,13 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr">
+      <head>
+        <script
+          src="https://www.etbis.org.tr/etbis-widget.min.js"
+          data-etbis-key="e01ba170-9f7d-4c02-bd5f-983a7c5e3a0f"
+          async
+        />
+      </head>
       <body>
         <CartProvider>{children}</CartProvider>
       </body>
