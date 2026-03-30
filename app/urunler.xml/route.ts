@@ -1,65 +1,69 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+export const runtime = 'nodejs';
+import { NextRequest, NextResponse } from "next/server";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const Iyzipay = require("iyzipay");
 
-export async function GET() {
-  const { data: urunler } = await supabase
-    .from("urunler")
-    .select("*, markalar(ad), kategoriler(ad)")
-    .eq("aktif", true)
-    .gt("stok", 0)
-    .limit(1000);
+const iyzipay = new Iyzipay({
+  apiKey: process.env.IYZICO_API_KEY,
+  secretKey: process.env.IYZICO_SECRET_KEY,
+  uri: process.env.IYZICO_BASE_URL || "https://api.iyzipay.com",
+});
 
-  const items = (urunler || []).map((u) => {
-    const fiyat = (u.indirimli_fiyat || u.fiyat).toFixed(2);
-    const normalFiyat = parseFloat(u.fiyat).toFixed(2);
-    const resim = (u.resim_url || "")
-  .replace(/<[^>]*>/g, "")
-  .replace(/&/g, "&amp;")
-  .trim();
-    const kategori = u.kategoriler?.ad || "Evcil Hayvan";
-    const marka = (u.markalar?.ad || "evemama").replace(/&/g, "&amp;");
-    const baslik = (u.ad || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const aciklama = (u.kisa_aciklama || u.ad || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const { items, buyer, totalPrice } = body;
 
-    return [
-      "  <item>",
-      `    <g:id>${u.id}</g:id>`,
-      `    <g:title><![CDATA[${baslik}]]></g:title>`,
-      `    <g:description><![CDATA[${aciklama}]]></g:description>`,
-      `    <g:link>https://evemama.net/urun/${u.slug}</g:link>`,
-      `    <g:image_link>${resim}</g:image_link>`,
-      `    <g:availability>in stock</g:availability>`,
-      `    <g:price>${normalFiyat} TRY</g:price>`,
-      u.indirimli_fiyat ? `    <g:sale_price>${fiyat} TRY</g:sale_price>` : "",
-      `    <g:brand><![CDATA[${marka}]]></g:brand>`,
-      `    <g:condition>new</g:condition>`,
-      `    <g:product_type><![CDATA[${kategori}]]></g:product_type>`,
-      `    <g:google_product_category>Animals &amp; Pet Supplies</g:google_product_category>`,
-      `    <g:identifier_exists>no</g:identifier_exists>`,
-      `    <g:mpn>${u.id}</g:mpn>`,
-      "  </item>",
-    ].filter(Boolean).join("\n");
-  }).join("\n");
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
-  <channel>
-    <title>evemama.net Ürün Kataloğu</title>
-    <link>https://evemama.net</link>
-    <description>Evcil dostunuzun her ihtiyacı</description>
-${items}
-  </channel>
-</rss>`;
-
-  return new NextResponse(xml, {
-    headers: {
-      "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, max-age=3600",
+  const request = {
+    locale: "tr",
+    conversationId: Date.now().toString(),
+    price: totalPrice.toFixed(2),
+    paidPrice: totalPrice.toFixed(2),
+    currency: "TRY",
+    basketId: "B" + Date.now(),
+    paymentGroup: "PRODUCT",
+    callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://evemama.net"}/odeme/sonuc`,
+    enabledInstallments: [1, 2, 3, 6, 9, 12],
+    buyer: {
+      id: buyer.id || "1",
+      name: buyer.name,
+      surname: buyer.surname,
+      email: buyer.email,
+      identityNumber: "74300864791",
+      registrationAddress: buyer.address,
+      city: buyer.city,
+      country: "Turkey",
+      ip: "85.34.78.112",
     },
+    shippingAddress: {
+      contactName: buyer.name + " " + buyer.surname,
+      city: buyer.city,
+      country: "Turkey",
+      address: buyer.address,
+    },
+    billingAddress: {
+      contactName: buyer.name + " " + buyer.surname,
+      city: buyer.city,
+      country: "Turkey",
+      address: buyer.address,
+    },
+    basketItems: items.map((item: any) => ({
+      id: item.id.toString(),
+      name: item.name,
+      category1: "Evcil Hayvan",
+      itemType: "PHYSICAL",
+      price: (item.price * item.quantity).toFixed(2),
+    })),
+  };
+
+  return new Promise((resolve) => {
+    iyzipay.checkoutFormInitialize.create(request, (err: any, result: any) => {
+      if (err) {
+        console.log("İyzico hata:", err);
+        resolve(NextResponse.json({ error: err.message }, { status: 500 }));
+      } else {
+        console.log("İyzico yanıt:", JSON.stringify(result));
+        resolve(NextResponse.json(result));
+      }
+    });
   });
 }
