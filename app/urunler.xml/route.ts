@@ -1,69 +1,36 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-const Iyzipay = require("iyzipay");
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-const iyzipay = new Iyzipay({
-  apiKey: process.env.IYZICO_API_KEY,
-  secretKey: process.env.IYZICO_SECRET_KEY,
-  uri: process.env.IYZICO_BASE_URL || "https://api.iyzipay.com",
-});
+export async function GET(req: NextRequest) {
+  const { data: urunler } = await supabase
+    .from("urunler")
+    .select("*, kategoriler(ad)")
+    .eq("aktif", true)
+    .gt("stok", 0)
+    .limit(500);
 
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { items, buyer, totalPrice } = body;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:g="http://base.google.com/ns/1.0">
+${(urunler || []).map(u => `
+  <entry>
+    <g:id>${u.id}</g:id>
+    <title>${u.ad}</title>
+    <g:price>${u.fiyat} TRY</g:price>
+    <g:availability>in stock</g:availability>
+    <g:condition>new</g:condition>
+    <g:image_link>${u.resim_url || ""}</g:image_link>
+    <link>https://evemama.net/urun/${u.slug}</link>
+    <g:product_type>${u.kategoriler?.ad || "Evcil Hayvan"}</g:product_type>
+  </entry>`).join("")}
+</feed>`;
 
-  const request = {
-    locale: "tr",
-    conversationId: Date.now().toString(),
-    price: totalPrice.toFixed(2),
-    paidPrice: totalPrice.toFixed(2),
-    currency: "TRY",
-    basketId: "B" + Date.now(),
-    paymentGroup: "PRODUCT",
-    callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://evemama.net"}/odeme/sonuc`,
-    enabledInstallments: [1, 2, 3, 6, 9, 12],
-    buyer: {
-      id: buyer.id || "1",
-      name: buyer.name,
-      surname: buyer.surname,
-      email: buyer.email,
-      identityNumber: "74300864791",
-      registrationAddress: buyer.address,
-      city: buyer.city,
-      country: "Turkey",
-      ip: "85.34.78.112",
-    },
-    shippingAddress: {
-      contactName: buyer.name + " " + buyer.surname,
-      city: buyer.city,
-      country: "Turkey",
-      address: buyer.address,
-    },
-    billingAddress: {
-      contactName: buyer.name + " " + buyer.surname,
-      city: buyer.city,
-      country: "Turkey",
-      address: buyer.address,
-    },
-    basketItems: items.map((item: any) => ({
-      id: item.id.toString(),
-      name: item.name,
-      category1: "Evcil Hayvan",
-      itemType: "PHYSICAL",
-      price: (item.price * item.quantity).toFixed(2),
-    })),
-  };
-
-  return new Promise((resolve) => {
-    iyzipay.checkoutFormInitialize.create(request, (err: any, result: any) => {
-      if (err) {
-        console.log("İyzico hata:", err);
-        resolve(NextResponse.json({ error: err.message }, { status: 500 }));
-      } else {
-        console.log("İyzico yanıt:", JSON.stringify(result));
-        resolve(NextResponse.json(result));
-      }
-    });
+  return new NextResponse(xml, {
+    headers: { "Content-Type": "application/xml" },
   });
 }
