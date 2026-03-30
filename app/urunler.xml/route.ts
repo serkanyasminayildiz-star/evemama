@@ -24,22 +24,28 @@ export async function GET(req: NextRequest) {
     .gt("stok", 0)
     .limit(500);
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom" xmlns:g="http://base.google.com/ns/1.0">
-${(urunler || []).map(u => `
-  <entry>
+  const entries = (urunler || []).map(u => `  <entry>
     <g:id>${u.id}</g:id>
     <title>${xmlEscape(u.ad)}</title>
-    <g:price>${u.fiyat} TRY</g:price>
+    <g:price>${u.indirimli_fiyat || u.fiyat} TRY</g:price>
     <g:availability>in stock</g:availability>
     <g:condition>new</g:condition>
     <g:image_link>${xmlEscape(u.resim_url || "")}</g:image_link>
     <link>https://evemama.net/urun/${xmlEscape(u.slug)}</link>
     <g:product_type>${xmlEscape(u.kategoriler?.ad || "Evcil Hayvan")}</g:product_type>
-  </entry>`).join("")}
+    <g:brand>${xmlEscape(u.marka || "evemama")}</g:brand>
+    <description>${xmlEscape(u.kisa_aciklama || u.ad)}</description>
+  </entry>`).join("\n");
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:g="http://base.google.com/ns/1.0">
+  <title>evemama.net Ürün Kataloğu</title>
+  <link>https://evemama.net</link>
+  <updated>${new Date().toISOString()}</updated>
+${entries}
 </feed>`;
 
   return new NextResponse(xml, {
-    headers: { "Content-Type": "application/xml" },
+    headers: { "Content-Type": "application/xml; charset=utf-8" },
   });
 }
