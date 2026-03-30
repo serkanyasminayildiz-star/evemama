@@ -1,11 +1,17 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
+import { createClient } from "@supabase/supabase-js";
 
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
 const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
 const IYZICO_BASE_URL = process.env.IYZICO_BASE_URL || "https://api.iyzipay.com";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://evemama.net";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const ENDPOINT = "/payment/iyzipos/checkoutform/auth/ecom/detail";
 
@@ -56,7 +62,29 @@ export async function POST(req: NextRequest) {
     console.log("Sonuç yanıt:", JSON.stringify(data));
 
     if (data.status === "success" && data.paymentStatus === "SUCCESS") {
-      return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarili`, { status: 303 });
+      
+      // Sipariş numarası oluştur
+      const siparisNo = "EVE" + Date.now().toString().slice(-8);
+
+      // Supabase'e sipariş kaydet
+      const { error } = await supabase.from("siparisler").insert({
+        siparis_no: siparisNo,
+        durum: "hazirlaniyor",
+        odeme_yontemi: "kredi_karti",
+        odeme_durumu: "odendi",
+        toplam: data.paidPrice,
+        ara_toplam: data.price,
+        iyzico_token: token,
+        created_at: new Date().toISOString(),
+      });
+
+      if (error) {
+        console.log("Sipariş kayıt hatası:", error.message);
+      } else {
+        console.log("Sipariş kaydedildi:", siparisNo);
+      }
+
+      return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarili&siparis=${siparisNo}`, { status: 303 });
     } else {
       return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz`, { status: 303 });
     }
