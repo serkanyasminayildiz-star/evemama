@@ -7,6 +7,15 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+function xmlEscape(str: string): string {
+  return (str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 export async function GET(req: NextRequest) {
   const { data: urunler } = await supabase
     .from("urunler")
@@ -20,13 +29,13 @@ export async function GET(req: NextRequest) {
 ${(urunler || []).map(u => `
   <entry>
     <g:id>${u.id}</g:id>
-    <title>${u.ad}</title>
+    <title>${xmlEscape(u.ad)}</title>
     <g:price>${u.fiyat} TRY</g:price>
     <g:availability>in stock</g:availability>
     <g:condition>new</g:condition>
-    <g:image_link>${u.resim_url || ""}</g:image_link>
-    <link>https://evemama.net/urun/${u.slug}</link>
-    <g:product_type>${u.kategoriler?.ad || "Evcil Hayvan"}</g:product_type>
+    <g:image_link>${xmlEscape(u.resim_url || "")}</g:image_link>
+    <link>https://evemama.net/urun/${xmlEscape(u.slug)}</link>
+    <g:product_type>${xmlEscape(u.kategoriler?.ad || "Evcil Hayvan")}</g:product_type>
   </entry>`).join("")}
 </feed>`;
 
