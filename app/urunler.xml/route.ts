@@ -16,26 +16,38 @@ function xmlEscape(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
+function duzeltResim(url: string): string {
+  if (!url) return "";
+  return url.replace("https://evemama.net", "https://www.sepetmama.com");
+}
+
 export async function GET(req: NextRequest) {
   const { data: urunler } = await supabase
     .from("urunler")
-    .select("*, kategoriler(ad)")
+    .select("*, kategoriler(ad), markalar(ad)")
     .eq("aktif", true)
     .gt("stok", 0)
-    .limit(500);
+    .gt("fiyat", 0)
+    .limit(1000);
 
-  const entries = (urunler || []).map(u => `  <entry>
+  const entries = (urunler || []).map(u => {
+    const fiyat = parseFloat(u.indirimli_fiyat || u.fiyat || 0);
+    const normalFiyat = parseFloat(u.fiyat || 0);
+    
+    return `  <entry>
     <g:id>${u.id}</g:id>
     <title>${xmlEscape(u.ad)}</title>
-    <g:price>${u.indirimli_fiyat || u.fiyat} TRY</g:price>
+    <g:price>${normalFiyat.toFixed(2)} TRY</g:price>
+    ${fiyat < normalFiyat ? `<g:sale_price>${fiyat.toFixed(2)} TRY</g:sale_price>` : ""}
     <g:availability>in stock</g:availability>
     <g:condition>new</g:condition>
-    <g:image_link>${xmlEscape(u.resim_url || "")}</g:image_link>
+    <g:image_link>${xmlEscape(duzeltResim(u.resim_url || ""))}</g:image_link>
     <link>https://evemama.net/urun/${xmlEscape(u.slug)}</link>
     <g:product_type>${xmlEscape(u.kategoriler?.ad || "Evcil Hayvan")}</g:product_type>
-    <g:brand>${xmlEscape(u.marka || "evemama")}</g:brand>
+    <g:brand>${xmlEscape(u.markalar?.ad || "evemama")}</g:brand>
     <description>${xmlEscape(u.kisa_aciklama || u.ad)}</description>
-  </entry>`).join("\n");
+  </entry>`;
+  }).join("\n");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:g="http://base.google.com/ns/1.0">
