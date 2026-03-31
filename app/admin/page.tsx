@@ -1158,7 +1158,7 @@ export default function Admin() {
                       <span style={{ background: sp.odeme_yontemi === "kredi_karti" ? "#E3F2FD" : "#E8F5E9", color: sp.odeme_yontemi === "kredi_karti" ? "#1565C0" : "#2E7D32", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
                         {sp.odeme_yontemi === "kredi_karti" ? "💳 Kart" : "🏦 Havale"}
                       </span>
-                      <span style={{ background: { beklemede: "#FFF3E0", hazirlaniyor: "#E3F2FD", kargoda: "#E8F5E9", tamamlandi: "#F3E5F5", iptal: "#FFEBEE" }[sp.durum] || "#F5F5F5", color: { beklemede: "#E65100", hazirlaniyor: "#1565C0", kargoda: "#2E7D32", tamamlandi: "#6A1B9A", iptal: "#C62828" }[sp.durum] || "#666", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
+                      <span style={{ background: ({ beklemede: "#FFF3E0", hazirlaniyor: "#E3F2FD", kargoda: "#E8F5E9", tamamlandi: "#F3E5F5", iptal: "#FFEBEE" } as any)[sp.durum] || "#F5F5F5", color: ({ beklemede: "#E65100", hazirlaniyor: "#1565C0", kargoda: "#2E7D32", tamamlandi: "#6A1B9A", iptal: "#C62828" } as any)[sp.durum] || "#666", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
                         {sp.durum || "beklemede"}
                       </span>
                     </div>
