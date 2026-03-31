@@ -825,7 +825,7 @@ export default function Admin() {
                           <td style={{ padding: "8px 12px" }}>
                             {stokInline?.id === urun.id ? (
                               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                                <input type="number" value={stokInline.deger} onChange={e => setStokInline({ ...stokInline, deger: e.target.value })} autoFocus onKeyDown={e => { if (e.key === "Enter") stokInlineKaydet(); if (e.key === "Escape") setStokInline(null); }} style={{ width: 80, padding: "6px 10px", border: "2px solid #E8845A", borderRadius: 8, fontSize: 13, outline: "none" }} />
+                                <input type="number" value={stokInline?.deger} onChange={e => setStokInline({ ...stokInline, deger: e.target.value })} autoFocus onKeyDown={e => { if (e.key === "Enter") stokInlineKaydet(); if (e.key === "Escape") setStokInline(null); }} style={{ width: 80, padding: "6px 10px", border: "2px solid #E8845A", borderRadius: 8, fontSize: 13, outline: "none" }} />
                                 <button onClick={stokInlineKaydet} style={{ ...btn(), padding: "6px 14px", fontSize: 12 }}>✓ Kaydet</button>
                                 <button onClick={() => setStokInline(null)} style={{ ...btn("#888"), padding: "6px 10px", fontSize: 12 }}>✕</button>
                               </div>
