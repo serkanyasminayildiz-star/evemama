@@ -654,7 +654,7 @@ export default function Admin() {
             <div style={{ background: "white", borderRadius: 18, padding: "14px 18px", marginBottom: 12, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
                 <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, opacity: 0.4 }}>🔍</span>
-                <input ref={aramaRef} type="text" autoComplete="new-password" autoCorrect="off" autoCapitalize="off" spellCheck={false} data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Ürün arayın..."
+                <input ref={aramaRef} type="text" autoComplete="new-password" autoCorrect...
                 {aramaMetni && <button onClick={() => setAramaMetni("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 16, cursor: "pointer", color: "#999", padding: 0 }}>✕</button>}
               </div>
               <select value={filtreler.kategori} onChange={e => filtreUygula({ ...filtreler, kategori: e.target.value })} style={fltSelect}><option value="">Tüm Kategoriler</option>{kategoriler.map(k => <option key={k.id} value={k.id}>{k.ust_kategori_id ? "└ " : ""}{k.ad}</option>)}</select>
