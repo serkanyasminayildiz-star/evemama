@@ -715,15 +715,23 @@ export default function Admin() {
                           <div style={{ fontSize: 10, opacity: 0.35, marginTop: 2 }}>ID:{urun.id}</div>
                         </td>
                         <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>
-                          {inlineEdit?.id === urun.id && inlineEdit.alan === "fiyat" ? (
-                            <div style={{ display: "flex", gap: 4 }}><input type="number" step="0.01" value={inlineEdit.deger} onChange={e => setInlineEdit({ ...inlineEdit, deger: e.target.value })} onKeyDown={e => { if (e.key === "Enter") inlineKaydet(); if (e.key === "Escape") setInlineEdit(null); }} autoFocus style={{ width: 80, padding: "4px 6px", border: "2px solid #E8845A", borderRadius: 6, fontSize: 12, outline: "none" }} /><button onClick={inlineKaydet} style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>✓</button><button onClick={() => setInlineEdit(null)} style={{ background: "#eee", border: "none", borderRadius: 6, padding: "4px 6px", fontSize: 11, cursor: "pointer" }}>✕</button></div>
+                          {inlineEdit?.id === urun.id && inlineEdit?.alan === "fiyat" ? (
+                            <div style={{ display: "flex", gap: 4 }}>
+                              <input type="number" step="0.01" value={inlineEdit.deger} onChange={e => setInlineEdit({ ...inlineEdit, deger: e.target.value })} onKeyDown={e => { if (e.key === "Enter") inlineKaydet(); if (e.key === "Escape") setInlineEdit(null); }} autoFocus style={{ width: 80, padding: "4px 6px", border: "2px solid #E8845A", borderRadius: 6, fontSize: 12, outline: "none" }} />
+                              <button onClick={inlineKaydet} style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>✓</button>
+                              <button onClick={() => setInlineEdit(null)} style={{ background: "#eee", border: "none", borderRadius: 6, padding: "4px 6px", fontSize: 11, cursor: "pointer" }}>✕</button>
+                            </div>
                           ) : (
                             <span onClick={() => setInlineEdit({ id: urun.id, alan: "fiyat", deger: String(urun.fiyat) })} style={{ fontWeight: 700, color: "#5C3D2E", cursor: "pointer", borderBottom: "1px dashed #ccc" }}>₺{parseFloat(urun.fiyat).toFixed(2)}</span>
                           )}
                         </td>
                         <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>
-                          {inlineEdit?.id === urun.id && inlineEdit.alan === "indirimli_fiyat" ? (
-                            <div style={{ display: "flex", gap: 4 }}><input type="number" step="0.01" value={inlineEdit.deger} onChange={e => setInlineEdit({ ...inlineEdit, deger: e.target.value })} onKeyDown={e => { if (e.key === "Enter") inlineKaydet(); if (e.key === "Escape") setInlineEdit(null); }} autoFocus style={{ width: 80, padding: "4px 6px", border: "2px solid #E8845A", borderRadius: 6, fontSize: 12, outline: "none" }} /><button onClick={inlineKaydet} style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>✓</button><button onClick={() => setInlineEdit(null)} style={{ background: "#eee", border: "none", borderRadius: 6, padding: "4px 6px", fontSize: 11, cursor: "pointer" }}>✕</button></div>
+                          {inlineEdit?.id === urun.id && inlineEdit?.alan === "indirimli_fiyat" ? (
+                            <div style={{ display: "flex", gap: 4 }}>
+                              <input type="number" step="0.01" value={inlineEdit.deger} onChange={e => setInlineEdit({ ...inlineEdit, deger: e.target.value })} onKeyDown={e => { if (e.key === "Enter") inlineKaydet(); if (e.key === "Escape") setInlineEdit(null); }} autoFocus style={{ width: 80, padding: "4px 6px", border: "2px solid #E8845A", borderRadius: 6, fontSize: 12, outline: "none" }} />
+                              <button onClick={inlineKaydet} style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>✓</button>
+                              <button onClick={() => setInlineEdit(null)} style={{ background: "#eee", border: "none", borderRadius: 6, padding: "4px 6px", fontSize: 11, cursor: "pointer" }}>✕</button>
+                            </div>
                           ) : (
                             <div onClick={() => setInlineEdit({ id: urun.id, alan: "indirimli_fiyat", deger: String(urun.indirimli_fiyat || "") })} style={{ cursor: "pointer" }}>
                               {urun.indirimli_fiyat ? (<div><span style={{ fontWeight: 700, color: "#E8845A", borderBottom: "1px dashed #ccc" }}>₺{parseFloat(urun.indirimli_fiyat).toFixed(2)}</span><span style={{ background: "#FFEBEE", color: "#C62828", fontSize: 9, fontWeight: 700, borderRadius: 4, padding: "1px 4px", marginLeft: 4 }}>%{Math.round((1 - parseFloat(urun.indirimli_fiyat) / parseFloat(urun.fiyat)) * 100)}</span></div>) : <span style={{ color: "#ccc", borderBottom: "1px dashed #eee" }}>—</span>}
@@ -731,8 +739,12 @@ export default function Admin() {
                           )}
                         </td>
                         <td style={{ padding: "8px 10px" }}>
-                          {inlineEdit?.id === urun.id && inlineEdit.alan === "stok" ? (
-                            <div style={{ display: "flex", gap: 4 }}><input type="number" value={inlineEdit.deger} onChange={e => setInlineEdit({ ...inlineEdit, deger: e.target.value })} onKeyDown={e => { if (e.key === "Enter") inlineKaydet(); if (e.key === "Escape") setInlineEdit(null); }} autoFocus style={{ width: 60, padding: "4px 6px", border: "2px solid #E8845A", borderRadius: 6, fontSize: 12, outline: "none" }} /><button onClick={inlineKaydet} style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>✓</button><button onClick={() => setInlineEdit(null)} style={{ background: "#eee", border: "none", borderRadius: 6, padding: "4px 6px", fontSize: 11, cursor: "pointer" }}>✕</button></div>
+                          {inlineEdit?.id === urun.id && inlineEdit?.alan === "stok" ? (
+                            <div style={{ display: "flex", gap: 4 }}>
+                              <input type="number" value={inlineEdit.deger} onChange={e => setInlineEdit({ ...inlineEdit, deger: e.target.value })} onKeyDown={e => { if (e.key === "Enter") inlineKaydet(); if (e.key === "Escape") setInlineEdit(null); }} autoFocus style={{ width: 60, padding: "4px 6px", border: "2px solid #E8845A", borderRadius: 6, fontSize: 12, outline: "none" }} />
+                              <button onClick={inlineKaydet} style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>✓</button>
+                              <button onClick={() => setInlineEdit(null)} style={{ background: "#eee", border: "none", borderRadius: 6, padding: "4px 6px", fontSize: 11, cursor: "pointer" }}>✕</button>
+                            </div>
                           ) : (
                             <span onClick={() => setInlineEdit({ id: urun.id, alan: "stok", deger: String(urun.stok) })} style={{ background: urun.stok > 10 ? "#E8F5E9" : urun.stok > 0 ? "#FFF8E1" : "#FFEBEE", color: urun.stok > 10 ? "#2E7D32" : urun.stok > 0 ? "#E65100" : "#C62828", padding: "3px 9px", borderRadius: 50, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{urun.stok}</span>
                           )}
