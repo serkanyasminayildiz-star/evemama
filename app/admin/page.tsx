@@ -13,7 +13,6 @@ export default function Admin() {
   const [bildirim, setBildirim] = useState("");
   const [yukleniyor, setYukleniyor] = useState(false);
 
-  // Ürünler
   const [urunler, setUrunler] = useState<any[]>([]);
   const [toplamUrun, setToplamUrun] = useState(0);
   const [sayfaNo, setSayfaNo] = useState(0);
@@ -27,13 +26,11 @@ export default function Admin() {
   const [topluIslem, setTopluIslem] = useState({ tip: "fiyat_yuzde", deger: "", etiket: "" });
   const [yeniUrunAcik, setYeniUrunAcik] = useState(false);
 
-  // Stok Takibi
   const [stokIstatistik, setStokIstatistik] = useState({ stok_yok: 0, kritik: 0, dusuk: 0, toplam_aktif: 0 });
   const [dusukStokUrunler, setDusukStokUrunler] = useState<any[]>([]);
   const [stokFiltreTip, setStokFiltreTip] = useState<"tukendi" | "kritik" | "dusuk">("tukendi");
   const [stokInline, setStokInline] = useState<{ id: number; deger: string } | null>(null);
 
-  // Diğer
   const [kategoriler, setKategoriler] = useState<any[]>([]);
   const [markalar, setMarkalar] = useState<any[]>([]);
   const [siparisler, setSiparisler] = useState<any[]>([]);
@@ -48,11 +45,9 @@ export default function Admin() {
   const [istatistikler, setIstatistikler] = useState({ urunler: 0, siparisler: 0, kategoriler: 0, bekleyenSoru: 0, bekleyen_siparis: 0, bugun_siparis: 0 });
   const [yeniKupon, setYeniKupon] = useState({ kod: "", indirim_tipi: "yuzde", indirim_degeri: "", min_sepet: "", kullanim_limiti: "100", bitis_tarihi: "" });
 
-  // Kategori CRUD
   const [yeniKategori, setYeniKategori] = useState({ ad: "", slug: "", ust_kategori_id: "", sira: "0" });
   const [duzenleKategori, setDuzenleKategori] = useState<any>(null);
 
-  // Marka CRUD
   const [yeniMarka, setYeniMarka] = useState({ ad: "", slug: "" });
   const [duzenleMarka, setDuzenleMarka] = useState<any>(null);
 
@@ -62,7 +57,6 @@ export default function Admin() {
     width: "100%", padding: "10px 14px", border: "2px solid #E8D5B7",
     borderRadius: 10, fontSize: 14, outline: "none", fontFamily: "inherit",
     boxSizing: "border-box", background: "white", color: "#2C1A0E", display: "block",
-    WebkitTextSecurity: "none" as any,
   };
   const btn = (bg = "#E8845A", extra?: React.CSSProperties): React.CSSProperties => ({
     background: bg, color: "white", border: "none", borderRadius: 10,
@@ -75,7 +69,6 @@ export default function Admin() {
     color: "#2C1A0E", cursor: "pointer"
   };
 
-  // ── VERİ YÜKLEME ────────────────────────────────────────────────────────────
   const urunleriYukle = useCallback(async (sayfa = 0, arama = "", filtre = { kategori: "", marka: "", stok: "", durum: "" }) => {
     setYukleniyor(true);
     const from = sayfa * SAYFA_BOYUTU;
@@ -179,7 +172,6 @@ export default function Admin() {
   const filtreUygula = (yeniFiltre: typeof filtreler) => { setFiltreler(yeniFiltre); setSayfaNo(0); };
   const filtreleriTemizle = () => { setAramaMetni(""); setFiltreler({ kategori: "", marka: "", stok: "", durum: "" }); setSayfaNo(0); if (aramaRef.current) aramaRef.current.value = ""; };
 
-  // ── ÜRÜN İŞLEMLERİ ─────────────────────────────────────────────────────────
   const slugUret = (ad: string) => ad.toLowerCase()
     .replace(/ç/g,"c").replace(/ğ/g,"g").replace(/ı/g,"i").replace(/ö/g,"o").replace(/ş/g,"s").replace(/ü/g,"u")
     .replace(/[^a-z0-9\s-]/g,"").trim().replace(/\s+/g,"-");
@@ -280,7 +272,6 @@ export default function Admin() {
     goster(`✅ ${seciliUrunler.length} ürüne işlem uygulandı`);
   };
 
-  // ── KATEGORİ İŞLEMLERİ ─────────────────────────────────────────────────────
   const kategoriEkle = async () => {
     if (!yeniKategori.ad) { goster("⚠️ Kategori adı zorunludur!"); return; }
     const slug = yeniKategori.slug || slugUret(yeniKategori.ad);
@@ -309,7 +300,6 @@ export default function Admin() {
     kategorileriYukle(); goster(`✅ ${!aktif ? "Aktif" : "Pasif"} edildi`);
   };
 
-  // ── MARKA İŞLEMLERİ ────────────────────────────────────────────────────────
   const markaEkle = async () => {
     if (!yeniMarka.ad) { goster("⚠️ Marka adı zorunludur!"); return; }
     const slug = yeniMarka.slug || slugUret(yeniMarka.ad);
@@ -337,7 +327,6 @@ export default function Admin() {
     markalariYukle(); goster(`✅ ${!aktif ? "Aktif" : "Pasif"} edildi`);
   };
 
-  // ── DİĞER İŞLEMLER ─────────────────────────────────────────────────────────
   const kargoGuncelle = async () => {
     if (!kargoAyar) return;
     const g: any = { sabit_ucret: parseFloat(kargoAyar.sabit_ucret) };
@@ -371,7 +360,6 @@ export default function Admin() {
   const bekleyenSorular = blogSorular.filter(bs => !bs.onaylandi);
   const filtrelerAktif = aramaMetni || filtreler.kategori || filtreler.marka || filtreler.stok || filtreler.durum;
 
-  // ── GİRİŞ EKRANI ───────────────────────────────────────────────────────────
   if (!giris) return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
       <div style={{ background: "white", borderRadius: 24, padding: "48px 40px", maxWidth: 380, width: "100%", boxShadow: "0 20px 60px rgba(92,61,46,0.1)", textAlign: "center" }}>
@@ -418,7 +406,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* KATEGORİ MODALİ */}
       {duzenleKategori && (
         <div onClick={e => { if (e.target === e.currentTarget) setDuzenleKategori(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div style={{ background: "white", borderRadius: 20, padding: 28, width: "100%", maxWidth: 480 }}>
@@ -437,7 +424,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* MARKA MODALİ */}
       {duzenleMarka && (
         <div onClick={e => { if (e.target === e.currentTarget) setDuzenleMarka(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div style={{ background: "white", borderRadius: 20, padding: 28, width: "100%", maxWidth: 400 }}>
@@ -452,7 +438,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* ÜRÜN DÜZENLEME MODALİ */}
       {duzenleUrun && (
         <div onClick={e => { if (e.target === e.currentTarget) setDuzenleUrun(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div style={{ background: "white", borderRadius: 20, padding: 28, width: "100%", maxWidth: 740, maxHeight: "92vh", overflowY: "auto" }}>
@@ -460,8 +445,6 @@ export default function Admin() {
               <div><h2 style={{ fontFamily: "Georgia,serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", margin: 0 }}>✏️ Ürün Düzenle</h2><div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.5, marginTop: 3 }}>ID: {duzenleUrun.id}</div></div>
               <button onClick={() => setDuzenleUrun(null)} style={{ background: "#F0EBE3", border: "none", fontSize: 20, cursor: "pointer", borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", color: "#5C3D2E" }}>✕</button>
             </div>
-
-            {/* Canlı önizleme */}
             <div style={{ marginBottom: 16, padding: 14, background: "#FDF6EE", borderRadius: 14, border: "2px dashed #E8D5B7" }}>
               <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 8 }}>RESİM URL — Canlı Önizleme</label>
               <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
@@ -499,7 +482,6 @@ export default function Admin() {
                 </div>
               </div>
             </div>
-
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ gridColumn: "1/-1" }}><label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 5 }}>Ürün Adı *</label><input value={duzenleUrun.ad} onChange={e => setDuzenleUrun({ ...duzenleUrun, ad: e.target.value })} style={s} /></div>
               <div><label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 5 }}>Normal Fiyat (₺) *</label><input type="number" step="0.01" value={duzenleUrun.fiyat} onChange={e => setDuzenleUrun({ ...duzenleUrun, fiyat: e.target.value })} style={s} /></div>
@@ -549,7 +531,7 @@ export default function Admin() {
       {/* ANA İÇERİK */}
       <div style={{ marginLeft: 220, flex: 1, padding: "28px 28px 60px", minWidth: 0 }}>
 
-        {/* ── DASHBOARD ── */}
+        {/* DASHBOARD */}
         {aktifSayfa === "dashboard" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 26, fontWeight: 700, color: "#2C1A0E", marginBottom: 24 }}>Dashboard</h1>
@@ -613,14 +595,13 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── ÜRÜNLER ── */}
+        {/* ÜRÜNLER */}
         {aktifSayfa === "urunler" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E" }}>Ürün Yönetimi <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.5, marginLeft: 10 }}>{toplamUrun} ürün{filtrelerAktif ? " (filtrelenmiş)" : ""}</span></h1>
               <button onClick={() => setYeniUrunAcik(!yeniUrunAcik)} style={btn(yeniUrunAcik ? "#888" : "#E8845A")}>{yeniUrunAcik ? "✕ Kapat" : "+ Yeni Ürün Ekle"}</button>
             </div>
-
             {yeniUrunAcik && (
               <div style={{ background: "white", borderRadius: 18, padding: 22, marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", border: "2px solid #E8845A" }}>
                 <h2 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", marginBottom: 14 }}>➕ Yeni Ürün</h2>
@@ -649,12 +630,23 @@ export default function Admin() {
                 </div>
               </div>
             )}
-
-            {/* Filtreler */}
             <div style={{ background: "white", borderRadius: 18, padding: "14px 18px", marginBottom: 12, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
                 <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, opacity: 0.4 }}>🔍</span>
-                <input ref={aramaRef} type="text" autoComplete="new-password" autoCorrect...
+                <input
+                  ref={aramaRef}
+                  type="text"
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  data-form-type="other"
+                  data-lpignore="true"
+                  placeholder="Ürün arayın..."
+                  value={aramaMetni}
+                  onChange={e => setAramaMetni(e.target.value)}
+                  style={{ ...s, paddingLeft: 36, paddingRight: aramaMetni ? 32 : 14 }}
+                />
                 {aramaMetni && <button onClick={() => setAramaMetni("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 16, cursor: "pointer", color: "#999", padding: 0 }}>✕</button>}
               </div>
               <select value={filtreler.kategori} onChange={e => filtreUygula({ ...filtreler, kategori: e.target.value })} style={fltSelect}><option value="">Tüm Kategoriler</option>{kategoriler.map(k => <option key={k.id} value={k.id}>{k.ust_kategori_id ? "└ " : ""}{k.ad}</option>)}</select>
@@ -664,8 +656,6 @@ export default function Admin() {
               {filtrelerAktif && <button onClick={filtreleriTemizle} style={{ ...btn("#888"), padding: "9px 14px", fontSize: 12 }}>✕ Temizle</button>}
               {yukleniyor && <span style={{ fontSize: 12, color: "#E8845A", fontWeight: 600 }}>⏳ Yükleniyor...</span>}
             </div>
-
-            {/* Toplu İşlem */}
             <div style={{ background: "white", borderRadius: 18, padding: "14px 18px", marginBottom: 12, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#5C3D2E", display: "flex", alignItems: "center", gap: 8 }}>⚡ Toplu İşlem {seciliUrunler.length > 0 && <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 11, padding: "2px 9px", fontWeight: 700 }}>{seciliUrunler.length} seçili</span>}</div>
@@ -683,8 +673,6 @@ export default function Admin() {
                 {seciliUrunler.length > 0 && <button onClick={() => setSeciliUrunler([])} style={{ ...btn("#888"), padding: "9px 14px", fontSize: 12 }}>✕ Seçimi Temizle</button>}
               </div>
             </div>
-
-            {/* Ürün Tablosu */}
             <div style={{ background: "white", borderRadius: 18, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", overflow: "hidden" }}>
               <div style={{ padding: "12px 18px", borderBottom: "1px solid #F0E8E0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -721,25 +709,23 @@ export default function Admin() {
                         onMouseEnter={e => { if (!seciliUrunler.includes(urun.id)) e.currentTarget.style.background = "#FDFAF7"; }}
                         onMouseLeave={e => { e.currentTarget.style.background = seciliUrunler.includes(urun.id) ? "#FFF8F4" : "white"; }}>
                         <td style={{ padding: "8px 12px", textAlign: "center" }}><input type="checkbox" checked={seciliUrunler.includes(urun.id)} onChange={e => setSeciliUrunler(e.target.checked ? [...seciliUrunler, urun.id] : seciliUrunler.filter(id => id !== urun.id))} /></td>
-                        <td style={{ padding: "6px 8px" }}>
-                          {urun.resim_url ? <img src={urun.resim_url} alt="" style={{ width: 44, height: 44, objectFit: "contain", borderRadius: 8, background: "#FDF6EE" }} /> : <div style={{ width: 44, height: 44, background: "#FDF6EE", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🐾</div>}
-                        </td>
+                        <td style={{ padding: "6px 8px" }}>{urun.resim_url ? <img src={urun.resim_url} alt="" style={{ width: 44, height: 44, objectFit: "contain", borderRadius: 8, background: "#FDF6EE" }} /> : <div style={{ width: 44, height: 44, background: "#FDF6EE", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🐾</div>}</td>
                         <td style={{ padding: "8px 10px", maxWidth: 220 }}>
-                          <a href={`/urun/${urun.slug}`} target="_blank" style={{ fontWeight: 600, color: "#2C1A0E", lineHeight: 1.3, textDecoration: "none", display: "block" }} title="Ürün sayfasını aç">{urun.ad?.substring(0, 48)}{urun.ad?.length > 48 ? "…" : ""}</a>
+                          <a href={`/urun/${urun.slug}`} target="_blank" style={{ fontWeight: 600, color: "#2C1A0E", lineHeight: 1.3, textDecoration: "none", display: "block" }}>{urun.ad?.substring(0, 48)}{urun.ad?.length > 48 ? "…" : ""}</a>
                           <div style={{ fontSize: 10, opacity: 0.35, marginTop: 2 }}>ID:{urun.id}</div>
                         </td>
                         <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>
                           {inlineEdit?.id === urun.id && inlineEdit.alan === "fiyat" ? (
                             <div style={{ display: "flex", gap: 4 }}><input type="number" step="0.01" value={inlineEdit.deger} onChange={e => setInlineEdit({ ...inlineEdit, deger: e.target.value })} onKeyDown={e => { if (e.key === "Enter") inlineKaydet(); if (e.key === "Escape") setInlineEdit(null); }} autoFocus style={{ width: 80, padding: "4px 6px", border: "2px solid #E8845A", borderRadius: 6, fontSize: 12, outline: "none" }} /><button onClick={inlineKaydet} style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>✓</button><button onClick={() => setInlineEdit(null)} style={{ background: "#eee", border: "none", borderRadius: 6, padding: "4px 6px", fontSize: 11, cursor: "pointer" }}>✕</button></div>
                           ) : (
-                            <span onClick={() => setInlineEdit({ id: urun.id, alan: "fiyat", deger: String(urun.fiyat) })} style={{ fontWeight: 700, color: "#5C3D2E", cursor: "pointer", borderBottom: "1px dashed #ccc" }} title="Hızlı düzenle">₺{parseFloat(urun.fiyat).toFixed(2)}</span>
+                            <span onClick={() => setInlineEdit({ id: urun.id, alan: "fiyat", deger: String(urun.fiyat) })} style={{ fontWeight: 700, color: "#5C3D2E", cursor: "pointer", borderBottom: "1px dashed #ccc" }}>₺{parseFloat(urun.fiyat).toFixed(2)}</span>
                           )}
                         </td>
                         <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>
                           {inlineEdit?.id === urun.id && inlineEdit.alan === "indirimli_fiyat" ? (
                             <div style={{ display: "flex", gap: 4 }}><input type="number" step="0.01" value={inlineEdit.deger} onChange={e => setInlineEdit({ ...inlineEdit, deger: e.target.value })} onKeyDown={e => { if (e.key === "Enter") inlineKaydet(); if (e.key === "Escape") setInlineEdit(null); }} autoFocus style={{ width: 80, padding: "4px 6px", border: "2px solid #E8845A", borderRadius: 6, fontSize: 12, outline: "none" }} /><button onClick={inlineKaydet} style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>✓</button><button onClick={() => setInlineEdit(null)} style={{ background: "#eee", border: "none", borderRadius: 6, padding: "4px 6px", fontSize: 11, cursor: "pointer" }}>✕</button></div>
                           ) : (
-                            <div onClick={() => setInlineEdit({ id: urun.id, alan: "indirimli_fiyat", deger: String(urun.indirimli_fiyat || "") })} style={{ cursor: "pointer" }} title="Hızlı düzenle">
+                            <div onClick={() => setInlineEdit({ id: urun.id, alan: "indirimli_fiyat", deger: String(urun.indirimli_fiyat || "") })} style={{ cursor: "pointer" }}>
                               {urun.indirimli_fiyat ? (<div><span style={{ fontWeight: 700, color: "#E8845A", borderBottom: "1px dashed #ccc" }}>₺{parseFloat(urun.indirimli_fiyat).toFixed(2)}</span><span style={{ background: "#FFEBEE", color: "#C62828", fontSize: 9, fontWeight: 700, borderRadius: 4, padding: "1px 4px", marginLeft: 4 }}>%{Math.round((1 - parseFloat(urun.indirimli_fiyat) / parseFloat(urun.fiyat)) * 100)}</span></div>) : <span style={{ color: "#ccc", borderBottom: "1px dashed #eee" }}>—</span>}
                             </div>
                           )}
@@ -748,19 +734,13 @@ export default function Admin() {
                           {inlineEdit?.id === urun.id && inlineEdit.alan === "stok" ? (
                             <div style={{ display: "flex", gap: 4 }}><input type="number" value={inlineEdit.deger} onChange={e => setInlineEdit({ ...inlineEdit, deger: e.target.value })} onKeyDown={e => { if (e.key === "Enter") inlineKaydet(); if (e.key === "Escape") setInlineEdit(null); }} autoFocus style={{ width: 60, padding: "4px 6px", border: "2px solid #E8845A", borderRadius: 6, fontSize: 12, outline: "none" }} /><button onClick={inlineKaydet} style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>✓</button><button onClick={() => setInlineEdit(null)} style={{ background: "#eee", border: "none", borderRadius: 6, padding: "4px 6px", fontSize: 11, cursor: "pointer" }}>✕</button></div>
                           ) : (
-                            <span onClick={() => setInlineEdit({ id: urun.id, alan: "stok", deger: String(urun.stok) })} style={{ background: urun.stok > 10 ? "#E8F5E9" : urun.stok > 0 ? "#FFF8E1" : "#FFEBEE", color: urun.stok > 10 ? "#2E7D32" : urun.stok > 0 ? "#E65100" : "#C62828", padding: "3px 9px", borderRadius: 50, fontSize: 12, fontWeight: 700, cursor: "pointer" }} title="Hızlı düzenle">{urun.stok}</span>
+                            <span onClick={() => setInlineEdit({ id: urun.id, alan: "stok", deger: String(urun.stok) })} style={{ background: urun.stok > 10 ? "#E8F5E9" : urun.stok > 0 ? "#FFF8E1" : "#FFEBEE", color: urun.stok > 10 ? "#2E7D32" : urun.stok > 0 ? "#E65100" : "#C62828", padding: "3px 9px", borderRadius: 50, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{urun.stok}</span>
                           )}
                         </td>
-                        <td style={{ padding: "8px 10px", fontSize: 12, color: "#5C3D2E", opacity: 0.65 }}>
-                          {urun.kategoriler?.slug ? <a href={`/kategori/${urun.kategoriler.slug}`} target="_blank" style={{ color: "#5C3D2E", textDecoration: "none", borderBottom: "1px dashed #ccc" }}>{urun.kategoriler.ad}</a> : "—"}
-                        </td>
+                        <td style={{ padding: "8px 10px", fontSize: 12, color: "#5C3D2E", opacity: 0.65 }}>{urun.kategoriler?.slug ? <a href={`/kategori/${urun.kategoriler.slug}`} target="_blank" style={{ color: "#5C3D2E", textDecoration: "none", borderBottom: "1px dashed #ccc" }}>{urun.kategoriler.ad}</a> : "—"}</td>
                         <td style={{ padding: "8px 10px", fontSize: 12, color: "#5C3D2E", opacity: 0.65 }}>{urun.markalar?.ad || "—"}</td>
-                        <td style={{ padding: "8px 10px" }}>
-                          {urun.etiket && etiketRenk[urun.etiket] ? <span style={{ background: etiketRenk[urun.etiket].bg, color: etiketRenk[urun.etiket].color, padding: "2px 8px", borderRadius: 50, fontSize: 10, fontWeight: 700 }}>{urun.etiket}</span> : urun.etiket ? <span style={{ background: "#F0EBE3", color: "#5C3D2E", padding: "2px 8px", borderRadius: 50, fontSize: 10, fontWeight: 700 }}>{urun.etiket}</span> : null}
-                        </td>
-                        <td style={{ padding: "8px 10px" }}>
-                          <button onClick={() => aktifToggle(urun.id, urun.aktif)} style={{ background: urun.aktif ? "#E8F5E9" : "#FFEBEE", color: urun.aktif ? "#2E7D32" : "#C62828", border: "none", padding: "3px 10px", borderRadius: 50, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{urun.aktif ? "Aktif" : "Pasif"}</button>
-                        </td>
+                        <td style={{ padding: "8px 10px" }}>{urun.etiket && etiketRenk[urun.etiket] ? <span style={{ background: etiketRenk[urun.etiket].bg, color: etiketRenk[urun.etiket].color, padding: "2px 8px", borderRadius: 50, fontSize: 10, fontWeight: 700 }}>{urun.etiket}</span> : urun.etiket ? <span style={{ background: "#F0EBE3", color: "#5C3D2E", padding: "2px 8px", borderRadius: 50, fontSize: 10, fontWeight: 700 }}>{urun.etiket}</span> : null}</td>
+                        <td style={{ padding: "8px 10px" }}><button onClick={() => aktifToggle(urun.id, urun.aktif)} style={{ background: urun.aktif ? "#E8F5E9" : "#FFEBEE", color: urun.aktif ? "#2E7D32" : "#C62828", border: "none", padding: "3px 10px", borderRadius: 50, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{urun.aktif ? "Aktif" : "Pasif"}</button></td>
                         <td style={{ padding: "8px 10px" }}>
                           <div style={{ display: "flex", gap: 5 }}>
                             <button onClick={() => setDuzenleUrun({ ...urun })} style={{ background: "#FDF6EE", border: "2px solid #E8D5B7", borderRadius: 8, padding: "5px 10px", fontSize: 12, cursor: "pointer", fontWeight: 600, color: "#5C3D2E" }}>✏️ Düzenle</button>
@@ -785,7 +765,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── STOK TAKİBİ ── */}
+        {/* STOK TAKİBİ */}
         {aktifSayfa === "stok" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>📉 Stok Takibi</h1>
@@ -820,13 +800,7 @@ export default function Admin() {
                   </div>
                 ) : (
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: "#FAF5EF" }}>
-                        {["", "ÜRÜN ADI", "KATEGORİ", "MARKA", "MEVCUT STOK", "DURUM", "HIZLI GÜNCELLE"].map(h => (
-                          <th key={h} style={{ padding: "12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#5C3D2E", opacity: 0.5 }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
+                    <thead><tr style={{ background: "#FAF5EF" }}>{["", "ÜRÜN ADI", "KATEGORİ", "MARKA", "MEVCUT STOK", "DURUM", "HIZLI GÜNCELLE"].map(h => <th key={h} style={{ padding: "12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#5C3D2E", opacity: 0.5 }}>{h}</th>)}</tr></thead>
                     <tbody>
                       {dusukStokUrunler.map(urun => (
                         <tr key={urun.id} style={{ borderBottom: "1px solid #F5EFE8" }}>
@@ -859,12 +833,12 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── SİPARİŞLER ── */}
+        {/* SİPARİŞLER */}
         {aktifSayfa === "siparisler" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Sipariş Yönetimi</h1>
             <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-              {[["", "Tümü"], ["beklemede", "⏳ Beklemede"], ["hazirlaniyor", "🔧 Hazırlanıyor"], ["kargoda", "🚚 Kargoda"], ["tamamlandi", "✅ Tamamlandı"], ["iptal", "❌ İptal"]].map(([val, lbl]) => (
+              {([["", "Tümü"], ["beklemede", "⏳ Beklemede"], ["hazirlaniyor", "🔧 Hazırlanıyor"], ["kargoda", "🚚 Kargoda"], ["tamamlandi", "✅ Tamamlandı"], ["iptal", "❌ İptal"]] as [string, string][]).map(([val, lbl]) => (
                 <button key={val} onClick={() => { setSiparisDurumFiltre(val); siparisleriYukle(val); }} style={{ ...btn(siparisDurumFiltre === val ? "#E8845A" : "#E8D5B7"), color: siparisDurumFiltre === val ? "white" : "#5C3D2E", padding: "8px 16px", fontSize: 12 }}>{lbl}</button>
               ))}
             </div>
@@ -927,7 +901,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── KATEGORİLER ── */}
+        {/* KATEGORİLER */}
         {aktifSayfa === "kategoriler" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Kategoriler ({kategoriler.length})</h1>
@@ -962,7 +936,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── MARKALAR ── */}
+        {/* MARKALAR */}
         {aktifSayfa === "markalar" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Markalar ({markalar.length})</h1>
@@ -993,7 +967,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── KUPONLAR ── */}
+        {/* KUPONLAR */}
         {aktifSayfa === "kuponlar" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Kupon Yönetimi</h1>
@@ -1030,7 +1004,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── BLOG SORULARI ── */}
+        {/* BLOG SORULARI */}
         {aktifSayfa === "blog" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Blog Soruları {bekleyenSorular.length > 0 && <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 13, padding: "3px 12px", marginLeft: 10 }}>{bekleyenSorular.length} bekliyor</span>}</h1>
@@ -1071,7 +1045,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── KARGO ── */}
+        {/* KARGO */}
         {aktifSayfa === "kargo" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Kargo Ayarları</h1>
@@ -1097,7 +1071,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── SİTE AYARLARI ── */}
+        {/* SİTE AYARLARI */}
         {aktifSayfa === "ayarlar" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Site Ayarları</h1>
@@ -1126,20 +1100,3 @@ export default function Admin() {
     </main>
   );
 }
-```
-
----
-
-**Commit mesajı için GitHub'a şunu yazabilirsin:**
-```
-feat: admin panel v2 - stok takibi, kategori/marka CRUD, sipariş detayı, ürün önizleme
-
-- Stok Takibi sayfası eklendi (tükendi/kritik/düşük filtreleri + inline stok güncelleme)
-- Dashboard'a bugün/bekleyen sipariş kartları ve stok uyarısı widget'ı eklendi
-- Kategori CRUD: ekle, düzenle (modal), sil, aktif/pasif toggle
-- Marka CRUD: ekle, düzenle (modal), sil, aktif/pasif toggle
-- Sipariş detayı: ▼ Detay ile açılır, siparis_kalemleri tablosundan ürün listesi
-- Ürün düzenleme modalına canlı "sitede nasıl görünür" mini kart önizlemesi eklendi
-- Ürün adı → /urun/[slug] ve kategori adı → /kategori/[slug] linklendi
-- Arama kutusu type="search"→"text" düzeltmesi, placeholder "Ürün arayın..."
-- Supabase join kategoriler(ad,id,slug) olarak güncellendi
