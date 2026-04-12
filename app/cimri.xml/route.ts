@@ -1,4 +1,3 @@
-// app/cimri.xml/route.ts
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -31,20 +30,29 @@ export async function GET(req: NextRequest) {
     const indirimli = parseFloat(u.indirimli_fiyat || 0);
     const hasDiscount = indirimli > 0 && indirimli < normalFiyat;
 
+    if (normalFiyat <= 0) return "";
+
+    const imageUrl = xmlEscape(u.resim_url || "");
+    const slug = xmlEscape(u.slug || String(u.id));
+    const title = xmlEscape(u.ad || "");
+    const description = xmlEscape(u.kisa_aciklama || u.ad || "");
+    const kategori = xmlEscape(u.kategoriler?.ad || "Evcil Hayvan");
+    const marka = xmlEscape(u.markalar?.ad || "evemama");
+
     return `    <item>
       <g:id>${u.id}</g:id>
-      <title>${xmlEscape(u.ad)}</title>
-      <link>https://evemama.net/urun/${xmlEscape(u.slug)}</link>
-      <description>${xmlEscape(u.kisa_aciklama || u.ad)}</description>
+      <title>${title}</title>
+      <link>https://evemama.net/urun/${slug}</link>
+      <description>${description}</description>
       <g:price>${normalFiyat.toFixed(2)} TRY</g:price>
       ${hasDiscount ? `<g:sale_price>${indirimli.toFixed(2)} TRY</g:sale_price>` : ""}
       <g:availability>in stock</g:availability>
       <g:condition>new</g:condition>
-      <g:image_link>${xmlEscape(u.resim_url || "")}</g:image_link>
-      <g:product_type>${xmlEscape(u.kategoriler?.ad || "Evcil Hayvan")}</g:product_type>
-      <g:brand>${xmlEscape(u.markalar?.ad || "evemama")}</g:brand>
+      <g:image_link>${imageUrl}</g:image_link>
+      <g:product_type>${kategori}</g:product_type>
+      <g:brand>${marka}</g:brand>
     </item>`;
-  }).join("\n");
+  }).filter(Boolean).join("\n");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
