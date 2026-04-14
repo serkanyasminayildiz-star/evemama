@@ -40,6 +40,7 @@ export default function Admin() {
   const [siparisDurumFiltre, setSiparisDurumFiltre] = useState("");
   const [acikSiparisId, setAcikSiparisId] = useState<number | null>(null);
   const [siparisKalemleri, setSiparisKalemleri] = useState<{ [key: number]: any[] }>({});
+  const [kalemYukleniyor, setKalemYukleniyor] = useState<number | null>(null);
   const [kuponlar, setKuponlar] = useState<any[]>([]);
   const [kargoAyar, setKargoAyar] = useState<any>(null);
   const [siteAyarlari, setSiteAyarlari] = useState<any>({});
@@ -97,7 +98,6 @@ export default function Admin() {
 
   const stokTakibiYukle = async (tip: "tukendi" | "kritik" | "dusuk" = "tukendi") => {
     setYukleniyor(true);
-    // İstatistikler
     const [{ count: c0 }, { count: c1 }, { count: c2 }, { count: c3 }] = await Promise.all([
       supabase.from("urunler").select("*", { count: "exact", head: true }).eq("stok", 0).eq("aktif", true),
       supabase.from("urunler").select("*", { count: "exact", head: true }).gt("stok", 0).lte("stok", 5).eq("aktif", true),
@@ -106,7 +106,6 @@ export default function Admin() {
     ]);
     setStokIstatistik({ stok_yok: c0 || 0, kritik: c1 || 0, dusuk: c2 || 0, toplam_aktif: c3 || 0 });
 
-    // Tablo
     let q = supabase.from("urunler").select("*, kategoriler(ad,slug), markalar(ad)").eq("aktif", true);
     if (tip === "tukendi") q = q.eq("stok", 0);
     else if (tip === "kritik") q = q.gt("stok", 0).lte("stok", 5);
@@ -124,10 +123,20 @@ export default function Admin() {
     setSiparisler(data || []);
   };
 
+  // ── SİPARİŞ KALEMLERİ - DÜZELTİLMİŞ ───────────────────────────────────────
   const siparisKalemleriniYukle = async (siparisId: number) => {
-    if (siparisKalemleri[siparisId]) return; // cache
-    const { data } = await supabase.from("siparis_kalemleri").select("*").eq("siparis_id", siparisId);
+    setKalemYukleniyor(siparisId);
+    const { data, error } = await supabase
+      .from("siparis_kalemleri")
+      .select("*, urunler(ad, resim_url, slug)")
+      .eq("siparis_id", siparisId);
+
+    if (error) {
+      console.error("Kalem yükleme hatası:", error);
+    }
+    console.log(`Sipariş #${siparisId} kalemleri:`, data);
     setSiparisKalemleri(prev => ({ ...prev, [siparisId]: data || [] }));
+    setKalemYukleniyor(null);
   };
 
   const kategorileriYukle = async () => {
@@ -181,7 +190,7 @@ export default function Admin() {
     if (!giris) return;
     if (aktifSayfa === "urunler") { setSayfaNo(0); setAramaMetni(""); setSeciliUrunler([]); setFiltreler({ kategori: "", marka: "", stok: "", durum: "" }); urunleriYukle(0, "", { kategori: "", marka: "", stok: "", durum: "" }); }
     if (aktifSayfa === "stok") { setStokFiltreTip("tukendi"); stokTakibiYukle("tukendi"); }
-    if (aktifSayfa === "siparisler") siparisleriYukle();
+    if (aktifSayfa === "siparisler") { siparisleriYukle(); setSiparisKalemleri({}); setAcikSiparisId(null); }
     if (aktifSayfa === "kategoriler") kategorileriYukle();
     if (aktifSayfa === "markalar") markalariYukle();
     if (aktifSayfa === "kuponlar") kuponlariYukle();
@@ -414,7 +423,6 @@ export default function Admin() {
 
   const stokInlineKaydet = async () => {
     if (!stokInline) return;
-    if (!stokInline) return;
     const si = stokInline;
     await supabase.from("urunler").update({ stok: parseInt(si.deger) || 0 }).eq("id", si.id);
     setStokInline(null);
@@ -455,7 +463,6 @@ export default function Admin() {
     { id: "ayarlar", icon: "⚙️", ad: "Site Ayarları" },
   ];
 
-  // ── ETIKET RENDER ──────────────────────────────────────────────────────────
   const etiketRenk: Record<string, { bg: string; color: string }> = {
     yeni: { bg: "#E3F2FD", color: "#1565C0" },
     indirim: { bg: "#FFEBEE", color: "#C62828" },
@@ -542,11 +549,9 @@ export default function Admin() {
               <button onClick={() => setDuzenleUrun(null)} style={{ background: "#F0EBE3", border: "none", fontSize: 20, cursor: "pointer", borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", color: "#5C3D2E" }}>✕</button>
             </div>
 
-            {/* Canlı resim önizleme */}
             <div style={{ marginBottom: 16, padding: 14, background: "#FDF6EE", borderRadius: 14, border: "2px dashed #E8D5B7" }}>
               <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 8 }}>RESİM URL — Canlı Önizleme</label>
               <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                {/* Resim + URL input */}
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
                     <div style={{ width: 90, height: 90, background: "white", borderRadius: 12, border: "2px solid #E8D5B7", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
@@ -554,9 +559,8 @@ export default function Admin() {
                         ? <img src={duzenleUrun.resim_url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} onError={e => { (e.target as any).style.display = "none"; }} />
                         : <span style={{ fontSize: 28, opacity: 0.3 }}>🐾</span>}
                     </div>
-                    <input value={duzenleUrun.resim_url || ""} onChange={e => setDuzenleUrun({ ...duzenleUrun, resim_url: e.target.value })} style={{ ...s, marginBottom: 0 }} placeholder="https://www.sepetmama.com/wp-content/..." />
+                    <input value={duzenleUrun.resim_url || ""} onChange={e => setDuzenleUrun({ ...duzenleUrun, resim_url: e.target.value })} style={{ ...s, marginBottom: 0 }} placeholder="https://..." />
                   </div>
-                  {/* Sitede nasıl görünür - mini kart önizleme */}
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#5C3D2E", opacity: 0.4, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Sitede nasıl görünür:</div>
                   <div style={{ width: 140, background: "white", borderRadius: 14, overflow: "hidden", boxShadow: "0 4px 12px rgba(92,61,46,0.10)", border: "1px solid #F0E8E0" }}>
                     <div style={{ height: 90, background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
@@ -690,8 +694,6 @@ export default function Admin() {
         {aktifSayfa === "dashboard" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 26, fontWeight: 700, color: "#2C1A0E", marginBottom: 24 }}>Dashboard</h1>
-
-            {/* Ana kartlar */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 20 }}>
               {[
                 { icon: "📦", ad: "Toplam Ürün", deger: istatistikler.urunler, renk: "#E8845A", sayfa: "urunler" },
@@ -708,9 +710,7 @@ export default function Admin() {
                 </div>
               ))}
             </div>
-
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-              {/* Stok Uyarısı Widget */}
               <div style={{ background: "white", borderRadius: 18, padding: 22, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <h3 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", margin: 0 }}>📉 Stok Uyarıları</h3>
@@ -730,8 +730,6 @@ export default function Admin() {
                   <div style={{ textAlign: "center", padding: "12px 0", color: "#8BAF8E", fontSize: 13 }}>✅ Tüm stoklar sağlıklı</div>
                 )}
               </div>
-
-              {/* Hızlı Erişim */}
               <div style={{ background: "white", borderRadius: 18, padding: 22, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
                 <h3 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", marginBottom: 16 }}>⚡ Hızlı Erişim</h3>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -744,8 +742,6 @@ export default function Admin() {
                 </div>
               </div>
             </div>
-
-            {/* İstatistik kartlar (alt satır) */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
               {[
                 { icon: "📁", ad: "Toplam Kategori", deger: istatistikler.kategoriler, renk: "#5C3D2E", sayfa: "kategoriler" },
@@ -777,19 +773,15 @@ export default function Admin() {
               </button>
             </div>
 
-            {/* YENİ ÜRÜN FORMU */}
             {yeniUrunAcik && (
               <div style={{ background: "white", borderRadius: 18, padding: 22, marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", border: "2px solid #E8845A" }}>
                 <h2 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", marginBottom: 14 }}>➕ Yeni Ürün</h2>
-
-                {/* Canlı resim önizleme - yeni ürün formu */}
                 {yeniUrun.resim_url && (
                   <div style={{ marginBottom: 12, padding: 10, background: "#FDF6EE", borderRadius: 10, display: "flex", alignItems: "center", gap: 12 }}>
                     <img src={yeniUrun.resim_url} alt="" style={{ width: 60, height: 60, objectFit: "contain", borderRadius: 8, background: "white", padding: 4 }} onError={e => { (e.target as any).style.display = "none"; }} />
                     <span style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.6 }}>Canlı önizleme</span>
                   </div>
                 )}
-
                 <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>ÜRÜN ADI *</label><input type="text" autoComplete="off" placeholder="Ürün adını yazın..." value={yeniUrun.ad} onChange={e => setYeniUrun({ ...yeniUrun, ad: e.target.value })} style={s} /></div>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>FİYAT ₺ *</label><input type="number" step="0.01" placeholder="0.00" value={yeniUrun.fiyat} onChange={e => setYeniUrun({ ...yeniUrun, fiyat: e.target.value })} style={s} /></div>
@@ -930,7 +922,6 @@ export default function Admin() {
                           </a>
                           <div style={{ fontSize: 10, opacity: 0.35, marginTop: 2 }}>ID:{urun.id}</div>
                         </td>
-                        {/* Inline fiyat */}
                         <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>
                           {inlineEdit?.id === urun.id && inlineEdit?.alan === "fiyat" ? (
                             <div style={{ display: "flex", gap: 4 }}>
@@ -944,7 +935,6 @@ export default function Admin() {
                             </span>
                           )}
                         </td>
-                        {/* Inline indirimli fiyat */}
                         <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>
                           {inlineEdit?.id === urun.id && inlineEdit?.alan === "indirimli_fiyat" ? (
                             <div style={{ display: "flex", gap: 4 }}>
@@ -965,7 +955,6 @@ export default function Admin() {
                             </div>
                           )}
                         </td>
-                        {/* Inline stok */}
                         <td style={{ padding: "8px 10px" }}>
                           {inlineEdit?.id === urun.id && inlineEdit?.alan === "stok" ? (
                             <div style={{ display: "flex", gap: 4 }}>
@@ -1028,8 +1017,6 @@ export default function Admin() {
         {aktifSayfa === "stok" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>📉 Stok Takibi</h1>
-
-            {/* Özet kartlar */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
               {[
                 { label: "Toplam Aktif Ürün", deger: stokIstatistik.toplam_aktif, renk: "#8BAF8E", bg: "#F1F8F2", icon: "📦" },
@@ -1044,8 +1031,6 @@ export default function Admin() {
                 </div>
               ))}
             </div>
-
-            {/* Filtre tablar */}
             <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
               {([
                 ["tukendi", "❌ Stok Yok", stokIstatistik.stok_yok],
@@ -1059,8 +1044,6 @@ export default function Admin() {
               ))}
               <button onClick={() => stokTakibiYukle(stokFiltreTip)} style={{ ...btn("#5C3D2E"), padding: "9px 16px", fontSize: 12 }}>🔄 Yenile</button>
             </div>
-
-            {/* Stok tablosu */}
             <div style={{ background: "white", borderRadius: 18, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", overflow: "hidden" }}>
               {yukleniyor ? (
                 <div style={{ textAlign: "center", padding: "60px 0", opacity: 0.5 }}>⏳ Yükleniyor...</div>
@@ -1164,12 +1147,24 @@ export default function Admin() {
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <span style={{ fontFamily: "Georgia,serif", fontSize: 20, fontWeight: 700, color: "#E8845A" }}>₺{parseFloat(sp.toplam || 0).toFixed(2)}</span>
-                      <button onClick={async () => {
-                        if (acikSiparisId === sp.id) { setAcikSiparisId(null); return; }
-                        setAcikSiparisId(sp.id);
-                        await siparisKalemleriniYukle(sp.id);
-                      }} style={{ background: "none", border: "2px solid #E8D5B7", borderRadius: 8, padding: "5px 12px", fontSize: 12, cursor: "pointer", color: "#5C3D2E", fontWeight: 600 }}>
-                        {acikSiparisId === sp.id ? "▲ Kapat" : "▼ Detay"}
+                      {/* ── DÜZELTİLMİŞ DETAY BUTONU ── */}
+                      <button
+                        onClick={async () => {
+                          if (acikSiparisId === sp.id) {
+                            setAcikSiparisId(null);
+                            return;
+                          }
+                          setAcikSiparisId(sp.id);
+                          // Her açılışta cache'i temizleyip taze veri çek
+                          setSiparisKalemleri(prev => {
+                            const y = { ...prev };
+                            delete y[sp.id];
+                            return y;
+                          });
+                          await siparisKalemleriniYukle(sp.id);
+                        }}
+                        style={{ background: "none", border: "2px solid #E8D5B7", borderRadius: 8, padding: "5px 12px", fontSize: 12, cursor: "pointer", color: "#5C3D2E", fontWeight: 600 }}>
+                        {kalemYukleniyor === sp.id ? "⏳ Yükleniyor..." : acikSiparisId === sp.id ? "▲ Kapat" : "▼ Detay"}
                       </button>
                     </div>
                   </div>
@@ -1198,29 +1193,69 @@ export default function Admin() {
                         </div>
                       </div>
 
-                      {/* Sipariş kalemleri */}
-                      {siparisKalemleri[sp.id] && siparisKalemleri[sp.id].length > 0 && (
-                        <div style={{ background: "#F8F4F0", borderRadius: 12, padding: 14, marginBottom: 14 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.5, marginBottom: 10, textTransform: "uppercase" }}>Sipariş İçeriği</div>
-                          {siparisKalemleri[sp.id].map((kalem, ki) => (
-                            <div key={ki} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: ki < siparisKalemleri[sp.id].length - 1 ? "1px dashed #E8D5B7" : "none" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <div style={{ width: 36, height: 36, background: "white", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                  {kalem.resim_url ? <img src={kalem.resim_url} alt="" style={{ width: 32, height: 32, objectFit: "contain", borderRadius: 6 }} /> : <span style={{ fontSize: 16 }}>🐾</span>}
-                                </div>
-                                <div>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: "#2C1A0E" }}>{kalem.urun_adi || kalem.ad || "Ürün"}</div>
-                                  <div style={{ fontSize: 11, opacity: 0.5 }}>x{kalem.adet}</div>
-                                </div>
-                              </div>
-                              <div style={{ fontWeight: 700, color: "#5C3D2E" }}>₺{parseFloat(kalem.fiyat || kalem.birim_fiyat || 0).toFixed(2)}</div>
-                            </div>
-                          ))}
-                          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10, paddingTop: 10, borderTop: "2px solid #E8D5B7" }}>
-                            <div style={{ fontFamily: "Georgia,serif", fontSize: 18, fontWeight: 700, color: "#E8845A" }}>Toplam: ₺{parseFloat(sp.toplam || 0).toFixed(2)}</div>
-                          </div>
+                      {/* ── DÜZELTİLMİŞ SİPARİŞ KALEMLERİ ── */}
+                      <div style={{ background: "#F8F4F0", borderRadius: 12, padding: 14, marginBottom: 14 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.5, marginBottom: 10, textTransform: "uppercase", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span>Sipariş İçeriği</span>
+                          {sp.id in siparisKalemleri && (
+                            <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 10, padding: "2px 8px", fontWeight: 700 }}>
+                              {siparisKalemleri[sp.id].length} kalem
+                            </span>
+                          )}
                         </div>
-                      )}
+
+                        {/* Yükleniyor durumu */}
+                        {kalemYukleniyor === sp.id && (
+                          <div style={{ textAlign: "center", padding: "20px 0", fontSize: 13, opacity: 0.5 }}>⏳ Kalemler yükleniyor...</div>
+                        )}
+
+                        {/* Kalem yok uyarısı */}
+                        {kalemYukleniyor !== sp.id && sp.id in siparisKalemleri && siparisKalemleri[sp.id].length === 0 && (
+                          <div style={{ textAlign: "center", padding: "20px 0", fontSize: 13, opacity: 0.5 }}>
+                            <div style={{ fontSize: 28, marginBottom: 8 }}>⚠️</div>
+                            <div>Bu sipariş için kalem bulunamadı.</div>
+                            <div style={{ fontSize: 11, marginTop: 4, opacity: 0.7 }}>siparis_id: {sp.id} — Supabase tablosunu kontrol edin.</div>
+                          </div>
+                        )}
+
+                        {/* Kalemler */}
+                        {kalemYukleniyor !== sp.id && sp.id in siparisKalemleri && siparisKalemleri[sp.id].length > 0 && (
+                          <>
+                            {siparisKalemleri[sp.id].map((kalem, ki) => {
+                              // Tüm olası kolon adlarını dene
+                              const urunAdi = kalem.urun_adi || kalem.ad || kalem.urun_ad || kalem.urunler?.ad || "Ürün";
+                              const fiyat = parseFloat(kalem.fiyat || kalem.birim_fiyat || kalem.toplam_fiyat || 0);
+                              const adet = kalem.adet || kalem.miktar || kalem.quantity || 1;
+                              const resim = kalem.resim_url || kalem.urunler?.resim_url || null;
+                              return (
+                                <div key={ki} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: ki < siparisKalemleri[sp.id].length - 1 ? "1px dashed #E8D5B7" : "none" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <div style={{ width: 44, height: 44, background: "white", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid #F0E8E0" }}>
+                                      {resim
+                                        ? <img src={resim} alt="" style={{ width: 38, height: 38, objectFit: "contain", borderRadius: 6 }}
+                                            onError={e => { (e.target as any).style.display = "none"; }} />
+                                        : <span style={{ fontSize: 20 }}>🐾</span>}
+                                    </div>
+                                    <div>
+                                      <div style={{ fontSize: 13, fontWeight: 600, color: "#2C1A0E" }}>{urunAdi}</div>
+                                      <div style={{ fontSize: 11, opacity: 0.5, marginTop: 2 }}>x{adet} adet</div>
+                                    </div>
+                                  </div>
+                                  <div style={{ textAlign: "right" }}>
+                                    <div style={{ fontWeight: 700, color: "#5C3D2E", fontSize: 14 }}>₺{fiyat.toFixed(2)}</div>
+                                    {adet > 1 && <div style={{ fontSize: 10, opacity: 0.5 }}>₺{(fiyat / adet).toFixed(2)} / adet</div>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12, paddingTop: 10, borderTop: "2px solid #E8D5B7" }}>
+                              <div style={{ fontFamily: "Georgia,serif", fontSize: 18, fontWeight: 700, color: "#E8845A" }}>
+                                Toplam: ₺{parseFloat(sp.toplam || 0).toFixed(2)}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
 
                       {/* Durum güncelleme + Baskı */}
                       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -1239,9 +1274,12 @@ export default function Admin() {
                           <option value="iade">↩️ İade Edildi</option>
                         </select>
                         <button onClick={() => {
-                          const kalemleriHtml = siparisKalemleri[sp.id]?.map(k =>
-                            `<div class="row"><span>${k.urun_adi || k.ad || "Ürün"} x${k.adet}</span><span>₺${parseFloat(k.fiyat || k.birim_fiyat || 0).toFixed(2)}</span></div>`
-                          ).join("") || "";
+                          const kalemleriHtml = (siparisKalemleri[sp.id] || []).map(k => {
+                            const ad = k.urun_adi || k.ad || k.urun_ad || k.urunler?.ad || "Ürün";
+                            const fiyat = parseFloat(k.fiyat || k.birim_fiyat || k.toplam_fiyat || 0);
+                            const adet = k.adet || k.miktar || k.quantity || 1;
+                            return `<div class="row"><span>${ad} x${adet}</span><span>₺${fiyat.toFixed(2)}</span></div>`;
+                          }).join("") || "<div class='row'><span>Kalem yok</span><span>—</span></div>";
                           const w = window.open("", "_blank");
                           if (!w) return;
                           w.document.write(`<html><head><title>Paketleme Fişi #${sp.siparis_no}</title><style>body{font-family:Arial;padding:20px;max-width:420px}h2{border-bottom:2px solid #333;padding-bottom:8px}.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:13px}.total{font-size:18px;font-weight:bold;color:#E8845A;margin-top:12px}@media print{button{display:none}}</style></head><body><h2>🐾 evemama.net — Paketleme Fişi</h2><div class="row"><b>Sipariş No</b><span>#${sp.siparis_no}</span></div><div class="row"><b>Tarih</b><span>${new Date(sp.created_at).toLocaleDateString("tr-TR")}</span></div><div class="row"><b>Müşteri</b><span>${sp.ad} ${sp.soyad}</span></div><div class="row"><b>E-posta</b><span>${sp.email || "-"}</span></div><div class="row"><b>Adres</b><span>${sp.adres || "-"}, ${sp.sehir || ""}</span></div><div class="row"><b>Ödeme</b><span>${sp.odeme_yontemi === "kredi_karti" ? "Kredi Kartı" : "Havale/EFT"}</span></div><hr/>${kalemleriHtml}<div class="total">Toplam: ₺${parseFloat(sp.toplam || 0).toFixed(2)}</div><br/><button onclick="window.print()">🖨️ Yazdır</button></body></html>`);
@@ -1260,8 +1298,6 @@ export default function Admin() {
         {aktifSayfa === "kategoriler" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Kategoriler ({kategoriler.length})</h1>
-
-            {/* Yeni Kategori Formu */}
             <div style={{ background: "white", borderRadius: 18, padding: 22, marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", border: "2px solid #E8845A" }}>
               <h2 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", marginBottom: 14 }}>➕ Yeni Kategori Ekle</h2>
               <div style={{ display: "grid", gridTemplateColumns: "2fr 2fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
@@ -1289,8 +1325,6 @@ export default function Admin() {
               </div>
               <button onClick={kategoriEkle} style={btn()}>✅ Kategori Ekle</button>
             </div>
-
-            {/* Kategori Listesi */}
             <div style={{ background: "white", borderRadius: 18, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", overflow: "hidden" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
@@ -1336,8 +1370,6 @@ export default function Admin() {
         {aktifSayfa === "markalar" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Markalar ({markalar.length})</h1>
-
-            {/* Yeni Marka Formu */}
             <div style={{ background: "white", borderRadius: 18, padding: 22, marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", border: "2px solid #E8845A" }}>
               <h2 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", marginBottom: 14 }}>➕ Yeni Marka Ekle</h2>
               <div style={{ display: "grid", gridTemplateColumns: "2fr 2fr auto", gap: 10, alignItems: "flex-end" }}>
@@ -1354,8 +1386,6 @@ export default function Admin() {
                 <button onClick={markaEkle} style={{ ...btn(), padding: "12px 22px" }}>✅ Ekle</button>
               </div>
             </div>
-
-            {/* Marka Listesi */}
             <div style={{ background: "white", borderRadius: 18, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", overflow: "hidden" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
