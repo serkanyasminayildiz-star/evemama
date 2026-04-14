@@ -1217,7 +1217,6 @@ export default function Admin() {
                         )}
 
                         {/* Kalemler */}
-                        {kalemYukleniyor !== sp.id && sp.id in siparisKalemleri && siparisKalemleri[sp.id].length > 0 && (
                           <>
                             {siparisKalemleri[sp.id].map((kalem, ki) => {
                               // Tüm olası kolon adlarını dene
