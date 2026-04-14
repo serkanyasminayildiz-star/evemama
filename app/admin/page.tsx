@@ -125,19 +125,17 @@ export default function Admin() {
 
   // ── SİPARİŞ KALEMLERİ - DÜZELTİLMİŞ ───────────────────────────────────────
   const siparisKalemleriniYukle = async (siparisId: number) => {
-    setKalemYukleniyor(siparisId);
-    const { data, error } = await supabase
-      .from("siparis_kalemleri")
-      .select("*, urunler(ad, resim_url, slug)")
-      .eq("siparis_id", siparisId);
+  setKalemYukleniyor(siparisId);
+  const { data, error } = await supabase
+    .from("siparis_kalemleri")
+    .select("*")
+    .eq("siparis_id", siparisId);
 
-    if (error) {
-      console.error("Kalem yükleme hatası:", error);
-    }
-    console.log(`Sipariş #${siparisId} kalemleri:`, data);
-    setSiparisKalemleri(prev => ({ ...prev, [siparisId]: data || [] }));
-    setKalemYukleniyor(null);
-  };
+  if (error) console.error("Kalem yükleme hatası:", error);
+  console.log(`Sipariş #${siparisId} kalemleri:`, data);
+  setSiparisKalemleri(prev => ({ ...prev, [siparisId]: data || [] }));
+  setKalemYukleniyor(null);
+};
 
   const kategorileriYukle = async () => {
     const { data } = await supabase.from("kategoriler").select("*").order("sira");
@@ -1223,10 +1221,10 @@ export default function Admin() {
                           <>
                             {siparisKalemleri[sp.id].map((kalem, ki) => {
                               // Tüm olası kolon adlarını dene
-                              const urunAdi = kalem.urun_adi || kalem.ad || kalem.urun_ad || kalem.urunler?.ad || "Ürün";
-                              const fiyat = parseFloat(kalem.fiyat || kalem.birim_fiyat || kalem.toplam_fiyat || 0);
-                              const adet = kalem.adet || kalem.miktar || kalem.quantity || 1;
-                              const resim = kalem.resim_url || kalem.urunler?.resim_url || null;
+                             const urunAdi = kalem.name || "Ürün";
+                             const fiyat = parseFloat(kalem.price || 0);
+                             const adet = kalem.quantity || 1;
+                             const resim = kalem.resim_url || null;
                               return (
                                 <div key={ki} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: ki < siparisKalemleri[sp.id].length - 1 ? "1px dashed #E8D5B7" : "none" }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
