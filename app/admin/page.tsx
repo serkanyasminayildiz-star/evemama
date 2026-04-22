@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../../lib/supabase";
+import CsvImport from "./CsvImport";
 
 const ADMIN_SIFRE = "evemama2025";
 const SAYFA_BOYUTU = 50;
@@ -26,6 +27,7 @@ export default function Admin() {
   const [seciliUrunler, setSeciliUrunler] = useState<number[]>([]);
   const [topluIslem, setTopluIslem] = useState({ tip: "fiyat_yuzde", deger: "", etiket: "" });
   const [yeniUrunAcik, setYeniUrunAcik] = useState(false);
+  const [csvImportAcik, setCsvImportAcik] = useState(false);
 
   // Stok Takibi
   const [stokIstatistik, setStokIstatistik] = useState({ stok_yok: 0, kritik: 0, dusuk: 0, toplam_aktif: 0 });
@@ -492,6 +494,12 @@ export default function Admin() {
         </div>
       )}
 
+      <CsvImport
+        acik={csvImportAcik}
+        onKapat={() => setCsvImportAcik(false)}
+        onTamamlandi={() => { kategorileriYukle(); markalariYukle(); istatistikleriYukle(); }}
+      />
+
       {/* KATEGORİ DÜZENLEME MODALİ */}
       {duzenleKategori && (
         <div onClick={e => { if (e.target === e.currentTarget) setDuzenleKategori(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
@@ -778,9 +786,12 @@ export default function Admin() {
                 Ürün Yönetimi
                 <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.5, marginLeft: 10 }}>{toplamUrun} ürün{filtrelerAktif ? " (filtrelenmiş)" : ""}</span>
               </h1>
-              <button onClick={() => setYeniUrunAcik(!yeniUrunAcik)} style={btn(yeniUrunAcik ? "#888" : "#E8845A")}>
-                {yeniUrunAcik ? "✕ Kapat" : "+ Yeni Ürün Ekle"}
-              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setCsvImportAcik(true)} style={btn("#5C3D2E")}>📥 CSV Yükle</button>
+                <button onClick={() => setYeniUrunAcik(!yeniUrunAcik)} style={btn(yeniUrunAcik ? "#888" : "#E8845A")}>
+                  {yeniUrunAcik ? "✕ Kapat" : "+ Yeni Ürün Ekle"}
+                </button>
+              </div>
             </div>
 
             {yeniUrunAcik && (
