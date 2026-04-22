@@ -121,7 +121,7 @@ export default function CsvImport({ acik, onKapat, onTamamlandi }: Props) {
           const mev = markaMap.get(mAd.toLowerCase());
           if (mev) markaId = mev;
           else {
-            const { data, error } = await supabase.from("markalar").insert({ ad: mAd, slug: slugUret(mAd), aktif: true }).select("id").single();
+            const { data, error }: any = await supabase.from("markalar").insert({ ad: mAd, slug: slugUret(mAd), aktif: true }).select("id").single();
             if (error) throw new Error(`Marka: ${error.message}`);
             markaId = data.id; markaMap.set(mAd.toLowerCase(), data.id); yeniM++;
             logEkle(`   ➕ Marka: ${mAd}`);
@@ -141,7 +141,7 @@ export default function CsvImport({ acik, onKapat, onTamamlandi }: Props) {
             if (mev) parentId = mev;
             else {
               const kSlug: string = slugUret(parca) + (parentId ? `-${parentId}` : "");
-              const { data, error } = await supabase.from("kategoriler").insert({ ad: parca, slug: kSlug, ust_kategori_id: parentId, aktif: true, sira: 0 }).select("id").single();
+              const { data, error }: any = await supabase.from("kategoriler").insert({ ad: parca, slug: kSlug, ust_kategori_id: parentId, aktif: true, sira: 0 }).select("id").single();
               if (error) throw new Error(`Kategori: ${error.message}`);
               parentId = data.id; katMap.set(key, data.id); yeniK++;
               logEkle(`   ➕ Kategori: ${parts.slice(0, p+1).join(" > ")}`);
