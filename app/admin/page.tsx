@@ -123,30 +123,29 @@ export default function Admin() {
     setSiparisler(data || []);
   };
 
-  // ── SİPARİŞ KALEMLERİ - DÜZELTİLMİŞ ───────────────────────────────────────
+  // ── SİPARİŞ KALEMLERİ ──────────────────────────────────────────────────
   const siparisKalemleriniYukle = async (siparisId: number) => {
     setKalemYukleniyor(siparisId);
-    
-    // DÜZELTME: urunler tablosu ile join yaparak ürün detaylarını al
-    const { data, error } = await supabase
-      .from("siparis_kalemleri")
-      .select(`
-        *,
-        urunler:urun_id (
-          ad,
-          resim_url,
-          fiyat
-        )
-      `)
-      .eq("siparis_id", siparisId);
 
-    if (error) {
-      console.error("Kalem yükleme hatası:", error);
-      goster("❌ Sipariş kalemleri yüklenemedi");
+    // urunler alani siparisler tablosunda JSON string olarak tutuluyor
+    const siparis = siparisler.find(s => s.id === siparisId);
+    let kalemler: any[] = [];
+
+    if (siparis?.urunler) {
+      try {
+        kalemler = typeof siparis.urunler === "string"
+          ? JSON.parse(siparis.urunler)
+          : siparis.urunler;
+        if (!Array.isArray(kalemler)) kalemler = [];
+      } catch (e) {
+        console.error("JSON parse hatasi:", e);
+        goster("❌ Sipariş ürünleri okunamadı");
+        kalemler = [];
+      }
     }
-    
-    console.log(`Sipariş #${siparisId} kalemleri:`, data);
-    setSiparisKalemleri(prev => ({ ...prev, [siparisId]: data || [] }));
+
+    console.log(`Sipariş #${siparisId} kalemleri:`, kalemler);
+    setSiparisKalemleri(prev => ({ ...prev, [siparisId]: kalemler }));
     setKalemYukleniyor(null);
   };
 
