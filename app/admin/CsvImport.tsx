@@ -140,8 +140,8 @@ export default function CsvImport({ acik, onKapat, onTamamlandi }: Props) {
             const mev = katMap.get(key);
             if (mev) parentId = mev;
             else {
-              const slug = slugUret(parca) + (parentId ? `-${parentId}` : "");
-              const { data, error } = await supabase.from("kategoriler").insert({ ad: parca, slug, ust_kategori_id: parentId, aktif: true, sira: 0 }).select("id").single();
+              const kSlug = slugUret(parca) + (parentId ? `-${parentId}` : "");
+              const { data, error } = await supabase.from("kategoriler").insert({ ad: parca, slug: kSlug, ust_kategori_id: parentId, aktif: true, sira: 0 }).select("id").single();
               if (error) throw new Error(`Kategori: ${error.message}`);
               parentId = data.id; katMap.set(key, data.id); yeniK++;
               logEkle(`   ➕ Kategori: ${parts.slice(0, p+1).join(" > ")}`);
