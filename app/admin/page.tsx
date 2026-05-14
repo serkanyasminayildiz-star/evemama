@@ -1018,17 +1018,48 @@ export default function Admin() {
                   </tbody>
                 </table>
               </div>
-              {toplamSayfa > 1 && (
-                <div style={{ padding: "14px 18px", borderTop: "1px solid #F0E8E0", display: "flex", justifyContent: "center", gap: 6 }}>
-                  {Array.from({ length: Math.min(toplamSayfa, 10) }, (_, i) => i).map(i => (
-                    <button key={i} onClick={() => { setSayfaNo(i); urunleriYukle(i, aramaMetni, filtreler); }}
-                      style={{ ...btn(sayfaNo === i ? "#E8845A" : "#E8D5B7"), color: sayfaNo === i ? "white" : "#5C3D2E", padding: "6px 12px", fontSize: 12, minWidth: 36 }}>
-                      {i + 1}
-                    </button>
-                  ))}
-                  {toplamSayfa > 10 && <span style={{ padding: "6px 4px", fontSize: 12, color: "#5C3D2E", opacity: 0.5 }}>... {toplamSayfa} sayfa</span>}
-                </div>
-              )}
+              {toplamSayfa > 1 && (() => {
+                // Pencereli pagination: aktif sayfa etrafinda kayan 7'li pencere.
+                // Plus ilk + son sayfa buton, onceki/sonraki, atlanan araliklar
+                // icin "..." gosterilir. Onceki versiyonda Math.min(toplamSayfa,10)
+                // ile sadece 1-10 butonu vardi, 10. sayfadan sonra navigasyon
+                // imkansizdi.
+                const pencereYari = 3;
+                let pStart = Math.max(0, sayfaNo - pencereYari);
+                let pEnd   = Math.min(toplamSayfa - 1, sayfaNo + pencereYari);
+                // Pencere küçükse kenardan doldur
+                if (pEnd - pStart < pencereYari * 2) {
+                  if (pStart === 0) pEnd = Math.min(toplamSayfa - 1, pencereYari * 2);
+                  if (pEnd === toplamSayfa - 1) pStart = Math.max(0, toplamSayfa - 1 - pencereYari * 2);
+                }
+                const sayfaButonu = (i: number) => (
+                  <button key={i} onClick={() => { setSayfaNo(i); urunleriYukle(i, aramaMetni, filtreler); }}
+                    style={{ ...btn(sayfaNo === i ? "#E8845A" : "#E8D5B7"), color: sayfaNo === i ? "white" : "#5C3D2E", padding: "6px 12px", fontSize: 12, minWidth: 36 }}>
+                    {i + 1}
+                  </button>
+                );
+                const ayrac = (key: string) => (
+                  <span key={key} style={{ padding: "6px 4px", fontSize: 12, color: "#5C3D2E", opacity: 0.5 }}>…</span>
+                );
+                const pencere: React.ReactNode[] = [];
+                for (let i = pStart; i <= pEnd; i++) pencere.push(sayfaButonu(i));
+                return (
+                  <div style={{ padding: "14px 18px", borderTop: "1px solid #F0E8E0", display: "flex", justifyContent: "center", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <button onClick={() => { if (sayfaNo > 0) { setSayfaNo(sayfaNo - 1); urunleriYukle(sayfaNo - 1, aramaMetni, filtreler); } }}
+                      disabled={sayfaNo === 0}
+                      style={{ ...btn("#E8D5B7"), color: "#5C3D2E", padding: "6px 12px", fontSize: 12, opacity: sayfaNo === 0 ? 0.4 : 1, cursor: sayfaNo === 0 ? "not-allowed" : "pointer" }}>← Önceki</button>
+                    {pStart > 0 && sayfaButonu(0)}
+                    {pStart > 1 && ayrac("baslangic")}
+                    {pencere}
+                    {pEnd < toplamSayfa - 2 && ayrac("son")}
+                    {pEnd < toplamSayfa - 1 && sayfaButonu(toplamSayfa - 1)}
+                    <button onClick={() => { if (sayfaNo < toplamSayfa - 1) { setSayfaNo(sayfaNo + 1); urunleriYukle(sayfaNo + 1, aramaMetni, filtreler); } }}
+                      disabled={sayfaNo >= toplamSayfa - 1}
+                      style={{ ...btn("#E8D5B7"), color: "#5C3D2E", padding: "6px 12px", fontSize: 12, opacity: sayfaNo >= toplamSayfa - 1 ? 0.4 : 1, cursor: sayfaNo >= toplamSayfa - 1 ? "not-allowed" : "pointer" }}>Sonraki →</button>
+                    <span style={{ marginLeft: 12, fontSize: 11, color: "#5C3D2E", opacity: 0.5 }}>{sayfaNo + 1} / {toplamSayfa}</span>
+                  </div>
+                );
+              })()}
             </div>
             <div style={{ marginTop: 8, fontSize: 11, color: "#5C3D2E", opacity: 0.45, textAlign: "center" }}>💡 Fiyat, indirimli fiyat ve stok hücrelerine tıklayarak hızlı düzenleme yapabilirsiniz</div>
           </div>
