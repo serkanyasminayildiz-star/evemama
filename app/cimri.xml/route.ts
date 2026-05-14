@@ -1,4 +1,9 @@
 export const runtime = 'nodejs';
+// force-dynamic + revalidate=0: Next.js'in route handler data cache'i
+// devre disi → her istekte Supabase'den canli veri cek. Aksi halde
+// build time'da static cache → fiyat/stok degisiklikleri yansimaz.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -67,7 +72,10 @@ ${items}
   return new NextResponse(xml, {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, max-age=3600, stale-while-revalidate=600",
+      // 1 saat cache CDN/Cimri tarafinda eski deger tutuyordu. 5 dk + 1 dk
+      // SWR yeterli — Cimri gunde birkac cekim yapar, degisiklikler max 5 dk
+      // icinde yansir.
+      "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
     },
   });
 }
