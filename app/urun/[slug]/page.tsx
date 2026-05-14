@@ -41,8 +41,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const urun = await urunGetir(slug);
   if (!urun) return { title: "Ürün bulunamadı — evemama" };
   const fiyat = Number(urun.indirimli_fiyat || urun.fiyat || 0).toFixed(2);
+  // Layout zaten "%s | evemama.net" template'i ekliyor; biz sadece urun
+  // adi + fiyatla doldurursak final: "Urun Adi — ₺X | evemama.net".
   return {
-    title: `${urun.ad} — ₺${fiyat} | evemama`,
+    title: `${urun.ad} — ₺${fiyat}`,
     description: urun.kisa_aciklama || urun.ad,
     openGraph: {
       title: urun.ad,
