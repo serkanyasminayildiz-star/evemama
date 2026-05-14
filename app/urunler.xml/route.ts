@@ -27,24 +27,30 @@ function duzeltResim(url: string): string {
 }
 
 export async function GET(req: NextRequest) {
+  // Stoku 0 olan urunleri feed'den CIKARMAK yerine icinde tutup
+  // availability'yi out_of_stock isaretliyoruz. Aksi halde Google
+  // Merchant urunun feed'den kaybolmasini 30 gun gecikme ile islerken
+  // o sure boyunca eski "in stock" degerini gosterir → admin panelde
+  // stoku 0 yapilan urun Merchant'ta hala "stokta var" gozukur.
   const { data: urunler } = await supabase
     .from("urunler")
     .select("*, kategoriler(ad), markalar(ad)")
     .eq("aktif", true)
-    .gt("stok", 0)
     .gt("fiyat", 0)
     .limit(1000);
 
   const entries = (urunler || []).map(u => {
     const fiyat = parseFloat(u.indirimli_fiyat || u.fiyat || 0);
     const normalFiyat = parseFloat(u.fiyat || 0);
-    
+    const stokSayisi = parseInt(u.stok ?? 0);
+    const availability = stokSayisi > 0 ? "in stock" : "out of stock";
+
     return `  <entry>
     <g:id>${u.id}</g:id>
     <title>${xmlEscape(u.ad)}</title>
     <g:price>${normalFiyat.toFixed(2)} TRY</g:price>
     ${fiyat < normalFiyat ? `<g:sale_price>${fiyat.toFixed(2)} TRY</g:sale_price>` : ""}
-    <g:availability>in stock</g:availability>
+    <g:availability>${availability}</g:availability>
     <g:condition>new</g:condition>
     <g:image_link>${xmlEscape(duzeltResim(u.resim_url || ""))}</g:image_link>
     <link>https://evemama.net/urun/${xmlEscape(u.slug)}</link>
