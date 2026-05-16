@@ -1463,17 +1463,46 @@ export default function Admin() {
                           <option value="iade">↩️ İade Edildi</option>
                         </select>
                         <button onClick={() => {
+                          // Paketleme fisi HTML'i — hem yeni sekmede acilir (yazdir/PDF
+                          // olarak kaydet icin) hem de Blob ile direkt HTML dosyasi
+                          // olarak indirilebilir.
                           const kalemleriHtml = (siparisKalemleri[sp.id] || []).map(k => {
                             const ad = k.urunler?.ad || k.urun_adi || k.ad || k.name || "Ürün";
                             const fiyat = parseFloat(k.fiyat || k.birim_fiyat || k.toplam_fiyat || k.price || 0);
                             const adet = k.adet || k.miktar || k.quantity || 1;
                             return `<div class="row"><span>${ad} x${adet}</span><span>₺${fiyat.toFixed(2)}</span></div>`;
                           }).join("") || "<div class='row'><span>Kalem yok</span><span>—</span></div>";
+                          const odemeYazi = sp.odeme_yontemi === "kredi_karti" ? "Kredi Kartı" : (sp.odeme_yontemi || "Havale/EFT");
+                          const tutar = parseFloat(sp.toplam || 0).toFixed(2);
+                          const fishHtml = `<html><head><meta charset="utf-8"><title>Paketleme Fişi #${sp.siparis_no}</title><style>body{font-family:Arial;padding:20px;max-width:420px}h2{border-bottom:2px solid #333;padding-bottom:8px}.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:13px}.total{font-size:18px;font-weight:bold;color:#E8845A;margin-top:12px}@media print{.no-print{display:none}}</style></head><body><h2>🐾 evemama.net — Paketleme Fişi</h2><div class="row"><b>Sipariş No</b><span>#${sp.siparis_no}</span></div><div class="row"><b>Tarih</b><span>${new Date(sp.created_at).toLocaleDateString("tr-TR")}</span></div><div class="row"><b>Müşteri</b><span>${sp.ad} ${sp.soyad}</span></div><div class="row"><b>E-posta</b><span>${sp.email || "-"}</span></div><div class="row"><b>Telefon</b><span>${sp.telefon || "-"}</span></div><div class="row"><b>Adres</b><span>${sp.adres || "-"}, ${sp.sehir || ""}</span></div><div class="row"><b>Ödeme</b><span>${odemeYazi}</span></div><hr/>${kalemleriHtml}<div class="total">Toplam: ₺${tutar}</div><br/><div class="no-print" style="display:flex;gap:8px"><button onclick="window.print()" style="padding:8px 14px;border:none;background:#5C3D2E;color:white;border-radius:8px;cursor:pointer;font-size:13px">🖨️ Yazdır / PDF</button></div></body></html>`;
                           const w = window.open("", "_blank");
                           if (!w) return;
-                          w.document.write(`<html><head><title>Paketleme Fişi #${sp.siparis_no}</title><style>body{font-family:Arial;padding:20px;max-width:420px}h2{border-bottom:2px solid #333;padding-bottom:8px}.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:13px}.total{font-size:18px;font-weight:bold;color:#E8845A;margin-top:12px}@media print{button{display:none}}</style></head><body><h2>🐾 evemama.net — Paketleme Fişi</h2><div class="row"><b>Sipariş No</b><span>#${sp.siparis_no}</span></div><div class="row"><b>Tarih</b><span>${new Date(sp.created_at).toLocaleDateString("tr-TR")}</span></div><div class="row"><b>Müşteri</b><span>${sp.ad} ${sp.soyad}</span></div><div class="row"><b>E-posta</b><span>${sp.email || "-"}</span></div><div class="row"><b>Telefon</b><span>${sp.telefon || "-"}</span></div><div class="row"><b>Adres</b><span>${sp.adres || "-"}, ${sp.sehir || ""}</span></div><div class="row"><b>Ödeme</b><span>${sp.odeme_yontemi === "kredi_karti" ? "Kredi Kartı" : "Havale/EFT"}</span></div><hr/>${kalemleriHtml}<div class="total">Toplam: ₺${parseFloat(sp.toplam || 0).toFixed(2)}</div><br/><button onclick="window.print()">🖨️ Yazdır</button></body></html>`);
+                          w.document.write(fishHtml);
                           w.document.close();
                         }} style={{ ...btn("#5C3D2E"), padding: "9px 16px", fontSize: 12 }}>🖨️ Paketleme Fişi</button>
+                        <button onClick={() => {
+                          // Direkt HTML dosyasi olarak indir — kullanici sonra
+                          // tarayicida acip Yazdir > PDF olarak kaydet diyebilir.
+                          const kalemleriHtml = (siparisKalemleri[sp.id] || []).map(k => {
+                            const ad = k.urunler?.ad || k.urun_adi || k.ad || k.name || "Ürün";
+                            const fiyat = parseFloat(k.fiyat || k.birim_fiyat || k.toplam_fiyat || k.price || 0);
+                            const adet = k.adet || k.miktar || k.quantity || 1;
+                            return `<div class="row"><span>${ad} x${adet}</span><span>₺${fiyat.toFixed(2)}</span></div>`;
+                          }).join("") || "<div class='row'><span>Kalem yok</span><span>—</span></div>";
+                          const odemeYazi = sp.odeme_yontemi === "kredi_karti" ? "Kredi Kartı" : (sp.odeme_yontemi || "Havale/EFT");
+                          const tutar = parseFloat(sp.toplam || 0).toFixed(2);
+                          const fishHtml = `<!doctype html><html><head><meta charset="utf-8"><title>Paketleme Fişi #${sp.siparis_no}</title><style>body{font-family:Arial;padding:20px;max-width:420px}h2{border-bottom:2px solid #333;padding-bottom:8px}.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:13px}.total{font-size:18px;font-weight:bold;color:#E8845A;margin-top:12px}</style></head><body><h2>🐾 evemama.net — Paketleme Fişi</h2><div class="row"><b>Sipariş No</b><span>#${sp.siparis_no}</span></div><div class="row"><b>Tarih</b><span>${new Date(sp.created_at).toLocaleDateString("tr-TR")}</span></div><div class="row"><b>Müşteri</b><span>${sp.ad} ${sp.soyad}</span></div><div class="row"><b>E-posta</b><span>${sp.email || "-"}</span></div><div class="row"><b>Telefon</b><span>${sp.telefon || "-"}</span></div><div class="row"><b>Adres</b><span>${sp.adres || "-"}, ${sp.sehir || ""}</span></div><div class="row"><b>Ödeme</b><span>${odemeYazi}</span></div><hr/>${kalemleriHtml}<div class="total">Toplam: ₺${tutar}</div></body></html>`;
+                          const blob = new Blob([fishHtml], { type: "text/html;charset=utf-8" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `paketleme-fisi-${sp.siparis_no}.html`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          setTimeout(() => URL.revokeObjectURL(url), 1000);
+                          goster("✅ Paketleme fişi indirildi");
+                        }} style={{ ...btn("#8BAF8E"), padding: "9px 16px", fontSize: 12 }}>💾 İndir</button>
                       </div>
                     </div>
                   )}
