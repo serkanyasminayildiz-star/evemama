@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 import { supabase } from "../../../lib/supabase";
 import { useCart } from "../../../context/CartContext";
 
@@ -231,7 +232,12 @@ export default function UrunDetayClient() {
         {aktifSekme === "aciklama" && (
           <div style={{ background: "white", borderRadius: 24, padding: "24px" }}>
             {urun.aciklama ? (
-              <div style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: urun.aciklama }} />
+              // urun.aciklama admin panelinden geliyor. Compromised admin
+              // veya supabase RLS hatasi durumunda <script>/<iframe>/onload=
+              // gibi XSS vektorleri kullaniciya ulasabilirdi. DOMPurify ile
+              // sanitize → sadece guvenli HTML kaliyor (b, i, p, ul, a vb.).
+              <div style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8 }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(urun.aciklama, { USE_PROFILES: { html: true } }) }} />
             ) : (
               <div style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.5, textAlign: "center", padding: "40px 0" }}>Bu ürün için henüz açıklama eklenmemiş.</div>
             )}
