@@ -9,6 +9,7 @@
 // UI/state tarafi tamamen UrunDetayClient.tsx icinde (eski page.tsx)
 // — regression riski yok.
 
+import { notFound } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import UrunDetayClient from "./UrunDetayClient";
 
@@ -18,6 +19,7 @@ type UrunRow = {
   id: number | string;
   ad: string;
   slug: string;
+  aktif: boolean | null;
   fiyat: number | string | null;
   indirimli_fiyat: number | string | null;
   stok: number | null;
@@ -30,7 +32,7 @@ type UrunRow = {
 async function urunGetir(slug: string): Promise<UrunRow | null> {
   const { data } = await supabase
     .from("urunler")
-    .select("id, ad, slug, fiyat, indirimli_fiyat, stok, kisa_aciklama, resim_url, markalar(ad), kategoriler(ad, slug)")
+    .select("id, ad, slug, aktif, fiyat, indirimli_fiyat, stok, kisa_aciklama, resim_url, markalar(ad), kategoriler(ad, slug)")
     .eq("slug", slug)
     .single();
   return (data as unknown as UrunRow) || null;
@@ -39,7 +41,13 @@ async function urunGetir(slug: string): Promise<UrunRow | null> {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const urun = await urunGetir(slug);
-  if (!urun) return { title: "Ürün bulunamadı — evemama" };
+  // Silinmis veya pasif urunler icin noindex + temel baslik. notFound()
+  // burada cagrilamaz (Next 16: generateMetadata'da notFound() destekli
+  // degil), o yuzden noindex ile bot'lara "indekslemeyin" deriz; HTTP 404
+  // ise default exportta donulur.
+  if (!urun || urun.aktif === false) {
+    return { title: "Ürün bulunamadı — evemama", robots: { index: false, follow: false } };
+  }
   const fiyat = Number(urun.indirimli_fiyat || urun.fiyat || 0).toFixed(2);
   // Layout zaten "%s | evemama.net" template'i ekliyor; biz sadece urun
   // adi + fiyatla doldurursak final: "Urun Adi — ₺X | evemama.net".
@@ -60,8 +68,16 @@ export default async function UrunPage({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const urun = await urunGetir(slug);
 
-  // Urun yoksa client component "Urun bulunamadi" ekraniyla halleder.
-  // JSON-LD sadece urun bulundugunda inject edilir.
+  // Silinmis veya pasif urunler icin HTTP 404 don. Aksi halde Google
+  // Merchant'in otomatik urun kesfi (web crawl) bu sayfalari "stokta var"
+  // sayar — admin'den sildigimiz urunler Merchant Center'da gunlerce
+  // hayalet olarak kalir. 404 donersek Google bir sonraki crawl'da
+  // otomatik kaynaktan dusurur. Stok=0 olan urunler aktif kalmaya devam
+  // eder, sadece availability "out of stock" gosterilir (zaten oyle).
+  if (!urun || urun.aktif === false) {
+    notFound();
+  }
+
   let jsonLdScript: React.ReactNode = null;
   if (urun) {
     const fiyat = Number(urun.indirimli_fiyat || urun.fiyat || 0);
