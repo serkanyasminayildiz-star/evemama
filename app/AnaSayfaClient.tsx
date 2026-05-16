@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { supabase } from "../lib/supabase";
 import { useCart } from "../context/CartContext";
 
@@ -499,7 +500,7 @@ export default function AnaSayfaClient() {
                         <a href={`/urun/${urun.slug}`} style={{ textDecoration: "none", display: "block" }}>
                           <div className="urun-img" style={{ height: 160, background: "#f9f9f9", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                             {urun.resim_url
-                              ? <img src={urun.resim_url} alt={urun.ad} style={{ width: "100%", height: "100%", objectFit: "contain", padding: 12, mixBlendMode: "multiply" }} />
+                              ? <Image src={urun.resim_url} alt={urun.ad} fill sizes="(max-width:768px) 50vw, (max-width:1200px) 25vw, 280px" style={{ objectFit: "contain", padding: 12, mixBlendMode: "multiply" }} />
                               : <div style={{ fontSize: 48, opacity: 0.15 }}>🐾</div>}
                             {urun.stok <= 5 && urun.stok > 0 && (
                               <span style={{ position: "absolute", top: 8, left: 8, background: "#E8845A", color: "white", fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 50 }}>Son {urun.stok}!</span>

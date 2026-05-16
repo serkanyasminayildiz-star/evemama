@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import DOMPurify from "isomorphic-dompurify";
 import { supabase } from "../../../lib/supabase";
@@ -123,9 +124,9 @@ export default function UrunDetayClient() {
 
         {/* Sol: Görsel */}
         <div>
-          <div style={{ background: "white", borderRadius: 24, overflow: "hidden", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 32px rgba(92,61,46,0.08)", marginBottom: 16 }}>
+          <div style={{ background: "white", borderRadius: 24, overflow: "hidden", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 32px rgba(92,61,46,0.08)", marginBottom: 16, position: "relative" }}>
             {urun.resim_url ? (
-              <img src={urun.resim_url} alt={urun.ad} style={{ width: "100%", height: "100%", objectFit: "contain", padding: 24 }} />
+              <Image src={urun.resim_url} alt={urun.ad} fill priority sizes="(max-width:768px) 100vw, 550px" style={{ objectFit: "contain", padding: 24 }} />
             ) : (
               <div style={{ fontSize: 120, opacity: 0.2 }}>🐾</div>
             )}
@@ -315,9 +316,9 @@ export default function UrunDetayClient() {
               {benzerUrunler.map(u => (
                 <a key={u.id} href={`/urun/${u.slug}`}
                   style={{ background: "#FDF6EE", borderRadius: 18, overflow: "hidden", textDecoration: "none", display: "block" }}>
-                  <div style={{ height: 130, background: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ height: 130, background: "white", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                     {u.resim_url ? (
-                      <img src={u.resim_url} alt={u.ad} style={{ width: "100%", height: "100%", objectFit: "contain", padding: 12, mixBlendMode: "multiply" }} />
+                      <Image src={u.resim_url} alt={u.ad} fill sizes="(max-width:768px) 50vw, 240px" style={{ objectFit: "contain", padding: 12, mixBlendMode: "multiply" }} />
                     ) : (
                       <div style={{ fontSize: 40, opacity: 0.2 }}>🐾</div>
                     )}

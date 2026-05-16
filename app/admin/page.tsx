@@ -146,7 +146,6 @@ export default function Admin() {
       }
     }
 
-    console.log(`Sipariş #${siparisId} kalemleri:`, kalemler);
     setSiparisKalemleri(prev => ({ ...prev, [siparisId]: kalemler }));
     setKalemYukleniyor(null);
   };

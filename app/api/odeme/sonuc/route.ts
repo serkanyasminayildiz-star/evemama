@@ -59,7 +59,14 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await response.json();
-    console.log("Sonuç yanıt:", JSON.stringify(data));
+    // Tam yanit yerine sadece durum + odeme bilgisi loglanir (PII / kart
+    // sayisi sizmasin). Hata durumunda errorMessage da yer alir.
+    console.log("[odeme/sonuc] iyzico result:", {
+      status: data.status,
+      paymentStatus: data.paymentStatus,
+      paidPrice: data.paidPrice || null,
+      errorMessage: data.errorMessage || null,
+    });
 
     if (data.status === "success" && data.paymentStatus === "SUCCESS") {
       
@@ -92,9 +99,9 @@ export async function POST(req: NextRequest) {
       });
 
       if (error) {
-        console.log("Sipariş kayıt hatası:", error.message);
+        console.error("[odeme/sonuc] siparis kayit hatasi:", { siparisNo, error });
       } else {
-        console.log("Sipariş kaydedildi:", siparisNo);
+        console.log("[odeme/sonuc] siparis kaydedildi:", siparisNo);
         // Geçici kaydı sil
         await supabase.from("odeme_gecici").delete().eq("token", token);
       }
@@ -104,7 +111,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz`, { status: 303 });
     }
   } catch (err: any) {
-    console.log("Hata:", err.message);
+    console.error("[odeme/sonuc] callback error:", err);
     return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz`, { status: 303 });
   }
 }

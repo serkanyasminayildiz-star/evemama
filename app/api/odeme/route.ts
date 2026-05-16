@@ -106,7 +106,14 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await response.json();
-    console.log("İyzico yanıt:", JSON.stringify(data));
+    // Eskiden tam JSON yanit loglaniyordu — musteri bilgileri ve token
+    // logs'a dusuyordu. Sadece basari/hata durumu + token kisa hash'i
+    // tutuyoruz (debug yeterli, PII sizmiyor).
+    console.log("[odeme] iyzico response:", {
+      status: data.status,
+      tokenPrefix: data.token ? String(data.token).slice(0, 8) + "…" : null,
+      errorMessage: data.errorMessage || null,
+    });
 
     // Token ile birlikte müşteri bilgilerini geçici olarak kaydet
     if (data.token) {
@@ -127,7 +134,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(data);
   } catch (err: any) {
-    console.log("Hata:", err.message);
+    console.error("[odeme] payment init error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

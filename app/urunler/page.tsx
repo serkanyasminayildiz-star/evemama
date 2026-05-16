@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { supabase } from "../../lib/supabase";
 import { useCart } from "../../context/CartContext";
 
@@ -306,7 +307,7 @@ export default function Urunler() {
                   <a href={`/urun/${urun.slug}`} style={{ textDecoration: "none", display: "block" }}>
                     <div style={{ height: 140, background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                       {urun.resim_url ? (
-                        <img src={urun.resim_url} alt={urun.ad} style={{ width: "100%", height: "100%", objectFit: "contain", padding: 10, mixBlendMode: "multiply" }} />
+                        <Image src={urun.resim_url} alt={urun.ad} fill sizes="(max-width:768px) 50vw, (max-width:1200px) 33vw, 320px" style={{ objectFit: "contain", padding: 10, mixBlendMode: "multiply" }} />
                       ) : (
                         <div style={{ fontSize: 48, opacity: 0.2 }}>🐾</div>
                       )}

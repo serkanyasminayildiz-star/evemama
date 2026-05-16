@@ -1,6 +1,7 @@
 "use client";
 import { useCart } from "../../context/CartContext";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { supabase } from "../../lib/supabase";
 
 export default function Sepet() {
@@ -164,9 +165,9 @@ export default function Sepet() {
               transform: eklendi === item.id ? "scale(1.01)" : "scale(1)",
               transition: "all .25s"
             }}>
-              <div style={{ width: 64, height: 64, background: "#FDF6EE", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+              <div style={{ width: 64, height: 64, background: "#FDF6EE", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", position: "relative" }}>
                 {item.resim_url ? (
-                  <img src={item.resim_url} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6, mixBlendMode: "multiply" }} />
+                  <Image src={item.resim_url} alt={item.name} fill sizes="64px" style={{ objectFit: "contain", padding: 6, mixBlendMode: "multiply" }} />
                 ) : (
                   <span style={{ fontSize: 32 }}>{item.emoji}</span>
                 )}
