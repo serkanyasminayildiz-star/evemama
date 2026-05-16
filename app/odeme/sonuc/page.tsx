@@ -1,10 +1,38 @@
 "use client";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+
+// Google Ads tag ID — layout.tsx'te yuklendi. Buradaki conversion label
+// 'Satin Alma' islemine ozel.
+const GOOGLE_ADS_TAG = "AW-18167277898";
+const PURCHASE_LABEL = "DPE6CN-7oa4cEMrS6tZD";
+
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
 
 function OdemeSonucIcerik() {
   const searchParams = useSearchParams();
   const durum = searchParams.get("durum");
+  const siparis = searchParams.get("siparis") || "";
+  const tutar = parseFloat(searchParams.get("tutar") || "0");
+  // Ayni siparis sayfaya birden fazla kez render edilirse conversion event'i
+  // sadece bir kez tetiklenmeli; useRef ile flag tutuyoruz.
+  const conversionFired = useRef(false);
+
+  useEffect(() => {
+    if (durum !== "basarili" || conversionFired.current) return;
+    if (typeof window === "undefined" || typeof window.gtag !== "function") return;
+    conversionFired.current = true;
+    window.gtag("event", "conversion", {
+      send_to: `${GOOGLE_ADS_TAG}/${PURCHASE_LABEL}`,
+      value: tutar > 0 ? tutar : 1.0,
+      currency: "TRY",
+      transaction_id: siparis,
+    });
+  }, [durum, siparis, tutar]);
 
   if (durum === "basarili") return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>

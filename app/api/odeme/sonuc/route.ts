@@ -106,7 +106,10 @@ export async function POST(req: NextRequest) {
         await supabase.from("odeme_gecici").delete().eq("token", token);
       }
 
-      return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarili&siparis=${siparisNo}`, { status: 303 });
+      // tutar query parametresi Google Ads conversion tracking icin lazim
+      // (gtag 'value' alanina yazilir). transaction_id de gtag'a gider —
+      // ayni siparis birden fazla kez conversion olarak sayilmasin diye.
+      return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarili&siparis=${siparisNo}&tutar=${data.paidPrice}`, { status: 303 });
     } else {
       return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz`, { status: 303 });
     }
