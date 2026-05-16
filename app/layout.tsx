@@ -1,5 +1,10 @@
 import { CartProvider } from "../context/CartContext";
+import Script from "next/script";
 import "./globals.css";
+
+// Google Ads conversion tracking Tag ID (AW-...).
+// Bu tek bir yerde tanimli — odeme/sonuc sayfasinda da gtag('event', 'conversion', ...) icin kullanilir.
+export const GOOGLE_ADS_ID = "AW-18167277898";
 
 export const metadata = {
   title: { default: "evemama.net — Evcil Dostunuzun Dükkânı", template: "%s | evemama.net" },
@@ -23,6 +28,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        {/* Google Ads (gtag.js) — tum sayfalarda yuklenir.
+            Conversion event'leri /odeme/sonuc sayfasinda window.gtag ile tetiklenir. */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GOOGLE_ADS_ID}');
+          `}
+        </Script>
         <CartProvider>{children}</CartProvider>
       </body>
     </html>
