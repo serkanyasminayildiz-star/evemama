@@ -26,6 +26,38 @@ function duzeltResim(url: string): string {
   return url.replace("https://evemama.net", "https://www.sepetmama.com");
 }
 
+// Google Shopping basliklarini zenginlestirir: marka basta + kategori sonda.
+// Mevcut adda zaten geciyorsa tekrarlamaz (kelime smiari case-insensitive).
+// Cikti max 150 karakter (Google limit) — 70 karakter sonrasi kullanici
+// goruntusunde kesilir ama tum 150 indeksleme icin kullanilir.
+function basliZenginlestir(ad: string, marka?: string, kategori?: string): string {
+  let baslik = (ad || "").trim();
+  const dum = baslik.toLowerCase();
+
+  // Marka basta: marka adi adda gecmiyorsa basa ekle
+  if (marka) {
+    const m = marka.trim();
+    if (m && !dum.includes(m.toLowerCase())) {
+      baslik = `${m} ${baslik}`;
+    }
+  }
+
+  // Kategori sonda: kategori adi adda gecmiyorsa sona ekle (em-dash ile ayrac)
+  if (kategori) {
+    const k = kategori.trim();
+    if (k && !baslik.toLowerCase().includes(k.toLowerCase())) {
+      baslik = `${baslik} — ${k}`;
+    }
+  }
+
+  // 150 karakter Google limiti — guvenli tarafta kalmak icin 145'te kes
+  if (baslik.length > 150) {
+    baslik = baslik.slice(0, 145).trim() + "…";
+  }
+
+  return baslik;
+}
+
 export async function GET(req: NextRequest) {
   // Stoku 0 olan urunleri feed'den CIKARMAK yerine icinde tutup
   // availability'yi out_of_stock isaretliyoruz. Aksi halde Google
@@ -61,9 +93,13 @@ export async function GET(req: NextRequest) {
     // identifier_exists=no demek gerek ama bu Shopping ranking'i düşürür).
     const gtinEtiket = u.gtin?.trim() ? `<g:gtin>${xmlEscape(u.gtin.trim())}</g:gtin>` : `<g:identifier_exists>no</g:identifier_exists>`;
 
+    // Baslik zenginlestirme: marka basa + kategori sona (yoksa) — Shopping
+    // arama eslesmesini artirir, ozellikle Turkce uzun-kuyruk sorgularda.
+    const zenginBaslik = basliZenginlestir(u.ad, u.markalar?.ad, u.kategoriler?.ad);
+
     return `  <entry>
     <g:id>${u.id}</g:id>
-    <title>${xmlEscape(u.ad)}</title>
+    <title>${xmlEscape(zenginBaslik)}</title>
     <g:price>${normalFiyat.toFixed(2)} TRY</g:price>
     ${fiyat < normalFiyat ? `<g:sale_price>${fiyat.toFixed(2)} TRY</g:sale_price>` : ""}
     <g:availability>${availability}</g:availability>
