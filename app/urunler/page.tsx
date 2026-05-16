@@ -34,8 +34,8 @@ export default function Urunler() {
   useEffect(() => {
     Promise.all([
       supabase.from("urunler").select("*, markalar(ad), kategoriler(ad, slug)").eq("aktif", true),
-      supabase.from("kategoriler").select("*").eq("aktif", true).order("sira"),
-      supabase.from("markalar").select("*").eq("aktif", true).order("ad"),
+      supabase.from("kategoriler").select("id, ad, slug, ust_kategori_id, sira").eq("aktif", true).order("sira"),
+      supabase.from("markalar").select("id, ad, slug").eq("aktif", true).order("ad"),
     ])
       .then(([uResp, kResp, mResp]) => {
         if (uResp.error || kResp.error || mResp.error) {

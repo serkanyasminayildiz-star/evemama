@@ -31,16 +31,19 @@ export default function KategoriClient() {
 
     const veriYukle = async () => {
       try {
-        const { data: kat, error: katErr } = await supabase.from("kategoriler").select("*").eq("slug", slug).single();
+        const { data: kat, error: katErr } = await supabase.from("kategoriler")
+          .select("id, ad, slug, ust_kategori_id, aciklama, aktif").eq("slug", slug).single();
         if (katErr) throw katErr;
         if (!kat) { setYukleniyor(false); return; }
         setKategori(kat);
 
-        const { data: tumKatData, error: tkErr } = await supabase.from("kategoriler").select("*");
+        const { data: tumKatData, error: tkErr } = await supabase.from("kategoriler")
+          .select("id, ad, slug, ust_kategori_id");
         if (tkErr) throw tkErr;
         setTumKategoriler(tumKatData || []);
 
-        const { data: altKat, error: akErr } = await supabase.from("kategoriler").select("*")
+        const { data: altKat, error: akErr } = await supabase.from("kategoriler")
+          .select("id, ad, slug, ust_kategori_id, sira")
           .eq("ust_kategori_id", kat.id).eq("aktif", true).order("sira");
         if (akErr) throw akErr;
         setAltKategoriler(altKat || []);

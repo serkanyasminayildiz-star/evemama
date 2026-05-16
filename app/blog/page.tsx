@@ -110,7 +110,7 @@ export default function Blog() {
 
   useEffect(() => {
     supabase.from("blog_sorular")
-      .select("*")
+      .select("id, ad, soru, cevap, kategori, onaylandi, created_at")
       .eq("onaylandi", true)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {

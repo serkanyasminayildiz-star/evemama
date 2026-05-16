@@ -30,7 +30,7 @@ export default function UrunDetayClient() {
         setUrun(data);
         setYukleniyor(false);
         if (data?.kategori_id) {
-          supabase.from("urunler").select("*").eq("kategori_id", data.kategori_id).neq("slug", slug).limit(4)
+          supabase.from("urunler").select("id, ad, slug, fiyat, indirimli_fiyat, resim_url, stok").eq("kategori_id", data.kategori_id).neq("slug", slug).neq("aktif", false).limit(4)
             .then(({ data: benzer, error: bErr }) => {
               if (bErr) console.error("[urun-detay] benzer urunler:", bErr);
               setBenzerUrunler(benzer || []);

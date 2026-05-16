@@ -68,7 +68,7 @@ export default function AnaSayfaClient() {
         setOneCikanlar(data || []);
       });
 
-    supabase.from("kategoriler").select("*")
+    supabase.from("kategoriler").select("id, ad, slug, ust_kategori_id, sira")
       .is("ust_kategori_id", null).eq("aktif", true).order("sira")
       .then(({ data, error }) => {
         if (error) {
@@ -83,7 +83,7 @@ export default function AnaSayfaClient() {
   useEffect(() => {
     if (kategoriler.length === 0) return;
     kategoriler.forEach(kat => {
-      supabase.from("kategoriler").select("*")
+      supabase.from("kategoriler").select("id, ad, slug, ust_kategori_id, sira")
         .eq("ust_kategori_id", kat.id).eq("aktif", true).order("sira")
         .then(({ data }) => {
           if (data && data.length > 0)

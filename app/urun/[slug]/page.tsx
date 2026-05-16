@@ -82,7 +82,7 @@ export default async function UrunPage({ params }: { params: Promise<{ slug: str
   if (urun) {
     const fiyat = Number(urun.indirimli_fiyat || urun.fiyat || 0);
     const stok = Number(urun.stok ?? 0);
-    const jsonLd = {
+    const productLd = {
       "@context": "https://schema.org",
       "@type": "Product",
       name: urun.ad,
@@ -100,11 +100,26 @@ export default async function UrunPage({ params }: { params: Promise<{ slug: str
         priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
       },
     };
+    // BreadcrumbList — Google arama sonuclarinda urun karti uzerinde
+    // "Ana Sayfa > Kategori > Urun" breadcrumb gosterimi icin.
+    const breadcrumbLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Ana Sayfa", item: "https://www.evemama.net" },
+        ...(urun.kategoriler ? [
+          { "@type": "ListItem", position: 2, name: urun.kategoriler.ad, item: `https://www.evemama.net/kategori/${urun.kategoriler.slug}` },
+          { "@type": "ListItem", position: 3, name: urun.ad, item: `https://www.evemama.net/urun/${urun.slug}` },
+        ] : [
+          { "@type": "ListItem", position: 2, name: urun.ad, item: `https://www.evemama.net/urun/${urun.slug}` },
+        ]),
+      ],
+    };
     jsonLdScript = (
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      </>
     );
   }
 
