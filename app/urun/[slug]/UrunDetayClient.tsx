@@ -226,11 +226,11 @@ export default function UrunDetayClient() {
       {/* Sekmeler */}
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 14px 48px" }}>
         <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #E8D5B7", marginBottom: 28, overflowX: "auto" }}>
-          {[
+          {([
             { id: "aciklama", label: "📋 Açıklama" },
             { id: "yorumlar", label: `⭐ Yorumlar (${yorumlar.length})` }
-          ].map(sekme => (
-            <button key={sekme.id} onClick={() => setAktifSekme(sekme.id as any)} className="sekme-btn"
+          ] as const).map(sekme => (
+            <button key={sekme.id} onClick={() => setAktifSekme(sekme.id)} className="sekme-btn"
               style={{ fontWeight: 700, border: "none", background: "none", cursor: "pointer", color: aktifSekme === sekme.id ? "#E8845A" : "#5C3D2E", opacity: aktifSekme === sekme.id ? 1 : 0.5, borderBottom: aktifSekme === sekme.id ? "2px solid #E8845A" : "2px solid transparent", marginBottom: -2, transition: "all .2s", whiteSpace: "nowrap", fontFamily: "inherit" }}>
               {sekme.label}
             </button>

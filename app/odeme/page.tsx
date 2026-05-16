@@ -99,11 +99,11 @@ export default function Odeme() {
           <div style={{ background: "white", borderRadius: 20, padding: "24px", marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 18 }}>💳 Ödeme Yöntemi</div>
             <div className="odeme-yontem-grid">
-              {[
+              {([
                 { id: "kart", icon: "💳", title: "Kredi / Banka Kartı", sub: "Taksit seçeneği mevcut" },
                 { id: "havale", icon: "🏦", title: "Banka Havalesi / EFT", sub: "Havale ile %3 indirim" },
-              ].map(o => (
-                <div key={o.id} onClick={() => setOdemeYontemi(o.id as any)}
+              ] as const).map(o => (
+                <div key={o.id} onClick={() => setOdemeYontemi(o.id)}
                   style={{ border: `2px solid ${odemeYontemi === o.id ? "#E8845A" : "#E8D5B7"}`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", background: odemeYontemi === o.id ? "#FFF5F0" : "white", transition: "all .2s", display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ width: 20, height: 20, borderRadius: "50%", border: `2px solid ${odemeYontemi === o.id ? "#E8845A" : "#E8D5B7"}`, background: odemeYontemi === o.id ? "#E8845A" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {odemeYontemi === o.id && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "white" }} />}
