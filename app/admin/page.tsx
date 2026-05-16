@@ -1361,23 +1361,23 @@ export default function Admin() {
                   {acikSiparisId === sp.id && (
                     <div style={{ padding: "18px 20px" }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
-                        <div style={{ background: "#FDF6EE", borderRadius: 12, padding: "12px 16px" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.5, marginBottom: 6, textTransform: "uppercase" }}>Müşteri Bilgileri</div>
-                          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{sp.ad} {sp.soyad}</div>
-                          <div style={{ fontSize: 12, opacity: 0.7 }}>{sp.email}</div>
-                          <div style={{ fontSize: 12, opacity: 0.7 }}>{sp.telefon}</div>
+                        <div style={{ background: "#FDF6EE", borderRadius: 12, padding: "12px 16px", color: "#5C3D2E" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.6, marginBottom: 6, textTransform: "uppercase" }}>Müşteri Bilgileri</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2, color: "#2C1A0E" }}>{sp.ad} {sp.soyad}</div>
+                          <div style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.85 }}>{sp.email}</div>
+                          <div style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.85 }}>{sp.telefon}</div>
                         </div>
-                        <div style={{ background: "#FDF6EE", borderRadius: 12, padding: "12px 16px" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.5, marginBottom: 6, textTransform: "uppercase" }}>Teslimat Adresi</div>
-                          <div style={{ fontSize: 13 }}>{sp.adres}</div>
-                          <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>{sp.sehir}</div>
+                        <div style={{ background: "#FDF6EE", borderRadius: 12, padding: "12px 16px", color: "#5C3D2E" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.6, marginBottom: 6, textTransform: "uppercase" }}>Teslimat Adresi</div>
+                          <div style={{ fontSize: 13, color: "#2C1A0E" }}>{sp.adres}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, color: "#2C1A0E" }}>{sp.sehir}</div>
                         </div>
-                        <div style={{ background: "#FDF6EE", borderRadius: 12, padding: "12px 16px" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.5, marginBottom: 6, textTransform: "uppercase" }}>Kargo Takip No</div>
+                        <div style={{ background: "#FDF6EE", borderRadius: 12, padding: "12px 16px", color: "#5C3D2E" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.6, marginBottom: 6, textTransform: "uppercase" }}>Kargo Takip No</div>
                           <input type="text" autoComplete="off" placeholder="Takip numarası girin..."
                             defaultValue={sp.kargo_takip || ""}
                             onBlur={async e => { if (e.target.value !== sp.kargo_takip) { await supabase.from("siparisler").update({ kargo_takip: e.target.value }).eq("id", sp.id); goster("✅ Takip no kaydedildi"); } }}
-                            style={{ width: "100%", padding: "8px 12px", border: "2px solid #E8D5B7", borderRadius: 8, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const, background: "white" }} />
+                            style={{ width: "100%", padding: "8px 12px", border: "2px solid #E8D5B7", borderRadius: 8, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const, background: "white", color: "#2C1A0E" }} />
                         </div>
                       </div>
 
