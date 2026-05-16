@@ -29,7 +29,8 @@ export default function Admin() {
   const [filtreler, setFiltreler] = useState({ kategori: "", marka: "", stok: "", durum: "" });
   const [duzenleUrun, setDuzenleUrun] = useState<any>(null);
   const [inlineEdit, setInlineEdit] = useState<{ id: number; alan: string; deger: string } | null>(null);
-  const [yeniUrun, setYeniUrun] = useState({ ad: "", fiyat: "", indirimli_fiyat: "", stok: "", resim_url: "", kategori_id: "", marka_id: "", kisa_aciklama: "", aciklama: "", etiket: "" });
+  const [yeniUrun, setYeniUrun] = useState<{ ad: string; fiyat: string; indirimli_fiyat: string; stok: string; resim_url: string; resimler: string[]; gtin: string; kategori_id: string; marka_id: string; kisa_aciklama: string; aciklama: string; etiket: string; }>({ ad: "", fiyat: "", indirimli_fiyat: "", stok: "", resim_url: "", resimler: [], gtin: "", kategori_id: "", marka_id: "", kisa_aciklama: "", aciklama: "", etiket: "" });
+  const [resimYukleniyor, setResimYukleniyor] = useState(false);
   const [seciliUrunler, setSeciliUrunler] = useState<number[]>([]);
   const [topluIslem, setTopluIslem] = useState({ tip: "fiyat_yuzde", deger: "", etiket: "" });
   const [yeniUrunAcik, setYeniUrunAcik] = useState(false);
@@ -227,16 +228,67 @@ export default function Admin() {
     .replace(/ç/g,"c").replace(/ğ/g,"g").replace(/ı/g,"i").replace(/ö/g,"o").replace(/ş/g,"s").replace(/ü/g,"u")
     .replace(/[^a-z0-9\s-]/g,"").trim().replace(/\s+/g,"-");
 
+  // Uzun aciklamadan ilk N karakteri al, kelime sinirinda kes (kisa aciklama
+  // icin temiz fallback). HTML tag'lerini de soyup metni temizler.
+  const kisaOzet = (uzun: string, maxLen = 160): string => {
+    const dum = (uzun || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    if (dum.length <= maxLen) return dum;
+    const kesik = dum.slice(0, maxLen);
+    const sonBosluk = kesik.lastIndexOf(" ");
+    return (sonBosluk > 100 ? kesik.slice(0, sonBosluk) : kesik) + "…";
+  };
+
+  // Supabase Storage'a tek bir dosya yukler, public URL doner.
+  const resimYukle = async (file: File): Promise<string | null> => {
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const dosyaAdi = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabase.storage.from("products").upload(dosyaAdi, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type,
+    });
+    if (error) {
+      console.error("[resim yukle]", error);
+      goster("❌ Resim yüklenemedi: " + error.message);
+      return null;
+    }
+    const { data } = supabase.storage.from("products").getPublicUrl(dosyaAdi);
+    return data.publicUrl;
+  };
+
+  // Birden fazla dosyayi sirayla yukler, basariliyi URL listesine ekler.
+  // mevcut: var olan URL'ler (yeni eklenenler bunlara eklenecek)
+  // limit:  toplam max URL sayisi (varsayilan 6)
+  const cokluResimYukle = async (files: FileList, mevcut: string[], limit = 6): Promise<string[]> => {
+    const arr = Array.from(files).slice(0, Math.max(0, limit - mevcut.length));
+    if (arr.length === 0) return mevcut;
+    setResimYukleniyor(true);
+    const sonuc = [...mevcut];
+    for (const f of arr) {
+      const url = await resimYukle(f);
+      if (url) sonuc.push(url);
+    }
+    setResimYukleniyor(false);
+    return sonuc;
+  };
+
   const urunEkle = async () => {
     if (!yeniUrun.ad || !yeniUrun.fiyat) { goster("⚠️ Ürün adı ve fiyat zorunludur!"); return; }
     const slug = slugUret(yeniUrun.ad) + "-" + Date.now();
+    const tumResimler = yeniUrun.resim_url ? [yeniUrun.resim_url, ...yeniUrun.resimler] : [...yeniUrun.resimler];
+    const anaResim = tumResimler[0] || null;
+    const ekResimler = tumResimler.slice(1);
+    // Kisa aciklama bos ise uzun aciklamadan otomatik uret.
+    const kisaAck = yeniUrun.kisa_aciklama?.trim() || (yeniUrun.aciklama ? kisaOzet(yeniUrun.aciklama) : null);
     const { error } = await supabase.from("urunler").insert({
       ad: yeniUrun.ad, slug,
       fiyat: parseFloat(yeniUrun.fiyat),
       indirimli_fiyat: yeniUrun.indirimli_fiyat ? parseFloat(yeniUrun.indirimli_fiyat) : null,
       stok: parseInt(yeniUrun.stok) || 0,
-      resim_url: yeniUrun.resim_url || null,
-      kisa_aciklama: yeniUrun.kisa_aciklama || null,
+      resim_url: anaResim,
+      resimler: ekResimler,
+      gtin: yeniUrun.gtin?.trim() || null,
+      kisa_aciklama: kisaAck,
       aciklama: yeniUrun.aciklama || null,
       etiket: yeniUrun.etiket || null,
       kategori_id: yeniUrun.kategori_id || null,
@@ -244,7 +296,7 @@ export default function Admin() {
       aktif: true,
     });
     if (error) { goster("❌ " + error.message); return; }
-    setYeniUrun({ ad: "", fiyat: "", indirimli_fiyat: "", stok: "", resim_url: "", kategori_id: "", marka_id: "", kisa_aciklama: "", aciklama: "", etiket: "" });
+    setYeniUrun({ ad: "", fiyat: "", indirimli_fiyat: "", stok: "", resim_url: "", resimler: [], gtin: "", kategori_id: "", marka_id: "", kisa_aciklama: "", aciklama: "", etiket: "" });
     setYeniUrunAcik(false);
     urunleriYukle(sayfaNo, aramaMetni, filtreler);
     istatistikleriYukle();
@@ -253,11 +305,17 @@ export default function Admin() {
 
   const urunGuncelle = async () => {
     if (!duzenleUrun) return;
+    const tumResimler = duzenleUrun.resim_url ? [duzenleUrun.resim_url, ...(duzenleUrun.resimler || [])] : [...(duzenleUrun.resimler || [])];
+    const anaResim = tumResimler[0] || null;
+    const ekResimler = tumResimler.slice(1);
+    const kisaAck = duzenleUrun.kisa_aciklama?.trim() || (duzenleUrun.aciklama ? kisaOzet(duzenleUrun.aciklama) : null);
     const { error } = await supabase.from("urunler").update({
       ad: duzenleUrun.ad, fiyat: parseFloat(duzenleUrun.fiyat),
       indirimli_fiyat: duzenleUrun.indirimli_fiyat ? parseFloat(duzenleUrun.indirimli_fiyat) : null,
       stok: parseInt(duzenleUrun.stok),
-      resim_url: duzenleUrun.resim_url || null, kisa_aciklama: duzenleUrun.kisa_aciklama || null,
+      resim_url: anaResim, resimler: ekResimler,
+      gtin: duzenleUrun.gtin?.trim() || null,
+      kisa_aciklama: kisaAck,
       aciklama: duzenleUrun.aciklama || null, etiket: duzenleUrun.etiket || null,
       kategori_id: duzenleUrun.kategori_id || null, marka_id: duzenleUrun.marka_id || null,
       aktif: duzenleUrun.aktif,
@@ -583,16 +641,36 @@ export default function Admin() {
             </div>
 
             <div style={{ marginBottom: 16, padding: 14, background: "#FDF6EE", borderRadius: 14, border: "2px dashed #E8D5B7" }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 8 }}>RESİM URL — Canlı Önizleme</label>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 8 }}>📷 RESİMLER (max 6) — ilki ana resim</label>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 10 }}>
+                {[...(duzenleUrun.resim_url ? [duzenleUrun.resim_url] : []), ...(duzenleUrun.resimler || [])].map((url: string, i: number) => (
+                  <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden", background: "white", border: i === 0 ? "2px solid #E8845A" : "1px solid #E8D5B7" }}>
+                    <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 4 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    {i === 0 && <span style={{ position: "absolute", bottom: 4, left: 4, background: "#E8845A", color: "white", fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 8 }}>ANA</span>}
+                    <button onClick={() => {
+                      const tum = [...(duzenleUrun.resim_url ? [duzenleUrun.resim_url] : []), ...(duzenleUrun.resimler || [])];
+                      tum.splice(i, 1);
+                      setDuzenleUrun({ ...duzenleUrun, resim_url: tum[0] || "", resimler: tum.slice(1) });
+                    }} style={{ position: "absolute", top: 4, right: 4, background: "#C62828", color: "white", border: "none", borderRadius: 50, width: 22, height: 22, fontSize: 11, cursor: "pointer", fontWeight: 700 }}>×</button>
+                  </div>
+                ))}
+                {[...(duzenleUrun.resim_url ? [duzenleUrun.resim_url] : []), ...(duzenleUrun.resimler || [])].length < 6 && (
+                  <label style={{ aspectRatio: "1", border: "2px dashed #E8D5B7", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", cursor: resimYukleniyor ? "wait" : "pointer", background: "white", color: "#E8845A", fontWeight: 700, fontSize: 22 }}>
+                    {resimYukleniyor ? "⏳" : "+"}
+                    <input type="file" accept="image/*" multiple onChange={async e => {
+                      if (!e.target.files) return;
+                      const mevcut = [...(duzenleUrun.resim_url ? [duzenleUrun.resim_url] : []), ...(duzenleUrun.resimler || [])];
+                      const yeniListe = await cokluResimYukle(e.target.files, mevcut, 6);
+                      setDuzenleUrun({ ...duzenleUrun, resim_url: yeniListe[0] || "", resimler: yeniListe.slice(1) });
+                      e.target.value = "";
+                    }} style={{ display: "none" }} />
+                  </label>
+                )}
+              </div>
               <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
-                    <div style={{ width: 90, height: 90, background: "white", borderRadius: 12, border: "2px solid #E8D5B7", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                      {duzenleUrun.resim_url
-                        ? <img src={duzenleUrun.resim_url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                        : <span style={{ fontSize: 28, opacity: 0.3 }}>🐾</span>}
-                    </div>
-                    <input value={duzenleUrun.resim_url || ""} onChange={e => setDuzenleUrun({ ...duzenleUrun, resim_url: e.target.value })} style={{ ...s, marginBottom: 0 }} placeholder="https://..." />
+                    <input value={duzenleUrun.resim_url || ""} onChange={e => setDuzenleUrun({ ...duzenleUrun, resim_url: e.target.value })} style={{ ...s, marginBottom: 0 }} placeholder="Veya manuel URL gir (ana resim)..." />
                   </div>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#5C3D2E", opacity: 0.4, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Sitede nasıl görünür:</div>
                   <div style={{ width: 140, background: "white", borderRadius: 14, overflow: "hidden", boxShadow: "0 4px 12px rgba(92,61,46,0.10)", border: "1px solid #F0E8E0" }}>
@@ -681,10 +759,14 @@ export default function Admin() {
                   <option value="son-stok">⚠️ Son Stok</option>
                 </select>
               </div>
+              <div style={{ gridColumn: "1/-1" }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 5 }}>GTIN / Barkod <span style={{ opacity: 0.5, fontWeight: 400 }}>(opsiyonel — Google Shopping onayı için tavsiye edilir)</span></label>
+                <input value={duzenleUrun.gtin || ""} onChange={e => setDuzenleUrun({ ...duzenleUrun, gtin: e.target.value })} placeholder="örn: 8690000000001" style={s} />
+              </div>
             </div>
             <div style={{ marginTop: 12 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 5 }}>Kısa Açıklama</label>
-              <input value={duzenleUrun.kisa_aciklama || ""} onChange={e => setDuzenleUrun({ ...duzenleUrun, kisa_aciklama: e.target.value })} style={s} />
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 5 }}>Kısa Açıklama <span style={{ opacity: 0.5, fontWeight: 400 }}>(boş bırakırsan uzundan otomatik üretilir)</span></label>
+              <input value={duzenleUrun.kisa_aciklama || ""} onChange={e => setDuzenleUrun({ ...duzenleUrun, kisa_aciklama: e.target.value })} placeholder={duzenleUrun.aciklama ? `Otomatik: ${kisaOzet(duzenleUrun.aciklama, 100)}` : "Kısa özet (160 karakter)"} style={s} />
             </div>
             <div style={{ marginTop: 12, marginBottom: 20 }}>
               <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 5 }}>Uzun Açıklama (HTML)</label>
@@ -812,30 +894,63 @@ export default function Admin() {
             {yeniUrunAcik && (
               <div style={{ background: "white", borderRadius: 18, padding: 22, marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", border: "2px solid #E8845A" }}>
                 <h2 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", marginBottom: 14 }}>➕ Yeni Ürün</h2>
-                {yeniUrun.resim_url && (
-                  <div style={{ marginBottom: 12, padding: 10, background: "#FDF6EE", borderRadius: 10, display: "flex", alignItems: "center", gap: 12 }}>
-                    <img src={yeniUrun.resim_url} alt="" style={{ width: 60, height: 60, objectFit: "contain", borderRadius: 8, background: "white", padding: 4 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                    <span style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.6 }}>Canlı önizleme</span>
+
+                {/* Cok resimli galeri — ilk resim ana kart, kalan 5 ek resim */}
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 6 }}>📷 RESİMLER (max 6) — ilki ana resim</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 8 }}>
+                    {[...(yeniUrun.resim_url ? [yeniUrun.resim_url] : []), ...yeniUrun.resimler].map((url, i) => (
+                      <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden", background: "#FDF6EE", border: i === 0 ? "2px solid #E8845A" : "1px solid #E8D5B7" }}>
+                        <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 4 }} />
+                        {i === 0 && <span style={{ position: "absolute", bottom: 4, left: 4, background: "#E8845A", color: "white", fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 8 }}>ANA</span>}
+                        <button onClick={() => {
+                          const tum = [...(yeniUrun.resim_url ? [yeniUrun.resim_url] : []), ...yeniUrun.resimler];
+                          tum.splice(i, 1);
+                          setYeniUrun({ ...yeniUrun, resim_url: tum[0] || "", resimler: tum.slice(1) });
+                        }} style={{ position: "absolute", top: 4, right: 4, background: "#C62828", color: "white", border: "none", borderRadius: 50, width: 22, height: 22, fontSize: 11, cursor: "pointer", fontWeight: 700 }}>×</button>
+                      </div>
+                    ))}
+                    {/* Yukleme slot'u — daha resim eklenebilir mi? */}
+                    {[...(yeniUrun.resim_url ? [yeniUrun.resim_url] : []), ...yeniUrun.resimler].length < 6 && (
+                      <label style={{ aspectRatio: "1", border: "2px dashed #E8D5B7", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", cursor: resimYukleniyor ? "wait" : "pointer", background: "#FAF5EF", color: "#E8845A", fontWeight: 700, fontSize: 22 }}>
+                        {resimYukleniyor ? "⏳" : "+"}
+                        <input type="file" accept="image/*" multiple onChange={async e => {
+                          if (!e.target.files) return;
+                          const mevcut = [...(yeniUrun.resim_url ? [yeniUrun.resim_url] : []), ...yeniUrun.resimler];
+                          const yeniListe = await cokluResimYukle(e.target.files, mevcut, 6);
+                          setYeniUrun({ ...yeniUrun, resim_url: yeniListe[0] || "", resimler: yeniListe.slice(1) });
+                          e.target.value = "";
+                        }} style={{ display: "none" }} />
+                      </label>
+                    )}
                   </div>
-                )}
+                  <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.5 }}>Dosya seç (birden fazla seçebilirsin). İlk resim ürün kartlarında ana resim olarak gösterilir.</div>
+                </div>
+
                 <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>ÜRÜN ADI *</label><input type="text" autoComplete="off" placeholder="Ürün adını yazın..." value={yeniUrun.ad} onChange={e => setYeniUrun({ ...yeniUrun, ad: e.target.value })} style={s} /></div>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>FİYAT ₺ *</label><input type="number" step="0.01" placeholder="0.00" value={yeniUrun.fiyat} onChange={e => setYeniUrun({ ...yeniUrun, fiyat: e.target.value })} style={s} /></div>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>İNDİRİMLİ ₺</label><input type="number" step="0.01" placeholder="Boş bırakın" value={yeniUrun.indirimli_fiyat} onChange={e => setYeniUrun({ ...yeniUrun, indirimli_fiyat: e.target.value })} style={s} /></div>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>STOK</label><input type="number" placeholder="0" value={yeniUrun.stok} onChange={e => setYeniUrun({ ...yeniUrun, stok: e.target.value })} style={s} /></div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
-                  <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>RESİM URL</label><input type="text" autoComplete="off" placeholder="https://..." value={yeniUrun.resim_url} onChange={e => setYeniUrun({ ...yeniUrun, resim_url: e.target.value })} style={s} /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>KATEGORİ</label><select value={yeniUrun.kategori_id} onChange={e => setYeniUrun({ ...yeniUrun, kategori_id: e.target.value })} style={s}><option value="">Seçin</option>{kategoriler.map(k => <option key={k.id} value={k.id}>{k.ust_kategori_id ? "└ " : ""}{k.ad}</option>)}</select></div>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>MARKA</label><select value={yeniUrun.marka_id} onChange={e => setYeniUrun({ ...yeniUrun, marka_id: e.target.value })} style={s}><option value="">Seçin</option>{markalar.map(m => <option key={m.id} value={m.id}>{m.ad}</option>)}</select></div>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>ETİKET</label><select value={yeniUrun.etiket} onChange={e => setYeniUrun({ ...yeniUrun, etiket: e.target.value })} style={s}><option value="">Yok</option><option value="yeni">🆕 Yeni</option><option value="indirim">💥 İndirim</option><option value="cok-satan">⭐ Çok Satan</option><option value="kampanya">🏷️ Kampanya</option><option value="son-stok">⚠️ Son Stok</option></select></div>
+                  <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>GTIN / BARKOD <span style={{ opacity: 0.5 }}>(opsiyonel)</span></label><input type="text" autoComplete="off" placeholder="örn: 8690000000001" value={yeniUrun.gtin} onChange={e => setYeniUrun({ ...yeniUrun, gtin: e.target.value })} style={s} /></div>
                 </div>
                 <div style={{ marginBottom: 10 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>KISA AÇIKLAMA</label>
-                  <input type="text" autoComplete="off" value={yeniUrun.kisa_aciklama} onChange={e => setYeniUrun({ ...yeniUrun, kisa_aciklama: e.target.value })} style={s} />
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>📝 UZUN AÇIKLAMA <span style={{ opacity: 0.5 }}>(ürün sayfasında gösterilir, kısa açıklama otomatik bundan üretilir)</span></label>
+                  <textarea value={yeniUrun.aciklama} onChange={e => setYeniUrun({ ...yeniUrun, aciklama: e.target.value })}
+                    rows={5} placeholder="Ürünün özelliklerini, kullanım amacını, içeriğini detaylıca anlatın..."
+                    style={{ ...s, minHeight: 100, resize: "vertical" as const, fontFamily: "inherit" }} />
+                </div>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>KISA AÇIKLAMA <span style={{ opacity: 0.5 }}>(boş bırakırsan uzundan otomatik üretilir)</span></label>
+                  <input type="text" autoComplete="off" value={yeniUrun.kisa_aciklama} onChange={e => setYeniUrun({ ...yeniUrun, kisa_aciklama: e.target.value })} placeholder={yeniUrun.aciklama ? `Otomatik: ${kisaOzet(yeniUrun.aciklama, 100)}` : "Kısa özet (160 karakter)"} style={s} />
                 </div>
                 <div style={{ display: "flex", gap: 10 }}>
-                  <button onClick={urunEkle} style={btn()}>✅ Ürünü Kaydet</button>
+                  <button onClick={urunEkle} disabled={resimYukleniyor} style={btn(resimYukleniyor ? "#ccc" : "#E8845A")}>{resimYukleniyor ? "Resim yükleniyor..." : "✅ Ürünü Kaydet"}</button>
                   <button onClick={() => setYeniUrunAcik(false)} style={btn("#888")}>İptal</button>
                 </div>
               </div>

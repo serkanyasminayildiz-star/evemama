@@ -50,6 +50,17 @@ export async function GET(req: NextRequest) {
     // oncelikli urunler daha cok gosterilir.
     const oncelikliEtiket = u.oncelikli ? `<g:custom_label_0>oncelikli</g:custom_label_0>` : "";
 
+    // Ek resimler — Google Shopping max 10 additional_image_link kabul eder;
+    // bizim formda max 5 ek resim oluyor (toplam 6).
+    const ekResimler = (Array.isArray(u.resimler) ? u.resimler : [])
+      .slice(0, 10)
+      .map((url: string) => `<g:additional_image_link>${xmlEscape(duzeltResim(url))}</g:additional_image_link>`)
+      .join("\n    ");
+
+    // GTIN — Google Shopping'in onay sürecinde çok yardımcı olur (yoksa
+    // identifier_exists=no demek gerek ama bu Shopping ranking'i düşürür).
+    const gtinEtiket = u.gtin?.trim() ? `<g:gtin>${xmlEscape(u.gtin.trim())}</g:gtin>` : `<g:identifier_exists>no</g:identifier_exists>`;
+
     return `  <entry>
     <g:id>${u.id}</g:id>
     <title>${xmlEscape(u.ad)}</title>
@@ -58,9 +69,11 @@ export async function GET(req: NextRequest) {
     <g:availability>${availability}</g:availability>
     <g:condition>new</g:condition>
     <g:image_link>${xmlEscape(duzeltResim(u.resim_url || ""))}</g:image_link>
+    ${ekResimler}
     <link>https://evemama.net/urun/${xmlEscape(u.slug)}</link>
     <g:product_type>${xmlEscape(u.kategoriler?.ad || "Evcil Hayvan")}</g:product_type>
     <g:brand>${xmlEscape(u.markalar?.ad || "evemama")}</g:brand>
+    ${gtinEtiket}
     <description>${xmlEscape(u.kisa_aciklama || u.ad)}</description>
     ${oncelikliEtiket}
   </entry>`;
