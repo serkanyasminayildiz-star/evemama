@@ -22,6 +22,7 @@ export default function Urunler() {
   const [aramaMetni, setAramaMetni] = useState("");
   const [eklendi, setEklendi] = useState<number | null>(null);
   const [filtrePanelAcik, setFiltrePanelAcik] = useState(false);
+  const [hata, setHata] = useState<string | null>(null);
   const { addItem, totalItems } = useCart();
   const sayfaBasina = 24;
 
@@ -34,13 +35,22 @@ export default function Urunler() {
       supabase.from("urunler").select("*, markalar(ad), kategoriler(ad, slug)").eq("aktif", true),
       supabase.from("kategoriler").select("*").eq("aktif", true).order("sira"),
       supabase.from("markalar").select("*").eq("aktif", true).order("ad"),
-    ]).then(([{ data: u }, { data: k }, { data: m }]) => {
-      setUrunler(u || []);
-      setFiltrelenmis(u || []);
-      setKategoriler(k || []);
-      setMarkalar(m || []);
-      setYukleniyor(false);
-    });
+    ])
+      .then(([uResp, kResp, mResp]) => {
+        if (uResp.error || kResp.error || mResp.error) {
+          console.error("[urunler] supabase errors:", { u: uResp.error, k: kResp.error, m: mResp.error });
+          setHata("Ürünler yüklenemedi. Sayfayı yenileyin.");
+        }
+        setUrunler(uResp.data || []);
+        setFiltrelenmis(uResp.data || []);
+        setKategoriler(kResp.data || []);
+        setMarkalar(mResp.data || []);
+      })
+      .catch(err => {
+        console.error("[urunler] beklenmeyen hata:", err);
+        setHata("Ürünler yüklenemedi. Sayfayı yenileyin.");
+      })
+      .finally(() => setYukleniyor(false));
   }, []);
 
   const kiloAralik = (urunAd: string, secili: string) => {
@@ -167,6 +177,13 @@ export default function Urunler() {
 
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
+
+      {hata && (
+        <div role="alert" style={{ background: "#FFEBEE", color: "#C62828", padding: "10px 16px", textAlign: "center", fontSize: 13, fontWeight: 600, borderBottom: "1px solid #FFCDD2" }}>
+          ⚠️ {hata}
+          <button onClick={() => setHata(null)} style={{ background: "none", border: "none", color: "#C62828", fontSize: 16, marginLeft: 10, cursor: "pointer", fontWeight: 700 }}>×</button>
+        </div>
+      )}
 
       <style>{`
         .urunler-layout { max-width: 1400px; margin: 0 auto; padding: 0 24px 48px; display: grid; grid-template-columns: 280px 1fr; gap: 24px; }

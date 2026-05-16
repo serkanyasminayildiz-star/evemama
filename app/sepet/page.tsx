@@ -12,14 +12,21 @@ export default function Sepet() {
 
   useEffect(() => {
     const kontrol = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setKullanici(user);
-      if (user && totalPrice >= 1000) {
-        const { count } = await supabase
-          .from("siparisler")
-          .select("*", { count: "exact", head: true })
-          .eq("email", user.email);
-        if (count === 0) setIlkSiparisIndirimi(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setKullanici(user);
+        if (user && totalPrice >= 1000) {
+          const { count, error } = await supabase
+            .from("siparisler")
+            .select("*", { count: "exact", head: true })
+            .eq("email", user.email);
+          if (error) throw error;
+          if (count === 0) setIlkSiparisIndirimi(true);
+        }
+      } catch (err) {
+        console.error("[sepet] ilk siparis kontrolu:", err);
+        // Indirim hesaplanmazsa sayfa calismaya devam eder (toast'a gerek yok,
+        // kullanici farketmez — sadece "ilk siparis indirimi" gosterilmez).
       }
     };
     kontrol();

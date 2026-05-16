@@ -21,12 +21,19 @@ export default function UrunDetayClient() {
   useEffect(() => {
     if (!slug) return;
     supabase.from("urunler").select("*, kategoriler(ad, slug), markalar(ad)").eq("slug", slug).single()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[urun-detay] fetch:", error);
+          // urun null kalir, asagidaki "Urun bulunamadi" ekranina dusulur.
+        }
         setUrun(data);
         setYukleniyor(false);
         if (data?.kategori_id) {
           supabase.from("urunler").select("*").eq("kategori_id", data.kategori_id).neq("slug", slug).limit(4)
-            .then(({ data: benzer }) => setBenzerUrunler(benzer || []));
+            .then(({ data: benzer, error: bErr }) => {
+              if (bErr) console.error("[urun-detay] benzer urunler:", bErr);
+              setBenzerUrunler(benzer || []);
+            });
         }
       });
   }, [slug]);

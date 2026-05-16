@@ -19,50 +19,65 @@ export default function KategoriClient() {
   const [sayfa, setSayfa] = useState(1);
   const [eklendi, setEklendi] = useState<number | null>(null);
   const [filtrePanelAcik, setFiltrePanelAcik] = useState(false);
+  const [hata, setHata] = useState<string | null>(null);
   const { addItem, totalItems } = useCart();
   const sayfaBasina = 24;
 
   useEffect(() => {
     if (!slug) return;
     setYukleniyor(true);
+    setHata(null);
 
     const veriYukle = async () => {
-      const { data: kat } = await supabase.from("kategoriler").select("*").eq("slug", slug).single();
-      if (!kat) { setYukleniyor(false); return; }
-      setKategori(kat);
+      try {
+        const { data: kat, error: katErr } = await supabase.from("kategoriler").select("*").eq("slug", slug).single();
+        if (katErr) throw katErr;
+        if (!kat) { setYukleniyor(false); return; }
+        setKategori(kat);
 
-      const { data: tumKatData } = await supabase.from("kategoriler").select("*");
-      setTumKategoriler(tumKatData || []);
+        const { data: tumKatData, error: tkErr } = await supabase.from("kategoriler").select("*");
+        if (tkErr) throw tkErr;
+        setTumKategoriler(tumKatData || []);
 
-      const { data: altKat } = await supabase.from("kategoriler").select("*")
-        .eq("ust_kategori_id", kat.id).eq("aktif", true).order("sira");
-      setAltKategoriler(altKat || []);
+        const { data: altKat, error: akErr } = await supabase.from("kategoriler").select("*")
+          .eq("ust_kategori_id", kat.id).eq("aktif", true).order("sira");
+        if (akErr) throw akErr;
+        setAltKategoriler(altKat || []);
 
-      const { data: seviye1 } = await supabase.from("kategoriler").select("id")
-        .or(`id.eq.${kat.id},ust_kategori_id.eq.${kat.id}`);
-      const idler1 = seviye1?.map(k => k.id) || [kat.id];
+        const { data: seviye1, error: s1Err } = await supabase.from("kategoriler").select("id")
+          .or(`id.eq.${kat.id},ust_kategori_id.eq.${kat.id}`);
+        if (s1Err) throw s1Err;
+        const idler1 = seviye1?.map(k => k.id) || [kat.id];
 
-      const { data: seviye2 } = await supabase.from("kategoriler").select("id")
-        .in("ust_kategori_id", idler1);
-      const idler2 = seviye2?.map(k => k.id) || [];
+        const { data: seviye2, error: s2Err } = await supabase.from("kategoriler").select("id")
+          .in("ust_kategori_id", idler1);
+        if (s2Err) throw s2Err;
+        const idler2 = seviye2?.map(k => k.id) || [];
 
-      const { data: seviye3 } = await supabase.from("kategoriler").select("id")
-        .in("ust_kategori_id", [...idler1, ...idler2]);
-      const idler3 = seviye3?.map(k => k.id) || [];
+        const { data: seviye3, error: s3Err } = await supabase.from("kategoriler").select("id")
+          .in("ust_kategori_id", [...idler1, ...idler2]);
+        if (s3Err) throw s3Err;
+        const idler3 = seviye3?.map(k => k.id) || [];
 
-      const tumIdler = [...new Set([...idler1, ...idler2, ...idler3])];
+        const tumIdler = [...new Set([...idler1, ...idler2, ...idler3])];
 
-      const { data: urunData } = await supabase.from("urunler")
-        .select("*, markalar(ad), kategoriler(ad, slug)")
-        .in("kategori_id", tumIdler)
-        .neq("aktif", false)
-        .limit(1000);
+        const { data: urunData, error: urErr } = await supabase.from("urunler")
+          .select("*, markalar(ad), kategoriler(ad, slug)")
+          .in("kategori_id", tumIdler)
+          .neq("aktif", false)
+          .limit(1000);
+        if (urErr) throw urErr;
 
-      setUrunler(urunData || []);
-      setFiltrelenmis(urunData || []);
-      const markaSet = new Set(urunData?.map((u: any) => u.markalar?.ad).filter(Boolean));
-      setMarkalar(Array.from(markaSet) as string[]);
-      setYukleniyor(false);
+        setUrunler(urunData || []);
+        setFiltrelenmis(urunData || []);
+        const markaSet = new Set(urunData?.map((u: any) => u.markalar?.ad).filter(Boolean));
+        setMarkalar(Array.from(markaSet) as string[]);
+      } catch (err) {
+        console.error("[kategori] veri yukleme hatasi:", err);
+        setHata("Kategori verileri yüklenemedi. Sayfayı yenileyin veya ana sayfaya dönün.");
+      } finally {
+        setYukleniyor(false);
+      }
     };
 
     veriYukle();
@@ -157,6 +172,13 @@ export default function KategoriClient() {
 
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
+
+      {hata && (
+        <div role="alert" style={{ background: "#FFEBEE", color: "#C62828", padding: "10px 16px", textAlign: "center", fontSize: 13, fontWeight: 600, borderBottom: "1px solid #FFCDD2" }}>
+          ⚠️ {hata}
+          <button onClick={() => setHata(null)} style={{ background: "none", border: "none", color: "#C62828", fontSize: 16, marginLeft: 10, cursor: "pointer", fontWeight: 700 }}>×</button>
+        </div>
+      )}
 
       <style>{`
         .kat-layout { max-width: 1400px; margin: 0 auto; padding: 0 24px 48px; display: grid; grid-template-columns: 260px 1fr; gap: 24px; }

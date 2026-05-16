@@ -10,14 +10,20 @@ export default function GirisYap() {
 
   const handleGiris = async () => {
     setYukleniyor(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password: sifre });
-    if (error) {
-      setMesaj("Hata: E-posta veya şifre yanlış!");
-    } else {
-      setMesaj("✅ Giriş başarılı! Yönlendiriliyorsunuz...");
-      setTimeout(() => { window.location.href = "/"; }, 1500);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password: sifre });
+      if (error) {
+        setMesaj("Hata: E-posta veya şifre yanlış!");
+      } else {
+        setMesaj("✅ Giriş başarılı! Yönlendiriliyorsunuz...");
+        setTimeout(() => { window.location.href = "/"; }, 1500);
+      }
+    } catch (err: any) {
+      console.error("[giris] signIn beklenmeyen hata:", err);
+      setMesaj("Hata: Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.");
+    } finally {
+      setYukleniyor(false);
     }
-    setYukleniyor(false);
   };
 
   const input = { width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const };

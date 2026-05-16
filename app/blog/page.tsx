@@ -106,13 +106,18 @@ export default function Blog() {
   const [yeniSoru, setYeniSoru] = useState({ ad: "", soru: "", kategori: "Kedi Bakımı" });
   const [soruGonderildi, setSoruGonderildi] = useState(false);
   const [soruYukleniyor, setSoruYukleniyor] = useState(true);
+  const [soruHata, setSoruHata] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from("blog_sorular")
       .select("*")
       .eq("onaylandi", true)
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[blog] sorular fetch:", error);
+          // Sorular zorunlu degil — sayfa blogYazilari (statik) ile calismaya devam eder.
+        }
         setSorular(data || []);
         setSoruYukleniyor(false);
       });
@@ -120,14 +125,21 @@ export default function Blog() {
 
   const soruGonder = async () => {
     if (!yeniSoru.ad.trim() || !yeniSoru.soru.trim()) return;
-    await supabase.from("blog_sorular").insert({
-      ad: yeniSoru.ad,
-      soru: yeniSoru.soru,
-      kategori: yeniSoru.kategori,
-      onaylandi: false,
-    });
-    setSoruGonderildi(true);
-    setYeniSoru({ ad: "", soru: "", kategori: "Kedi Bakımı" });
+    try {
+      const { error } = await supabase.from("blog_sorular").insert({
+        ad: yeniSoru.ad,
+        soru: yeniSoru.soru,
+        kategori: yeniSoru.kategori,
+        onaylandi: false,
+      });
+      if (error) throw error;
+      setSoruGonderildi(true);
+      setYeniSoru({ ad: "", soru: "", kategori: "Kedi Bakımı" });
+    } catch (err) {
+      console.error("[blog] soru gonderme hatasi:", err);
+      setSoruHata("Soru gönderilemedi. Lütfen tekrar deneyin.");
+      setTimeout(() => setSoruHata(null), 4000);
+    }
   };
 
   const filtrelenmis = aktifKat === "Tümü" ? blogYazilari : blogYazilari.filter(y => y.kategori === aktifKat);
@@ -284,6 +296,11 @@ export default function Blog() {
             <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.7, marginBottom: 24 }}>
               Evcil dostunuz hakkında merak ettiğiniz her şeyi sorabilirsiniz. Uzman ekibimiz ve topluluk yardımcı olacak!
             </p>
+            {soruHata && (
+              <div role="alert" style={{ background: "#FFEBEE", color: "#C62828", padding: "10px 14px", borderRadius: 10, marginBottom: 14, fontSize: 13, fontWeight: 600 }}>
+                ⚠️ {soruHata}
+              </div>
+            )}
             {soruGonderildi ? (
               <div style={{ background: "#8BAF8E", borderRadius: 16, padding: "20px", textAlign: "center", color: "white" }}>
                 <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>

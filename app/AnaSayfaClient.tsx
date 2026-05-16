@@ -16,6 +16,7 @@ export default function AnaSayfaClient() {
   const [newsletterOk, setNewsletterOk] = useState(false);
   const { addItem, totalItems } = useCart();
   const [eklendi, setEklendi] = useState<number | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
   const slideInterval = useRef<any>(null);
 
   const slides = [
@@ -50,14 +51,32 @@ export default function AnaSayfaClient() {
   };
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setKullanici(data.user));
+    supabase.auth.getUser()
+      .then(({ data }) => setKullanici(data.user))
+      .catch(err => console.error("[home] auth.getUser:", err));
+
     supabase.from("urunler")
       .select("*, markalar(ad), kategoriler(id, ad, slug)")
       .neq("aktif", false).gt("stok", 0).limit(80)
-      .then(({ data }) => setOneCikanlar(data || []));
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[home] urunler fetch:", error);
+          setHata("Ürünler yüklenemedi. Sayfayı yenileyin.");
+          return;
+        }
+        setOneCikanlar(data || []);
+      });
+
     supabase.from("kategoriler").select("*")
       .is("ust_kategori_id", null).eq("aktif", true).order("sira")
-      .then(({ data }) => setKategoriler(data || []));
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[home] kategoriler fetch:", error);
+          setHata("Kategoriler yüklenemedi. Sayfayı yenileyin.");
+          return;
+        }
+        setKategoriler(data || []);
+      });
   }, []);
 
   useEffect(() => {
@@ -126,6 +145,13 @@ export default function AnaSayfaClient() {
 
   return (
     <main style={{ fontFamily: "sans-serif", background: "#FDF6EE", color: "#2C1A0E", overflowX: "hidden" }}>
+
+      {hata && (
+        <div role="alert" style={{ background: "#FFEBEE", color: "#C62828", padding: "10px 16px", textAlign: "center", fontSize: 13, fontWeight: 600, borderBottom: "1px solid #FFCDD2" }}>
+          ⚠️ {hata}
+          <button onClick={() => setHata(null)} style={{ background: "none", border: "none", color: "#C62828", fontSize: 16, marginLeft: 10, cursor: "pointer", fontWeight: 700 }}>×</button>
+        </div>
+      )}
 
       <style>{`
         .hamburger-btn { display: none; background: none; border: none; font-size: 22px; cursor: pointer; color: #5C3D2E; padding: 4px 8px; }

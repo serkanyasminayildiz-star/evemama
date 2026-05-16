@@ -14,12 +14,18 @@ export default function UyeOl() {
   const handleUyeOl = async () => {
     if (sifre !== sifre2) { setMesaj("Şifreler eşleşmiyor!"); return; }
     setYukleniyor(true);
-    const { error } = await supabase.auth.signUp({
-      email, password: sifre,
-      options: { data: { full_name: ad, phone: telefon } }
-    });
-    setMesaj(error ? "Hata: " + error.message : "✅ Kayıt başarılı! E-postanı kontrol et.");
-    setYukleniyor(false);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email, password: sifre,
+        options: { data: { full_name: ad, phone: telefon } }
+      });
+      setMesaj(error ? "Hata: " + error.message : "✅ Kayıt başarılı! E-postanı kontrol et.");
+    } catch (err: any) {
+      console.error("[uye-ol] signUp beklenmeyen hata:", err);
+      setMesaj("Hata: Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.");
+    } finally {
+      setYukleniyor(false);
+    }
   };
 
   const input = { width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const };
