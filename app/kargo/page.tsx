@@ -1,3 +1,9 @@
+export const metadata = {
+  title: "Kargo ve Teslimat",
+  description: "evemama.net kargo süreleri, ücretsiz kargo limiti, anlaşmalı kargo firmaları ve teslimat detayları.",
+  alternates: { canonical: "/kargo" },
+};
+
 export default function Kargo() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>

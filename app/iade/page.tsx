@@ -1,3 +1,9 @@
+export const metadata = {
+  title: "İade ve Değişim",
+  description: "evemama.net ürün iade koşulları, değişim süreci, cayma hakkı ve iade için yapılması gerekenler.",
+  alternates: { canonical: "/iade" },
+};
+
 export default function Iade() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>

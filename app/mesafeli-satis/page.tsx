@@ -1,3 +1,9 @@
+export const metadata = {
+  title: "Mesafeli Satış Sözleşmesi",
+  description: "evemama.net üzerinden yapılan alışverişlerde tüketici ile satıcı arasındaki mesafeli satış sözleşmesi koşulları.",
+  alternates: { canonical: "/mesafeli-satis" },
+};
+
 export default function MesafeliSatis() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>

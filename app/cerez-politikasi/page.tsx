@@ -1,3 +1,9 @@
+export const metadata = {
+  title: "Çerez Politikası",
+  description: "evemama.net üzerinde kullanılan çerezler, türleri, amaçları ve çerez tercih yönetimi hakkında bilgi.",
+  alternates: { canonical: "/cerez-politikasi" },
+};
+
 export default function CerezPolitikasi() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>

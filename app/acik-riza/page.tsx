@@ -1,3 +1,9 @@
+export const metadata = {
+  title: "Açık Rıza Metni",
+  description: "evemama.net üzerinde kişisel verilerin işlenmesine ilişkin açık rıza metni — KVKK madde 5/1 ve 6/2 kapsamında.",
+  alternates: { canonical: "/acik-riza" },
+};
+
 export default function AcikRiza() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>

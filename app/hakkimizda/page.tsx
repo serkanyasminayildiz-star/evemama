@@ -1,3 +1,15 @@
+export const metadata = {
+  title: "Hakkımızda",
+  description: "evemama.net — evcil hayvan tutkunlarının güvendiği online dükkân. Hikâyemiz, misyonumuz ve değerlerimiz.",
+  alternates: { canonical: "/hakkimizda" },
+  openGraph: {
+    title: "evemama.net Hakkında",
+    description: "Evcil dostunuzun her ihtiyacı için güvenilir bir adres.",
+    url: "/hakkimizda",
+    type: "website",
+  },
+};
+
 export default function Hakkimizda() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>

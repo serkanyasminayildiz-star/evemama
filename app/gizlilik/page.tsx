@@ -1,3 +1,9 @@
+export const metadata = {
+  title: "Gizlilik Politikası",
+  description: "evemama.net üzerinde kişisel verilerinizin nasıl işlendiği, korunduğu ve haklarınız hakkında bilgi.",
+  alternates: { canonical: "/gizlilik" },
+};
+
 export default function Gizlilik() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>

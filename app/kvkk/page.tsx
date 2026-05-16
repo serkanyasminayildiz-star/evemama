@@ -1,3 +1,9 @@
+export const metadata = {
+  title: "KVKK Aydınlatma Metni",
+  description: "evemama.net Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında veri sahibi aydınlatma metni.",
+  alternates: { canonical: "/kvkk" },
+};
+
 export default function KVKK() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>

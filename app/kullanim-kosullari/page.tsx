@@ -1,3 +1,9 @@
+export const metadata = {
+  title: "Kullanım Koşulları",
+  description: "evemama.net site kullanım koşulları, üyelik, alışveriş ve hizmet kuralları.",
+  alternates: { canonical: "/kullanim-kosullari" },
+};
+
 export default function KullanimKosullari() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
