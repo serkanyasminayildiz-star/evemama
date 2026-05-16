@@ -461,7 +461,8 @@ export default function Admin() {
     </main>
   );
 
-  const menuler = [
+  type MenuItem = { id: string; icon: string; ad: string; badge?: number };
+  const menuler: MenuItem[] = [
     { id: "dashboard", icon: "📊", ad: "Dashboard" },
     { id: "urunler", icon: "📦", ad: "Ürünler" },
     { id: "stok", icon: "📉", ad: "Stok Takibi", badge: stokIstatistik.stok_yok + stokIstatistik.kritik },
@@ -573,7 +574,7 @@ export default function Admin() {
                   <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
                     <div style={{ width: 90, height: 90, background: "white", borderRadius: 12, border: "2px solid #E8D5B7", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                       {duzenleUrun.resim_url
-                        ? <img src={duzenleUrun.resim_url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} onError={e => { (e.target as any).style.display = "none"; }} />
+                        ? <img src={duzenleUrun.resim_url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                         : <span style={{ fontSize: 28, opacity: 0.3 }}>🐾</span>}
                     </div>
                     <input value={duzenleUrun.resim_url || ""} onChange={e => setDuzenleUrun({ ...duzenleUrun, resim_url: e.target.value })} style={{ ...s, marginBottom: 0 }} placeholder="https://..." />
@@ -582,7 +583,7 @@ export default function Admin() {
                   <div style={{ width: 140, background: "white", borderRadius: 14, overflow: "hidden", boxShadow: "0 4px 12px rgba(92,61,46,0.10)", border: "1px solid #F0E8E0" }}>
                     <div style={{ height: 90, background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
                       {duzenleUrun.resim_url
-                        ? <img src={duzenleUrun.resim_url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 8, mixBlendMode: "multiply" }} onError={e => { (e.target as any).style.display = "none"; }} />
+                        ? <img src={duzenleUrun.resim_url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 8, mixBlendMode: "multiply" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                         : <span style={{ fontSize: 32, opacity: 0.2 }}>🐾</span>}
                       {duzenleUrun.stok === 0 || parseInt(duzenleUrun.stok) === 0 ? (
                         <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.75)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -693,7 +694,7 @@ export default function Admin() {
             <button key={m.id} onClick={() => setAktifSayfa(m.id)}
               style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: aktifSayfa === m.id ? "rgba(232,132,90,0.18)" : "none", border: "none", borderLeft: aktifSayfa === m.id ? "3px solid #E8845A" : "3px solid transparent", cursor: "pointer", color: aktifSayfa === m.id ? "#E8845A" : "#FDF6EE", fontSize: 13, fontWeight: aktifSayfa === m.id ? 700 : 400, marginBottom: 1, fontFamily: "inherit", opacity: aktifSayfa === m.id ? 1 : 0.6, textAlign: "left" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 9 }}><span style={{ fontSize: 15 }}>{m.icon}</span>{m.ad}</span>
-              {(m as any).badge > 0 ? <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 10, padding: "2px 7px", fontWeight: 700 }}>{(m as any).badge}</span> : null}
+              {m.badge && m.badge > 0 ? <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 10, padding: "2px 7px", fontWeight: 700 }}>{m.badge}</span> : null}
             </button>
           ))}
         </nav>
@@ -753,7 +754,7 @@ export default function Admin() {
                   {menuler.filter(m => m.id !== "dashboard").map((m, i) => (
                     <button key={i} onClick={() => setAktifSayfa(m.id)} style={{ background: "#FDF6EE", border: "2px solid #E8D5B7", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 600, color: "#5C3D2E", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
                       {m.icon} {m.ad}
-                      {(m as any).badge > 0 ? <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 10, padding: "1px 6px" }}>{(m as any).badge}</span> : null}
+                      {m.badge && m.badge > 0 ? <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 10, padding: "1px 6px" }}>{m.badge}</span> : null}
                     </button>
                   ))}
                 </div>
@@ -798,7 +799,7 @@ export default function Admin() {
                 <h2 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", marginBottom: 14 }}>➕ Yeni Ürün</h2>
                 {yeniUrun.resim_url && (
                   <div style={{ marginBottom: 12, padding: 10, background: "#FDF6EE", borderRadius: 10, display: "flex", alignItems: "center", gap: 12 }}>
-                    <img src={yeniUrun.resim_url} alt="" style={{ width: 60, height: 60, objectFit: "contain", borderRadius: 8, background: "white", padding: 4 }} onError={e => { (e.target as any).style.display = "none"; }} />
+                    <img src={yeniUrun.resim_url} alt="" style={{ width: 60, height: 60, objectFit: "contain", borderRadius: 8, background: "white", padding: 4 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                     <span style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.6 }}>Canlı önizleme</span>
                   </div>
                 )}
@@ -1192,7 +1193,7 @@ export default function Admin() {
                       <span style={{ background: sp.odeme_yontemi === "kredi_karti" ? "#E3F2FD" : "#E8F5E9", color: sp.odeme_yontemi === "kredi_karti" ? "#1565C0" : "#2E7D32", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
                         {sp.odeme_yontemi === "kredi_karti" ? "💳 Kart" : "🏦 Havale"}
                       </span>
-                      <span style={{ background: ({ beklemede: "#FFF3E0", hazirlaniyor: "#E3F2FD", kargoda: "#E8F5E9", tamamlandi: "#F3E5F5", iptal: "#FFEBEE" } as any)[sp.durum] || "#F5F5F5", color: ({ beklemede: "#E65100", hazirlaniyor: "#1565C0", kargoda: "#2E7D32", tamamlandi: "#6A1B9A", iptal: "#C62828" } as any)[sp.durum] || "#666", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
+                      <span style={{ background: (({ beklemede: "#FFF3E0", hazirlaniyor: "#E3F2FD", kargoda: "#E8F5E9", tamamlandi: "#F3E5F5", iptal: "#FFEBEE" }) as Record<string, string>)[sp.durum] || "#F5F5F5", color: (({ beklemede: "#E65100", hazirlaniyor: "#1565C0", kargoda: "#2E7D32", tamamlandi: "#6A1B9A", iptal: "#C62828" }) as Record<string, string>)[sp.durum] || "#666", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
                         {sp.durum || "beklemede"}
                       </span>
                     </div>
@@ -1285,7 +1286,7 @@ export default function Admin() {
                                     <div style={{ width: 44, height: 44, background: "white", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid #F0E8E0" }}>
                                       {resim
                                         ? <img src={resim} alt="" style={{ width: 38, height: 38, objectFit: "contain", borderRadius: 6 }}
-                                            onError={e => { (e.target as any).style.display = "none"; }} />
+                                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                                         : <span style={{ fontSize: 20 }}>🐾</span>}
                                     </div>
                                     <div>
@@ -1600,18 +1601,18 @@ export default function Admin() {
         {aktifSayfa === "ayarlar" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Site Ayarları</h1>
-            {[
-              { baslik: "💳 İyzico Ödeme", alanlar: [{ key: "iyzico_api_key", label: "API Key", tip: "text" }, { key: "iyzico_secret_key", label: "Secret Key", tip: "text" }, { key: "iyzico_base_url", label: "Base URL", tip: "text" }] },
-              { baslik: "🏦 Havale / EFT", alanlar: [{ key: "havale_banka1", label: "Banka Adı", tip: "text" }, { key: "havale_iban1", label: "IBAN", tip: "text" }, { key: "havale_ad1", label: "Hesap Sahibi", tip: "text" }] },
-              { baslik: "📞 İletişim", alanlar: [{ key: "whatsapp_no", label: "WhatsApp No", tip: "text" }, { key: "site_email", label: "E-posta", tip: "email" }] },
-            ].map((bolum, bi) => (
+            {([
+              { baslik: "💳 İyzico Ödeme", alanlar: [{ key: "iyzico_api_key", label: "API Key", tip: "text" as const }, { key: "iyzico_secret_key", label: "Secret Key", tip: "text" as const }, { key: "iyzico_base_url", label: "Base URL", tip: "text" as const }] },
+              { baslik: "🏦 Havale / EFT", alanlar: [{ key: "havale_banka1", label: "Banka Adı", tip: "text" as const }, { key: "havale_iban1", label: "IBAN", tip: "text" as const }, { key: "havale_ad1", label: "Hesap Sahibi", tip: "text" as const }] },
+              { baslik: "📞 İletişim", alanlar: [{ key: "whatsapp_no", label: "WhatsApp No", tip: "text" as const }, { key: "site_email", label: "E-posta", tip: "email" as const }] },
+            ]).map((bolum, bi) => (
               <div key={bi} style={{ background: "white", borderRadius: 18, padding: 24, marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
                 <h2 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", marginBottom: 16 }}>{bolum.baslik}</h2>
                 {bolum.alanlar.map(({ key, label, tip }) => (
                   <div key={key} style={{ marginBottom: 14 }}>
                     <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 6 }}>{label}</label>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <input type={tip as any} autoComplete="off" value={siteAyarlari[key] || ""} onChange={e => setSiteAyarlari({ ...siteAyarlari, [key]: e.target.value })} style={{ ...s, flex: 1, marginBottom: 0 }} />
+                      <input type={tip} autoComplete="off" value={siteAyarlari[key] || ""} onChange={e => setSiteAyarlari({ ...siteAyarlari, [key]: e.target.value })} style={{ ...s, flex: 1, marginBottom: 0 }} />
                       <button onClick={() => siteAyarKaydet(key, siteAyarlari[key] || "")} style={{ ...btn(), padding: "10px 16px" }}>Kaydet</button>
                     </div>
                   </div>
