@@ -242,7 +242,7 @@ export default function Admin() {
   const resimYukle = async (file: File): Promise<string | null> => {
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const dosyaAdi = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const { error } = await supabase.storage.from("products").upload(dosyaAdi, file, {
+    const { error } = await supabase.storage.from("images").upload(dosyaAdi, file, {
       cacheControl: "3600",
       upsert: false,
       contentType: file.type,
@@ -252,7 +252,7 @@ export default function Admin() {
       goster("❌ Resim yüklenemedi: " + error.message);
       return null;
     }
-    const { data } = supabase.storage.from("products").getPublicUrl(dosyaAdi);
+    const { data } = supabase.storage.from("images").getPublicUrl(dosyaAdi);
     return data.publicUrl;
   };
 
