@@ -45,6 +45,11 @@ export async function GET(req: NextRequest) {
     const stokSayisi = parseInt(u.stok ?? 0);
     const availability = stokSayisi > 0 ? "in stock" : "out of stock";
 
+    // custom_label_0 = "oncelikli" → Google Ads Shopping kampanyasinda
+    // bu etikete gore reklam grubu kurulup yuksek TBM tanimlanabilir;
+    // oncelikli urunler daha cok gosterilir.
+    const oncelikliEtiket = u.oncelikli ? `<g:custom_label_0>oncelikli</g:custom_label_0>` : "";
+
     return `  <entry>
     <g:id>${u.id}</g:id>
     <title>${xmlEscape(u.ad)}</title>
@@ -57,6 +62,7 @@ export async function GET(req: NextRequest) {
     <g:product_type>${xmlEscape(u.kategoriler?.ad || "Evcil Hayvan")}</g:product_type>
     <g:brand>${xmlEscape(u.markalar?.ad || "evemama")}</g:brand>
     <description>${xmlEscape(u.kisa_aciklama || u.ad)}</description>
+    ${oncelikliEtiket}
   </entry>`;
   }).join("\n");
 

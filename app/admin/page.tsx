@@ -295,6 +295,15 @@ export default function Admin() {
     goster(`✅ ${!aktif ? "Aktif" : "Pasif"} edildi`);
   };
 
+  // Oncelikli toggle — XML feed'inde custom_label_0="oncelikli" olarak
+  // disari verilir. Google Ads Shopping kampanyasinda bu etikete gore
+  // ayri reklam grubu + yuksek TBM tanimlanabilir.
+  const oncelikliToggle = async (id: number, oncelikli: boolean) => {
+    await supabase.from("urunler").update({ oncelikli: !oncelikli }).eq("id", id);
+    urunleriYukle(sayfaNo, aramaMetni, filtreler);
+    goster(`${!oncelikli ? "⭐ Öncelikli yapıldı" : "Öncelikli kaldırıldı"}`);
+  };
+
   const topluIslemUygula = async () => {
     if (seciliUrunler.length === 0) { goster("⚠️ Önce ürün seçin!"); return; }
     setYukleniyor(true);
@@ -920,14 +929,14 @@ export default function Admin() {
                         <input type="checkbox" onChange={e => setSeciliUrunler(e.target.checked ? urunler.map(u => u.id) : [])} checked={seciliUrunler.length === urunler.length && urunler.length > 0} />
                       </th>
                       <th style={{ padding: "10px 8px", width: 52 }}></th>
-                      {["ÜRÜN", "FİYAT", "İNDİRİMLİ", "STOK", "KATEGORİ", "MARKA", "ETİKET", "DURUM", "İŞLEM"].map(h => (
+                      {["ÜRÜN", "FİYAT", "İNDİRİMLİ", "STOK", "KATEGORİ", "MARKA", "ETİKET", "DURUM", "⭐ ÖNCELİKLİ", "İŞLEM"].map(h => (
                         <th key={h} style={{ padding: "10px 10px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#5C3D2E", opacity: 0.5, letterSpacing: 0.5, whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {urunler.length === 0 ? (
-                      <tr><td colSpan={11} style={{ textAlign: "center", padding: "48px 0", opacity: 0.4 }}>
+                      <tr><td colSpan={12} style={{ textAlign: "center", padding: "48px 0", opacity: 0.4 }}>
                         <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
                         <div>Ürün bulunamadı</div>
                         {filtrelerAktif && <button onClick={filtreleriTemizle} style={{ ...btn("#E8845A"), marginTop: 12, fontSize: 12, padding: "8px 16px" }}>Filtreleri Temizle</button>}
@@ -1011,6 +1020,12 @@ export default function Admin() {
                         <td style={{ padding: "8px 10px" }}>
                           <button onClick={() => aktifToggle(urun.id, urun.aktif)} style={{ background: urun.aktif ? "#E8F5E9" : "#FFEBEE", color: urun.aktif ? "#2E7D32" : "#C62828", border: "none", padding: "3px 10px", borderRadius: 50, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                             {urun.aktif ? "Aktif" : "Pasif"}
+                          </button>
+                        </td>
+                        <td style={{ padding: "8px 10px" }}>
+                          <button onClick={() => oncelikliToggle(urun.id, urun.oncelikli)} title={urun.oncelikli ? "Öncelikli — Google Ads'te yüksek bidle gösteriliyor" : "Öncelikli yap"}
+                            style={{ background: urun.oncelikli ? "#FFF3E0" : "#F5F5F5", color: urun.oncelikli ? "#E65100" : "#999", border: "none", padding: "3px 10px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                            {urun.oncelikli ? "⭐" : "☆"}
                           </button>
                         </td>
                         <td style={{ padding: "8px 10px" }}>
