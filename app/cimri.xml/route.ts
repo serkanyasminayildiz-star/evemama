@@ -22,11 +22,13 @@ function xmlEscape(str: string): string {
 }
 
 export async function GET(req: NextRequest) {
+  // Stoku 0 olanlari da feed'de tut → Google Merchant'ta history korunur,
+  // sadece availability "out of stock" gosterilir. Stok 0 -> feed'den
+  // cikinca Merchant 30 gun "in stock" cache'ler, yanlis bilgi yansir.
   const { data: urunler } = await supabase
     .from("urunler")
     .select("*, kategoriler(ad), markalar(ad)")
     .eq("aktif", true)
-    .gt("stok", 0)
     .gt("fiyat", 0)
     .limit(1000);
 
@@ -34,6 +36,8 @@ export async function GET(req: NextRequest) {
     const normalFiyat = parseFloat(u.fiyat || 0);
     const indirimli = parseFloat(u.indirimli_fiyat || 0);
     const hasDiscount = indirimli > 0 && indirimli < normalFiyat;
+    const stokSayisi = parseInt(u.stok ?? 0);
+    const availability = stokSayisi > 0 ? "in stock" : "out of stock";
 
     if (normalFiyat <= 0) return "";
 
@@ -44,6 +48,21 @@ export async function GET(req: NextRequest) {
     const kategori = xmlEscape(u.kategoriler?.ad || "Evcil Hayvan");
     const marka = xmlEscape(u.markalar?.ad || "evemama");
 
+    // Oncelikli isaretli urunler icin Google Ads Shopping kampanyasinda
+    // ayri reklam grubu + yuksek TBM tanimlanmasi icin custom_label_0.
+    const oncelikliEtiket = u.oncelikli ? `<g:custom_label_0>oncelikli</g:custom_label_0>` : "";
+
+    // Ek resimler (max 5 ek) — feed'i sisirmemek icin sadece dolu URL'leri.
+    const ekResimler = (Array.isArray(u.resimler) ? u.resimler : [])
+      .filter((url: string) => url && url.trim().length > 0)
+      .slice(0, 5)
+      .map((url: string) => `<g:additional_image_link>${xmlEscape(url)}</g:additional_image_link>`)
+      .join("\n      ");
+
+    // GTIN — varsa Shopping ranking'i artirir. Yoksa hicbir sey emit etme
+    // (identifier_exists=no marka urunler icin sinirli statusune dusurur).
+    const gtinEtiket = u.gtin?.trim() ? `<g:gtin>${xmlEscape(u.gtin.trim())}</g:gtin>` : "";
+
     return `    <item>
       <g:id>${u.id}</g:id>
       <title>${title}</title>
@@ -51,11 +70,14 @@ export async function GET(req: NextRequest) {
       <description>${description}</description>
       <g:price>${normalFiyat.toFixed(2)} TRY</g:price>
       ${hasDiscount ? `<g:sale_price>${indirimli.toFixed(2)} TRY</g:sale_price>` : ""}
-      <g:availability>in stock</g:availability>
+      <g:availability>${availability}</g:availability>
       <g:condition>new</g:condition>
       <g:image_link>${imageUrl}</g:image_link>
+      ${ekResimler}
       <g:product_type>${kategori}</g:product_type>
       <g:brand>${marka}</g:brand>
+      ${gtinEtiket}
+      ${oncelikliEtiket}
     </item>`;
   }).filter(Boolean).join("\n");
 
