@@ -26,6 +26,47 @@ function duzeltResim(url: string): string {
   return url.replace("https://evemama.net", "https://www.sepetmama.com");
 }
 
+// Aciklama zenginlestirme — cimri.xml ile ayni mantik. Mevcut aciklama
+// 120+ karakter ise dokunmaz; aksi halde yapisal sablonla doldurur.
+function aciklamaZenginlestir(u: any): string {
+  const mevcut = (u.kisa_aciklama || "").trim();
+  const ad = (u.ad || "").trim();
+  const marka = (u.markalar?.ad || "").trim();
+  const kategori = (u.kategoriler?.ad || "").trim();
+
+  if (mevcut.length >= 120 && mevcut.toLowerCase() !== ad.toLowerCase()) {
+    return mevcut;
+  }
+
+  const parcalar: string[] = [ad];
+  if (marka && kategori) {
+    parcalar.push(`${marka} markasinin ${kategori} kategorisinde yer alan bir ürünüdür.`);
+  } else if (marka) {
+    parcalar.push(`${marka} markasinin ürünüdür.`);
+  } else if (kategori) {
+    parcalar.push(`${kategori} kategorisinde bir üründür.`);
+  }
+
+  if (mevcut && mevcut.toLowerCase() !== ad.toLowerCase()) {
+    parcalar.push(mevcut);
+  }
+
+  const adLow = ad.toLowerCase();
+  const ozellikler: string[] = [];
+  if (/yavru|kitten|puppy/.test(adLow)) ozellikler.push("yavru evcil hayvanlar için");
+  if (/yetiskin|adult/.test(adLow)) ozellikler.push("yetişkin evcil hayvanlar için");
+  if (/yasli|senior|mature/.test(adLow)) ozellikler.push("yaşlı evcil hayvanlar için");
+  if (/tahil ?siz|grain ?free/.test(adLow)) ozellikler.push("tahılsız formül");
+  if (/kisir|sterilised/.test(adLow)) ozellikler.push("kısırlaştırılmış hayvanlar için");
+  if (/hipoaler|hypoallergenic/.test(adLow)) ozellikler.push("hipoalerjenik");
+  if (/ilac|sa[gğ]l[iı]k|tedavi|veterinary/.test(adLow)) ozellikler.push("sağlık desteği");
+  if (ozellikler.length > 0) {
+    parcalar.push(`Özellikler: ${ozellikler.join(", ")}.`);
+  }
+
+  return parcalar.join(" ").trim().slice(0, 1500);
+}
+
 // Google Shopping basliklarini zenginlestirir: marka basta + kategori sonda.
 // Mevcut adda zaten geciyorsa tekrarlamaz (kelime smiari case-insensitive).
 // Cikti max 150 karakter (Google limit) — 70 karakter sonrasi kullanici
@@ -112,7 +153,7 @@ export async function GET(req: NextRequest) {
     <g:product_type>${xmlEscape(u.kategoriler?.ad || "Evcil Hayvan")}</g:product_type>
     <g:brand>${xmlEscape(u.markalar?.ad || "evemama")}</g:brand>
     ${gtinEtiket}
-    <description>${xmlEscape(u.kisa_aciklama || u.ad)}</description>
+    <description>${xmlEscape(aciklamaZenginlestir(u))}</description>
     ${oncelikliEtiket}
   </entry>`;
   }).join("\n");

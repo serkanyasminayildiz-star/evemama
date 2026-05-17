@@ -21,6 +21,60 @@ function xmlEscape(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
+// Aciklama zenginlestirme — Google Shopping description alani icin yapisal
+// metin uretir. Promosyon ifadelerinden kaciniyor (Google penalty), doga ve
+// yapisal bilgi (marka + kategori + ozellikler) ekliyor.
+//
+// Strateji:
+// 1) Mevcut aciklama 120+ karakter ise dokunmuyoruz (kullanici elden
+//    yazmis, kaliteli).
+// 2) Aksi halde: urun adi + "marka X kategorisinde yer alan ürünüdür" +
+//    urun adindan cikartilan ozellikler (yas, tahilsiz, kisir vs.).
+function aciklamaZenginlestir(u: any): string {
+  const mevcut = (u.kisa_aciklama || "").trim();
+  const ad = (u.ad || "").trim();
+  const marka = (u.markalar?.ad || "").trim();
+  const kategori = (u.kategoriler?.ad || "").trim();
+
+  // Mevcut aciklama dolu ve adi tekrar etmiyorsa onu kullan
+  if (mevcut.length >= 120 && mevcut.toLowerCase() !== ad.toLowerCase()) {
+    return mevcut;
+  }
+
+  const parcalar: string[] = [ad];
+
+  // Marka + kategori cumlesi (dogal Turkce)
+  if (marka && kategori) {
+    parcalar.push(`${marka} markasinin ${kategori} kategorisinde yer alan bir ürünüdür.`);
+  } else if (marka) {
+    parcalar.push(`${marka} markasinin ürünüdür.`);
+  } else if (kategori) {
+    parcalar.push(`${kategori} kategorisinde bir üründür.`);
+  }
+
+  // Mevcut kisa aciklama varsa (kisa ama bilgili)
+  if (mevcut && mevcut.toLowerCase() !== ad.toLowerCase()) {
+    parcalar.push(mevcut);
+  }
+
+  // Urun adindan cikarilabilen ozellikler — Shopping arama eslesmesi icin
+  const adLow = ad.toLowerCase();
+  const ozellikler: string[] = [];
+  if (/yavru|kitten|puppy/.test(adLow)) ozellikler.push("yavru evcil hayvanlar için");
+  if (/yetiskin|adult/.test(adLow)) ozellikler.push("yetişkin evcil hayvanlar için");
+  if (/yasli|senior|mature/.test(adLow)) ozellikler.push("yaşlı evcil hayvanlar için");
+  if (/tahil ?siz|grain ?free/.test(adLow)) ozellikler.push("tahılsız formül");
+  if (/kisir|sterilised/.test(adLow)) ozellikler.push("kısırlaştırılmış hayvanlar için");
+  if (/hipoaler|hypoallergenic/.test(adLow)) ozellikler.push("hipoalerjenik");
+  if (/ilac|sa[gğ]l[iı]k|tedavi|veterinary/.test(adLow)) ozellikler.push("sağlık desteği");
+  if (ozellikler.length > 0) {
+    parcalar.push(`Özellikler: ${ozellikler.join(", ")}.`);
+  }
+
+  // Google description limit 5000 ama 1000 cevresi optimal
+  return parcalar.join(" ").trim().slice(0, 1500);
+}
+
 export async function GET(req: NextRequest) {
   // Stoku 0 olanlari da feed'de tut → Google Merchant'ta history korunur,
   // sadece availability "out of stock" gosterilir. Stok 0 -> feed'den
@@ -44,7 +98,7 @@ export async function GET(req: NextRequest) {
     const imageUrl = xmlEscape(u.resim_url || "");
     const slug = xmlEscape(u.slug || String(u.id));
     const title = xmlEscape(u.ad || "");
-    const description = xmlEscape(u.kisa_aciklama || u.ad || "");
+    const description = xmlEscape(aciklamaZenginlestir(u));
     const kategori = xmlEscape(u.kategoriler?.ad || "Evcil Hayvan");
     const marka = xmlEscape(u.markalar?.ad || "evemama");
 
