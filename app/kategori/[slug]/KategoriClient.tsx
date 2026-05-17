@@ -33,8 +33,9 @@ export default function KategoriClient() {
       try {
         // .single() yerine .limit(1) — DB'de duplicate slug varsa
         // .single() exception firlatir ve sayfa "yuklenemedi" hatasi verir.
+        // NOT: kategoriler tablosunda 'aciklama' kolonu yok — SELECT'ten cikarildi.
         const { data: katList, error: katErr } = await supabase.from("kategoriler")
-          .select("id, ad, slug, ust_kategori_id, aciklama, aktif").eq("slug", slug).limit(1);
+          .select("id, ad, slug, ust_kategori_id, aktif").eq("slug", slug).limit(1);
         if (katErr) throw katErr;
         const kat = katList?.[0];
         if (!kat) { setYukleniyor(false); return; }

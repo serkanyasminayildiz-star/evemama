@@ -12,15 +12,16 @@ import KategoriClient from "./KategoriClient";
 
 export const dynamic = "force-dynamic";
 
-type Kategori = { id: number | string; ad: string; slug: string; aciklama?: string | null; ust_kategori_id?: number | string | null };
+type Kategori = { id: number | string; ad: string; slug: string; ust_kategori_id?: number | string | null };
 type Urun = { id: number | string; ad: string; slug: string; fiyat: number; indirimli_fiyat?: number | null; resim_url?: string | null; stok?: number | null };
 
 async function kategoriGetir(slug: string): Promise<Kategori | null> {
   // .single() yerine .limit(1) — duplicate slug veya RLS hatasi durumunda
   // sayfa 404'e dusmesin, client component fetch'i devraisin.
+  // NOT: kategoriler tablosunda 'aciklama' kolonu yok — SELECT'ten cikarildi.
   const { data, error } = await supabase
     .from("kategoriler")
-    .select("id, ad, slug, aciklama, ust_kategori_id")
+    .select("id, ad, slug, ust_kategori_id")
     .eq("slug", slug)
     .limit(1);
   if (error) {
@@ -63,7 +64,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!kat) {
     return { title: "Kategori bulunamadı", robots: { index: false, follow: false } };
   }
-  const desc = kat.aciklama || `${kat.ad} kategorisindeki tüm ürünler — kedi, köpek, evcil hayvan ürünleri. evemama.net'te uygun fiyat ve hızlı kargo.`;
+  const desc = `${kat.ad} kategorisindeki tüm ürünler — kedi, köpek, evcil hayvan ürünleri. evemama.net'te uygun fiyat ve hızlı kargo.`;
   return {
     title: `${kat.ad}`,
     description: desc,
