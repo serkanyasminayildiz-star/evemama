@@ -31,9 +31,12 @@ export default function KategoriClient() {
 
     const veriYukle = async () => {
       try {
-        const { data: kat, error: katErr } = await supabase.from("kategoriler")
-          .select("id, ad, slug, ust_kategori_id, aciklama, aktif").eq("slug", slug).single();
+        // .single() yerine .limit(1) — DB'de duplicate slug varsa
+        // .single() exception firlatir ve sayfa "yuklenemedi" hatasi verir.
+        const { data: katList, error: katErr } = await supabase.from("kategoriler")
+          .select("id, ad, slug, ust_kategori_id, aciklama, aktif").eq("slug", slug).limit(1);
         if (katErr) throw katErr;
+        const kat = katList?.[0];
         if (!kat) { setYukleniyor(false); return; }
         setKategori(kat);
 
