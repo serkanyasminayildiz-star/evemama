@@ -89,9 +89,11 @@ export async function GET(req: NextRequest) {
       .map((url: string) => `<g:additional_image_link>${xmlEscape(duzeltResim(url))}</g:additional_image_link>`)
       .join("\n    ");
 
-    // GTIN — Google Shopping'in onay sürecinde çok yardımcı olur (yoksa
-    // identifier_exists=no demek gerek ama bu Shopping ranking'i düşürür).
-    const gtinEtiket = u.gtin?.trim() ? `<g:gtin>${xmlEscape(u.gtin.trim())}</g:gtin>` : `<g:identifier_exists>no</g:identifier_exists>`;
+    // GTIN — varsa ekle. Yoksa identifier_exists=no EMIT ETME — bu Google'a
+    // "bu urun gercekten markasiz/handmade" der ve marka urunler icin
+    // sinirli statusune dusurur. Sadece etiketi bos birakmak daha guvenli:
+    // Google "missing recommended" diye uyari verir ama Onayli kalir.
+    const gtinEtiket = u.gtin?.trim() ? `<g:gtin>${xmlEscape(u.gtin.trim())}</g:gtin>` : "";
 
     // Baslik zenginlestirme: marka basa + kategori sona (yoksa) — Shopping
     // arama eslesmesini artirir, ozellikle Turkce uzun-kuyruk sorgularda.
