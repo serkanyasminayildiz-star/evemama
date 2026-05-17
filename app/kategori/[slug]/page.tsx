@@ -7,7 +7,6 @@
 // burada VERIYI BAGIMSIZ olarak ayrica cekiyor — client kendi fetch'ini
 // yapmaya devam ediyor; regression yok.
 
-import { notFound } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import KategoriClient from "./KategoriClient";
 
@@ -17,12 +16,18 @@ type Kategori = { id: number | string; ad: string; slug: string; aciklama?: stri
 type Urun = { id: number | string; ad: string; slug: string; fiyat: number; indirimli_fiyat?: number | null; resim_url?: string | null; stok?: number | null };
 
 async function kategoriGetir(slug: string): Promise<Kategori | null> {
-  const { data } = await supabase
+  // .single() yerine .limit(1) — duplicate slug veya RLS hatasi durumunda
+  // sayfa 404'e dusmesin, client component fetch'i devraisin.
+  const { data, error } = await supabase
     .from("kategoriler")
     .select("id, ad, slug, aciklama, ust_kategori_id")
     .eq("slug", slug)
-    .single();
-  return (data as unknown as Kategori) || null;
+    .limit(1);
+  if (error) {
+    console.error("[kategoriGetir] supabase error:", slug, error);
+    return null;
+  }
+  return (data?.[0] as unknown as Kategori) || null;
 }
 
 // Kategori + tum alt kategorilerin (3 seviyeye kadar) urunlerini doner.
@@ -75,7 +80,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function KategoriPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const kat = await kategoriGetir(slug);
-  if (!kat) notFound();
+
+  // Eger kategori server-side bulunamazsa notFound() yerine client'a
+  // render et — client kendi fetch'iyle sayfayi yukleyecek. notFound()
+  // cok agresif: gercekten yoksa bile client tarafi calismaya devam etmeli.
+  if (!kat) {
+    return <KategoriClient />;
+  }
 
   const urunler = await altKategorilerVeUrunler(kat.id);
 
