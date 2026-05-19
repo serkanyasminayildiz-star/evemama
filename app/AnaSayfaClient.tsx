@@ -130,12 +130,12 @@ export default function AnaSayfaClient() {
     // Mamalari" grubunda goruntulenir).
     type Grup = { ad: string; slug: string; urunler: any[]; sortKey: number };
     const gruplar: Record<string, Grup> = {
-      "kedi-mama":   { ad: "Kedi Maması",         slug: findKatSlug(k => k.slug === "kedi") || "kedi",                  sortKey: 0, urunler: [] },
-      "kedi-yavru":  { ad: "Yavru Kedi Mamaları", slug: findKatSlug(k => /yavru/.test(k.slug) && /kedi/.test(k.slug)) || "urunler", sortKey: 1, urunler: [] },
-      "kedi-yasli":  { ad: "Yaşlı Kedi Mamaları", slug: findKatSlug(k => /yasli|yaşlı/.test(k.slug + " " + k.ad.toLowerCase()) && /kedi/.test(k.slug + " " + k.ad.toLowerCase())) || "urunler", sortKey: 2, urunler: [] },
-      "kopek-mama":  { ad: "Köpek Maması",        slug: findKatSlug(k => k.slug === "kopek") || "kopek",                sortKey: 3, urunler: [] },
-      "kopek-yavru": { ad: "Yavru Köpek Mamaları",slug: findKatSlug(k => /yavru/.test(k.slug) && /kopek/.test(k.slug)) || "urunler", sortKey: 4, urunler: [] },
-      "kopek-yasli": { ad: "Yaşlı Köpek Mamaları",slug: findKatSlug(k => /yasli|yaşlı/.test(k.slug + " " + k.ad.toLowerCase()) && /kopek/.test(k.slug + " " + k.ad.toLowerCase())) || "urunler", sortKey: 5, urunler: [] },
+      "kedi-mama":     { ad: "Kedi Maması",         slug: findKatSlug(k => k.slug === "kedi") || "kedi",                            sortKey: 0, urunler: [] },
+      "kedi-yavru":    { ad: "Yavru Kedi Mamaları", slug: findKatSlug(k => /yavru/.test(k.slug) && /kedi/.test(k.slug)) || "urunler", sortKey: 1, urunler: [] },
+      "kedi-konserve": { ad: "Yaş Kedi Mamaları",   slug: findKatSlug(k => /konserve/.test(k.slug) && /kedi/.test(k.slug)) || "urunler", sortKey: 2, urunler: [] },
+      "kopek-mama":    { ad: "Köpek Maması",        slug: findKatSlug(k => k.slug === "kopek") || "kopek",                          sortKey: 3, urunler: [] },
+      "kopek-yavru":   { ad: "Yavru Köpek Mamaları",slug: findKatSlug(k => /yavru/.test(k.slug) && /kopek/.test(k.slug)) || "urunler", sortKey: 4, urunler: [] },
+      "kopek-konserve":{ ad: "Yaş Köpek Mamaları",  slug: findKatSlug(k => /konserve/.test(k.slug) && /kopek/.test(k.slug)) || "urunler", sortKey: 5, urunler: [] },
     };
 
     oneCikanlar.forEach(u => {
@@ -145,9 +145,10 @@ export default function AnaSayfaClient() {
 
       const isKedi = /\bkedi\b|kitten/.test(txt) && !/kopek|köpek/.test(txt);
       const isKopek = /\bkopek\b|köpek|puppy/.test(txt) && !/\bkedi\b/.test(txt);
-      const isMama = /mama|food|biskuvi|odul|treat/.test(txt);
+      const isMama = /mama|food|biskuvi|odul|treat|konserve/.test(txt);
       const isYavru = /yavru|kitten|puppy/.test(txt);
-      const isYasli = /yasli|yaşlı|senior|mature|\+\s*7|\+\s*11/.test(txt);
+      // "Yaş" = konserve / wet food. Slug'da "konserve" var veya ad'da "yaş mama"/"wet" geciyor.
+      const isKonserve = /konserve|wet|pate|patê|sos|jelly|gravy|sıvı|pouch/.test(txt);
 
       if (!isMama) return; // Sadece mama urunleri (aksesuar, kum vb. degil)
 
@@ -158,11 +159,11 @@ export default function AnaSayfaClient() {
       if (isKedi) {
         ekle("kedi-mama");
         if (isYavru) ekle("kedi-yavru");
-        if (isYasli) ekle("kedi-yasli");
+        if (isKonserve) ekle("kedi-konserve");
       } else if (isKopek) {
         ekle("kopek-mama");
         if (isYavru) ekle("kopek-yavru");
-        if (isYasli) ekle("kopek-yasli");
+        if (isKonserve) ekle("kopek-konserve");
       }
     });
 
