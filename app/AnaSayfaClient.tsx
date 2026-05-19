@@ -58,7 +58,10 @@ export default function AnaSayfaClient() {
 
     supabase.from("urunler")
       .select("*, markalar(ad), kategoriler(id, ad, slug)")
-      .neq("aktif", false).gt("stok", 0).limit(150)
+      // Limit yuksek tutulur ki TUM aktif+stoktaki urunler dataset'e gelsin;
+      // grouplama (kategori basina max 6) memory'de yapilir. ~800 urun
+      // toplam ~500 KB — modern cihazlarda sorun degil.
+      .neq("aktif", false).gt("stok", 0).limit(1000)
       .then(({ data, error }) => {
         if (error) {
           console.error("[home] urunler fetch:", error);
