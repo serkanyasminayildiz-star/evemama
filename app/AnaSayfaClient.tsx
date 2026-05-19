@@ -440,7 +440,10 @@ export default function AnaSayfaClient() {
           <a href="/urunler" style={{ fontSize: 14, fontWeight: 600, color: "#E8845A", textDecoration: "none" }}>Tümünü gör →</a>
         </div>
         <div className="kat-grid">
-          {kategoriler.map((kat, i) => {
+          {kategoriler
+            // "Kiyafet" kategorilerini ana sayfa carousel'inden gizle (kullanici talebi)
+            .filter(kat => !/kiyafet|kıyafet|giysi/i.test(kat.slug + " " + kat.ad))
+            .map((kat, i) => {
             const g = getKatGorsel(kat.slug);
             return (
               <a key={i} href={`/kategori/${kat.slug}`} className="kat-card">
