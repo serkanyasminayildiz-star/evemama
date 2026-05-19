@@ -58,7 +58,7 @@ export default function AnaSayfaClient() {
 
     supabase.from("urunler")
       .select("*, markalar(ad), kategoriler(id, ad, slug)")
-      .neq("aktif", false).gt("stok", 0).limit(80)
+      .neq("aktif", false).gt("stok", 0).limit(150)
       .then(({ data, error }) => {
         if (error) {
           console.error("[home] urunler fetch:", error);
@@ -103,7 +103,7 @@ export default function AnaSayfaClient() {
       const kat = u.kategoriler;
       if (!kat) return;
       if (!gruplar[kat.slug]) gruplar[kat.slug] = { ad: kat.ad, slug: kat.slug, urunler: [] };
-      if (gruplar[kat.slug].urunler.length < 4) gruplar[kat.slug].urunler.push(u);
+      if (gruplar[kat.slug].urunler.length < 6) gruplar[kat.slug].urunler.push(u);
     });
     return Object.values(gruplar)
       .filter(g => g.urunler.length >= 2)
@@ -175,7 +175,23 @@ export default function AnaSayfaClient() {
         .kat-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(92,61,46,0.15); }
         .kat-card-img { height: 100px; display: flex; align-items: center; justify-content: center; }
         .kat-card-label { padding: 10px 8px 12px; text-align: center; background: white; }
-        .urun-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+        /* Yatay kaydırılır urun carousel — desktop'ta 4 kart gorunur,
+           mobilde 2 kart. Diger urunler kaydırma ile gorunur. */
+        .urun-grid {
+          display: flex; gap: 16px;
+          overflow-x: auto; overflow-y: hidden;
+          scroll-snap-type: x proximity; scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 10px;
+          scrollbar-width: thin; scrollbar-color: #E8D5B7 transparent;
+        }
+        .urun-grid::-webkit-scrollbar { height: 6px; }
+        .urun-grid::-webkit-scrollbar-track { background: transparent; }
+        .urun-grid::-webkit-scrollbar-thumb { background: #E8D5B7; border-radius: 50px; }
+        .urun-grid > div {
+          flex: 0 0 calc((100% - 48px) / 4);
+          scroll-snap-align: start;
+        }
         .ara-btn-active { background: #E8845A; color: white; border: none; border-radius: 10px; padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: transform .1s, background .2s; }
         .ara-btn-active:hover { background: #5C3D2E; }
         .ara-btn-active:active { transform: scale(0.94); }
@@ -210,7 +226,8 @@ export default function AnaSayfaClient() {
           .kat-card-img { height: 72px !important; }
           .sec-title { font-size: 20px !important; }
           .urun-section { padding: 0 14px !important; }
-          .urun-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+          .urun-grid { gap: 10px !important; }
+          .urun-grid > div { flex: 0 0 calc((100% - 10px) / 2) !important; }
           .urun-img { height: 130px !important; }
           .trust-section { padding: 26px 16px !important; }
           .trust-grid { grid-template-columns: repeat(2,1fr) !important; gap: 16px 12px !important; }
