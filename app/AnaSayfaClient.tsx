@@ -9,6 +9,9 @@ export default function AnaSayfaClient() {
   const [oneCikanlar, setOneCikanlar] = useState<any[]>([]);
   const [kategoriler, setKategoriler] = useState<any[]>([]);
   const [altKategoriler, setAltKategoriler] = useState<{ [key: string]: any[] }>({});
+  // Tum kategoriler (root + alt seviyelerin hepsi) — urun gruplama icin
+  // her urunun kategori_id'sini root kategoriye kadar takip etmek gerekiyor.
+  const [tumKategoriler, setTumKategoriler] = useState<any[]>([]);
   const [acikMenu, setAcikMenu] = useState<string | null>(null);
   const [mobMenuAcik, setMobMenuAcik] = useState(false);
   const [aktifSlide, setAktifSlide] = useState(0);
@@ -81,6 +84,16 @@ export default function AnaSayfaClient() {
         }
         setKategoriler(data || []);
       });
+
+    // Tum kategoriler — parent lookup icin (urun gruplamada leaf -> root)
+    supabase.from("kategoriler").select("id, ad, slug, ust_kategori_id")
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[home] tumKategoriler fetch:", error);
+          return;
+        }
+        setTumKategoriler(data || []);
+      });
   }, []);
 
   useEffect(() => {
@@ -100,13 +113,29 @@ export default function AnaSayfaClient() {
     return () => clearInterval(slideInterval.current);
   }, []);
 
+  // Bir leaf kategori id'sinden root (ust_kategori_id=null) kategoriye git
+  const getRootKategori = (leafId: number): any | null => {
+    if (!tumKategoriler.length) return null;
+    let cat = tumKategoriler.find(k => k.id === leafId);
+    let guvenlik = 0; // sonsuz dongu koruyucu
+    while (cat && cat.ust_kategori_id && guvenlik < 10) {
+      cat = tumKategoriler.find(k => k.id === cat.ust_kategori_id);
+      guvenlik++;
+    }
+    return cat || null;
+  };
+
   const urunGruplari = (() => {
-    const gruplar: { [slug: string]: { ad: string; slug: string; urunler: any[] } } = {};
+    if (!tumKategoriler.length) return [];
+    // ROOT kategoriye gore grupluyoruz — orn. tum yavru/yetiskin/yasli kedi
+    // mamalari tek bir "Kedi Maması" grubuna dusulur. Boyle olunca her ana
+    // kategoride bolca urun olur, 6+ kart kaydirilarak gosterilir.
+    const gruplar: { [id: number]: { ad: string; slug: string; urunler: any[] } } = {};
     oneCikanlar.forEach(u => {
-      const kat = u.kategoriler;
-      if (!kat) return;
-      if (!gruplar[kat.slug]) gruplar[kat.slug] = { ad: kat.ad, slug: kat.slug, urunler: [] };
-      if (gruplar[kat.slug].urunler.length < 6) gruplar[kat.slug].urunler.push(u);
+      const root = getRootKategori(u.kategori_id);
+      if (!root) return;
+      if (!gruplar[root.id]) gruplar[root.id] = { ad: root.ad, slug: root.slug, urunler: [] };
+      if (gruplar[root.id].urunler.length < 15) gruplar[root.id].urunler.push(u);
     });
     return Object.values(gruplar)
       .filter(g => g.urunler.length >= 2)
@@ -114,8 +143,8 @@ export default function AnaSayfaClient() {
         const oncelik = (slug: string) => {
           if (slug.includes("kedi") && slug.includes("mama")) return 0;
           if (slug.includes("kopek") && slug.includes("mama")) return 1;
-          if (slug.includes("kedi")) return 2;
-          if (slug.includes("kopek")) return 3;
+          if (slug === "kedi" || slug.includes("kedi")) return 2;
+          if (slug === "kopek" || slug.includes("kopek")) return 3;
           return 99;
         };
         const fark = oncelik(a.slug) - oncelik(b.slug);
@@ -192,7 +221,8 @@ export default function AnaSayfaClient() {
         .urun-grid::-webkit-scrollbar-track { background: transparent; }
         .urun-grid::-webkit-scrollbar-thumb { background: #E8D5B7; border-radius: 50px; }
         .urun-grid > div {
-          flex: 0 0 calc((100% - 48px) / 4);
+          /* 6 kart gorunur: 6 kart + 5x16px gap = 100% - 80px / 6 */
+          flex: 0 0 calc((100% - 80px) / 6);
           scroll-snap-align: start;
         }
         .ara-btn-active { background: #E8845A; color: white; border: none; border-radius: 10px; padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: transform .1s, background .2s; }
