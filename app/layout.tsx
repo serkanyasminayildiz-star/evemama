@@ -75,7 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}</style>
         <a
           className="wa-fab"
-          href="https://wa.me/905520908001?text=Merhaba%2C%20evemama.net%27ten%20bir%20sorum%20var."
+          href="https://wa.me/905347488001?text=Merhaba%2C%20evemama.net%27ten%20bir%20sorum%20var."
           target="_blank"
           rel="noopener noreferrer"
           aria-label="WhatsApp Destek"
