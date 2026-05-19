@@ -593,7 +593,7 @@ export default function AnaSayfaClient() {
                 <strong style={{ opacity: 0.7, fontSize: 11 }}>TNB Pet Mamaları ve Aksesuarları İthalat İhracat San. ve Tic. Ltd. Şti.</strong><br />
                 Vergi No: 9381208717 — Kadifekale V.D.<br />
                 Atilla Mah. 349 Sok. No:55/A Konak / İzmir<br />
-                📞 0534 748 80 01<br />
+                📞 0552 090 80 01<br />
                 ✉️ info@evemama.net
               </p>
             </div>
