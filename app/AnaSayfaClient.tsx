@@ -516,7 +516,14 @@ export default function AnaSayfaClient() {
                   </div>
 
                   <div className="urun-grid">
-                    {grup.urunler.map((urun, i) => (
+                    {grup.urunler.map((urun, i) => {
+                      // Indirim hesaplama — indirimli_fiyat dolu ve normalden kucukse indirim var.
+                      const normalFiyat = parseFloat(urun.fiyat) || 0;
+                      const indirimliFiyat = parseFloat(urun.indirimli_fiyat) || 0;
+                      const indirimVar = indirimliFiyat > 0 && indirimliFiyat < normalFiyat;
+                      const indirimOrani = indirimVar ? Math.round((1 - indirimliFiyat / normalFiyat) * 100) : 0;
+                      const gosterFiyat = indirimVar ? indirimliFiyat : normalFiyat;
+                      return (
                       <div key={i} style={{ background: "white", borderRadius: 20, overflow: "hidden", transition: "transform .2s, box-shadow .2s" }}
                         onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 16px 40px rgba(92,61,46,0.1)"; }}
                         onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
@@ -525,6 +532,12 @@ export default function AnaSayfaClient() {
                             {urun.resim_url
                               ? <Image src={urun.resim_url} alt={urun.ad} fill sizes="(max-width:768px) 50vw, (max-width:1200px) 25vw, 280px" style={{ objectFit: "contain", padding: 12, mixBlendMode: "multiply" }} />
                               : <div style={{ fontSize: 48, opacity: 0.15 }}>🐾</div>}
+                            {/* Indirim rozeti — sag ust kose, kirmizi yuvarlak */}
+                            {indirimVar && (
+                              <span style={{ position: "absolute", top: 8, right: 8, background: "#C62828", color: "white", fontSize: 12, fontWeight: 800, padding: "5px 9px", borderRadius: 50, boxShadow: "0 2px 8px rgba(198,40,40,0.3)" }}>
+                                %{indirimOrani}
+                              </span>
+                            )}
                             {urun.stok <= 5 && urun.stok > 0 && (
                               <span style={{ position: "absolute", top: 8, left: 8, background: "#E8845A", color: "white", fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 50 }}>Son {urun.stok}!</span>
                             )}
@@ -535,14 +548,24 @@ export default function AnaSayfaClient() {
                           </div>
                         </a>
                         <div style={{ padding: "0 14px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontFamily: "Georgia,serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E" }}>₺{(urun.indirimli_fiyat || urun.fiyat).toFixed(2)}</span>
+                          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
+                            {indirimVar && (
+                              <span style={{ fontSize: 11, color: "#999", textDecoration: "line-through", marginBottom: 2 }}>
+                                ₺{normalFiyat.toFixed(2)}
+                              </span>
+                            )}
+                            <span style={{ fontFamily: "Georgia,serif", fontSize: 16, fontWeight: 700, color: indirimVar ? "#C62828" : "#5C3D2E" }}>
+                              ₺{gosterFiyat.toFixed(2)}
+                            </span>
+                          </div>
                           <button onClick={() => handleEkle(urun)}
                             style={{ background: eklendi === urun.id ? "#8BAF8E" : "#E8845A", color: "white", border: "none", borderRadius: 50, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all .2s" }}>
                             {eklendi === urun.id ? "✅" : "+ Sepet"}
                           </button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {ki < urunGruplari.length - 1 && (
