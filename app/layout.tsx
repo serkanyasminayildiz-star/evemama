@@ -42,6 +42,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             gtag('config', '${GOOGLE_ADS_ID}');
           `}
         </Script>
+        {/* iyzico Alıcı Koruma rozeti — sayfanin sol altinda "Alici Koruma"
+            badge'i gosterir. Iyzico ile guvenli odeme yapildigini belirten
+            guven sinyali; cevirim oranina pozitif etkisi olur.
+            iyz config script'inin buyer-protection.js'ten ONCE yuklenmesi
+            gerekiyor — beforeInteractive bunu garanti eder. */}
+        <Script id="iyzico-config" strategy="beforeInteractive">
+          {`window.iyz = { token: '94870e88-8639-4167-8044-2defb3b45ded', position: 'bottomLeft', ideaSoft: false, pwi: true };`}
+        </Script>
+        <Script
+          src="https://static.iyzipay.com/buyer-protection/buyer-protection.js"
+          strategy="afterInteractive"
+        />
         <CartProvider>{children}</CartProvider>
       </body>
     </html>
