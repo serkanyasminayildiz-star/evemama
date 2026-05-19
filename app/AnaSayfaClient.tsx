@@ -113,44 +113,62 @@ export default function AnaSayfaClient() {
     return () => clearInterval(slideInterval.current);
   }, []);
 
-  // Bir leaf kategori id'sinden root (ust_kategori_id=null) kategoriye git
-  const getRootKategori = (leafId: number): any | null => {
-    if (!tumKategoriler.length) return null;
-    let cat = tumKategoriler.find(k => k.id === leafId);
-    let guvenlik = 0; // sonsuz dongu koruyucu
-    while (cat && cat.ust_kategori_id && guvenlik < 10) {
-      cat = tumKategoriler.find(k => k.id === cat.ust_kategori_id);
-      guvenlik++;
-    }
-    return cat || null;
+  // Verilen filtre fonksiyonuna uyan ilk kategorinin slug'ini doner.
+  // "Tümünü Gör" linkleri icin kullanilir; eslesme yoksa /urunler'e duser.
+  const findKatSlug = (filterFn: (k: any) => boolean): string => {
+    const match = tumKategoriler.find(filterFn);
+    return match ? match.slug : "";
   };
 
   const urunGruplari = (() => {
-    if (!tumKategoriler.length) return [];
-    // ROOT kategoriye gore grupluyoruz — orn. tum yavru/yetiskin/yasli kedi
-    // mamalari tek bir "Kedi Maması" grubuna dusulur. Boyle olunca her ana
-    // kategoride bolca urun olur, 6+ kart kaydirilarak gosterilir.
-    const gruplar: { [id: number]: { ad: string; slug: string; urunler: any[] } } = {};
+    if (!tumKategoriler.length || !oneCikanlar.length) return [];
+
+    // 6 sabit grup: Kedi Mamasi + Yavru/Yasli; Kopek Mamasi + Yavru/Yasli.
+    // Her urun slug ve isminde gecen kelimelere gore TAG'lenir, ilgili
+    // gruplara eklenir. Bir urun birden fazla gruba girebilir (ornegin
+    // "Yavru Kedi Mamasi" hem ana "Kedi Mamasi"nda hem ozel "Yavru Kedi
+    // Mamalari" grubunda goruntulenir).
+    type Grup = { ad: string; slug: string; urunler: any[]; sortKey: number };
+    const gruplar: Record<string, Grup> = {
+      "kedi-mama":   { ad: "Kedi Maması",         slug: findKatSlug(k => k.slug === "kedi") || "kedi",                  sortKey: 0, urunler: [] },
+      "kedi-yavru":  { ad: "Yavru Kedi Mamaları", slug: findKatSlug(k => /yavru/.test(k.slug) && /kedi/.test(k.slug)) || "urunler", sortKey: 1, urunler: [] },
+      "kedi-yasli":  { ad: "Yaşlı Kedi Mamaları", slug: findKatSlug(k => /yasli|yaşlı/.test(k.slug + " " + k.ad.toLowerCase()) && /kedi/.test(k.slug + " " + k.ad.toLowerCase())) || "urunler", sortKey: 2, urunler: [] },
+      "kopek-mama":  { ad: "Köpek Maması",        slug: findKatSlug(k => k.slug === "kopek") || "kopek",                sortKey: 3, urunler: [] },
+      "kopek-yavru": { ad: "Yavru Köpek Mamaları",slug: findKatSlug(k => /yavru/.test(k.slug) && /kopek/.test(k.slug)) || "urunler", sortKey: 4, urunler: [] },
+      "kopek-yasli": { ad: "Yaşlı Köpek Mamaları",slug: findKatSlug(k => /yasli|yaşlı/.test(k.slug + " " + k.ad.toLowerCase()) && /kopek/.test(k.slug + " " + k.ad.toLowerCase())) || "urunler", sortKey: 5, urunler: [] },
+    };
+
     oneCikanlar.forEach(u => {
-      const root = getRootKategori(u.kategori_id);
-      if (!root) return;
-      if (!gruplar[root.id]) gruplar[root.id] = { ad: root.ad, slug: root.slug, urunler: [] };
-      if (gruplar[root.id].urunler.length < 15) gruplar[root.id].urunler.push(u);
+      const slug = (u.kategoriler?.slug || "").toLowerCase();
+      const ad = (u.ad || "").toLowerCase();
+      const txt = slug + " " + ad;
+
+      const isKedi = /\bkedi\b|kitten/.test(txt) && !/kopek|köpek/.test(txt);
+      const isKopek = /\bkopek\b|köpek|puppy/.test(txt) && !/\bkedi\b/.test(txt);
+      const isMama = /mama|food|biskuvi|odul|treat/.test(txt);
+      const isYavru = /yavru|kitten|puppy/.test(txt);
+      const isYasli = /yasli|yaşlı|senior|mature|\+\s*7|\+\s*11/.test(txt);
+
+      if (!isMama) return; // Sadece mama urunleri (aksesuar, kum vb. degil)
+
+      const ekle = (key: string) => {
+        if (gruplar[key].urunler.length < 15) gruplar[key].urunler.push(u);
+      };
+
+      if (isKedi) {
+        ekle("kedi-mama");
+        if (isYavru) ekle("kedi-yavru");
+        if (isYasli) ekle("kedi-yasli");
+      } else if (isKopek) {
+        ekle("kopek-mama");
+        if (isYavru) ekle("kopek-yavru");
+        if (isYasli) ekle("kopek-yasli");
+      }
     });
+
     return Object.values(gruplar)
       .filter(g => g.urunler.length >= 2)
-      .sort((a, b) => {
-        const oncelik = (slug: string) => {
-          if (slug.includes("kedi") && slug.includes("mama")) return 0;
-          if (slug.includes("kopek") && slug.includes("mama")) return 1;
-          if (slug === "kedi" || slug.includes("kedi")) return 2;
-          if (slug === "kopek" || slug.includes("kopek")) return 3;
-          return 99;
-        };
-        const fark = oncelik(a.slug) - oncelik(b.slug);
-        return fark !== 0 ? fark : b.urunler.length - a.urunler.length;
-      })
-      .slice(0, 6);
+      .sort((a, b) => a.sortKey - b.sortKey);
   })();
 
   const handleEkle = (urun: any) => {
