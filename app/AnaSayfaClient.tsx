@@ -333,8 +333,11 @@ export default function AnaSayfaClient() {
         {kullanici ? (
           <div style={{ background: "rgba(244,192,154,0.15)", borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 8 }}>👋 {kullanici.user_metadata?.full_name?.split(" ")[0] || "Üyemiz"}</div>
-            <button onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}
-              style={{ background: "none", border: "1px solid #E8D5B7", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#5C3D2E", padding: "6px 14px", borderRadius: 50 }}>Çıkış Yap</button>
+            <div style={{ display: "flex", gap: 6 }}>
+              <a href="/siparislerim" style={{ background: "#E8845A", color: "white", textDecoration: "none", fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 50 }}>📦 Siparişlerim</a>
+              <button onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}
+                style={{ background: "none", border: "1px solid #E8D5B7", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#5C3D2E", padding: "6px 14px", borderRadius: 50 }}>Çıkış Yap</button>
+            </div>
           </div>
         ) : (
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -377,6 +380,9 @@ export default function AnaSayfaClient() {
             {kullanici ? (
               <>
                 <span style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E" }}>👋 {kullanici.user_metadata?.full_name?.split(" ")[0] || "Üyemiz"}</span>
+                <a href="/siparislerim" style={{ background: "#E8845A", color: "white", textDecoration: "none", fontSize: 13, fontWeight: 700, padding: "8px 16px", borderRadius: 50 }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#D67248"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#E8845A"}>📦 Siparişlerim</a>
                 <button onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}
                   style={{ background: "none", border: "2px solid #E8D5B7", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#5C3D2E", padding: "8px 16px", borderRadius: 50 }}
                   onMouseEnter={e => e.currentTarget.style.background = "#E8D5B7"}
