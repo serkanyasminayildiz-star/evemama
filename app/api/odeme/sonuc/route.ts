@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
+import { sendSiparisOnayMaili } from "../../../../lib/email";
 
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
 const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
@@ -104,6 +105,23 @@ export async function POST(req: NextRequest) {
         console.log("[odeme/sonuc] siparis kaydedildi:", siparisNo);
         // Geçici kaydı sil
         await supabase.from("odeme_gecici").delete().eq("token", token);
+
+        // Sipariş onay maili — best-effort, hata olsa bile akışı bozma.
+        // RESEND_API_KEY yoksa fonksiyon zaten sessizce false döner.
+        if (gecici?.email) {
+          sendSiparisOnayMaili({
+            siparisNo,
+            ad: gecici.ad || "",
+            soyad: gecici.soyad || "",
+            email: gecici.email,
+            urunler: gecici.urunler || [],
+            toplam: data.paidPrice,
+            araToplam: data.price,
+            adres: gecici.adres || "",
+            sehir: gecici.sehir || "",
+            telefon: gecici.telefon || "",
+          }).catch((e) => console.error("[odeme/sonuc] mail gonderim hatasi:", e));
+        }
       }
 
       // tutar query parametresi Google Ads conversion tracking icin lazim
