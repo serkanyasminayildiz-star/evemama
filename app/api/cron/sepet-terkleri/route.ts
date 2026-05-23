@@ -64,7 +64,15 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   let failed = 0;
 
-  for (const t of liste) {
+  // Resend free tier rate limit: 5 istek/saniye. Bir for loop'ta peş peşe
+  // gönderirsek 5'inciden sonra 429 yiyoruz. 250ms gecikme ile saniyede
+  // 4 mail atariz — guvenli marj.
+  const RATE_LIMIT_DELAY_MS = 250;
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  for (let idx = 0; idx < liste.length; idx++) {
+    const t = liste[idx];
+    if (idx > 0) await sleep(RATE_LIMIT_DELAY_MS);
     // urunler kolonu JSON string olarak kaydedilmis (api/odeme'de
     // JSON.stringify ile insert ediliyor); parse et.
     let urunler: any[] = [];

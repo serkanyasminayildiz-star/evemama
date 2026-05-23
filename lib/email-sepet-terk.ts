@@ -8,9 +8,9 @@
 // FROM adresi: domain Resend'de dogrulanmissa `siparis@evemama.net`,
 // degilse `onboarding@resend.dev` (sandbox).
 import { Resend } from "resend";
+import { resolveFromEmail } from "./email-from";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "evemama.net <onboarding@resend.dev>";
 
 let resend: Resend | null = null;
 function getResend(): Resend | null {
@@ -201,7 +201,7 @@ export async function sendSepetTerkMaili(p: SepetTerkParams): Promise<boolean> {
   }
   try {
     const { data, error } = await client.emails.send({
-      from: FROM_EMAIL,
+      from: resolveFromEmail(),
       to: p.email,
       subject: "Sepetinizi unutmadınız mı? 🛒",
       html: buildHTML(p),
