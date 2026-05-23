@@ -18,6 +18,12 @@
 // header'i ile gonderir. CRON_SECRET tanimliysa header'i kontrol ederiz;
 // yanlissa 401 doneriz. Tanimli degilse (dev) kontrol pasif.
 export const runtime = 'nodejs';
+// Cache'lemeyi ZORLA kapat — Vercel CDN bu GET endpoint'inin cevabini
+// cache'lerse her cron tetiklemesi/manuel test ayni eski JSON'u doner,
+// fonksiyon hic calismaz. force-dynamic Next.js'e "bu route'u her seferinde
+// fresh calistir" der; revalidate=0 ile birlikte cache atlanir.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -34,7 +40,10 @@ export async function GET(req: NextRequest) {
   if (CRON_SECRET) {
     const auth = req.headers.get("authorization") || "";
     if (auth !== `Bearer ${CRON_SECRET}`) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "unauthorized" },
+        { status: 401, headers: { "Cache-Control": "no-store" } },
+      );
     }
   }
 
@@ -109,5 +118,8 @@ export async function GET(req: NextRequest) {
   }
 
   console.log("[cron/sepet-terk] tamamlandi:", { sent, failed, total: liste.length });
-  return NextResponse.json({ ok: true, sent, failed, total: liste.length });
+  return NextResponse.json(
+    { ok: true, sent, failed, total: liste.length, runAt: new Date().toISOString() },
+    { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
+  );
 }
