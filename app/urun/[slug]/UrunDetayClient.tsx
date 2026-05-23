@@ -15,9 +15,23 @@ export default function UrunDetayClient() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [eklendi, setEklendi] = useState(false);
   const [adet, setAdet] = useState(1);
-  const [aktifSekme, setAktifSekme] = useState<"aciklama" | "yorumlar">("aciklama");
+  const [aktifSekme, setAktifSekme] = useState<"aciklama" | "yorumlar" | "sss">("aciklama");
   const [yeniYorum, setYeniYorum] = useState({ ad: "", puan: 5, yorum: "" });
   const [yorumGonderildi, setYorumGonderildi] = useState(false);
+  // SSS accordion'da hangi sorunun acik oldugunu tutar; null=hepsi kapali.
+  // Ilk soru (orjinallik) varsayilan olarak acik — en sik sorulan ve trust
+  // sinyali oldugu icin musteri sayfaya geldiginde gorsun.
+  const [acikSss, setAcikSss] = useState<number | null>(0);
+
+  // Pre-purchase'da en sik sorulan sorular — WhatsApp'tan gelen
+  // sorulari onceden kapatip cevirim oranina katki saglar.
+  const sssListesi = [
+    { soru: "Ürün orijinal mi?", cevap: "Evet. Tüm ürünlerimizi markaların Türkiye resmi distribütörlerinden tedarik ediyoruz. Faturalı satış yapıyoruz; ürün barkodundan üreticinin Türkiye temsilcisinden de teyit alabilirsiniz." },
+    { soru: "Son kullanma tarihi (SKT) ne kadar?", cevap: "Gönderdiğimiz tüm mamaların SKT'si minimum 6 ay, çoğu üründe 12 ay ve üzeridir. Stoklarımızı sürekli rotasyonda tutarız — eskisi gitmeden yenisi gelmez." },
+    { soru: "Kargo ne zaman gelir?", cevap: "Saat 14:00'a kadar verilen siparişler aynı gün kargoya verilir. Anlaşmalı kargo firmamızla çoğu şehre 1-2 iş günü içinde teslim edilir. 1000₺ üzeri siparişlerde kargo ücretsizdir." },
+    { soru: "İade ve değişim nasıl olur?", cevap: "Ambalajı açılmamış ürünleri teslim aldıktan sonra 14 gün içinde koşulsuz iade edebilirsiniz. İade kargosunu da biz karşılıyoruz. Yanlış ürün gelirse aynı gün değişim yapılır." },
+    { soru: "Ödeme güvenli mi?", cevap: "Tüm ödemeler iyzico altyapısı üzerinden 3D Secure ile işlenir. Kart bilgileriniz tarafımıza ulaşmaz, banka tarafında saklanır. Ayrıca iyzico Alıcı Koruma kapsamında siparişiniz teminat altındadır." },
+  ];
 
   useEffect(() => {
     if (!slug) return;
@@ -166,6 +180,27 @@ export default function UrunDetayClient() {
             <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.45, marginTop: 4 }}>KDV Dahil</div>
           </div>
 
+          {/* Guven Bandi — pre-purchase trust signals.
+              Musterinin "orijinal mi? SKT? iade? guvenli mi?" sorularini
+              sepete eklemeden once gormesi icin fiyatin hemen altinda.
+              4 kart 2x2 grid, ikon + baslik + alt baslik. */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20, background: "white", borderRadius: 16, padding: 14, border: "1px solid #F3E4CC" }}>
+            {[
+              { icon: "✓", text: "%100 Orijinal", sub: "Resmi distribütör" },
+              { icon: "📅", text: "Min. 6 Ay SKT", sub: "Garantili tazelik" },
+              { icon: "🔒", text: "Güvenli Ödeme", sub: "iyzico · 3D Secure" },
+              { icon: "↩️", text: "14 Gün İade", sub: "Koşulsuz iade hakkı" },
+            ].map((item, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 10, background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#8BAF8E", flexShrink: 0 }}>{item.icon}</div>
+                <div style={{ lineHeight: 1.25, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, color: "#5C3D2E", fontSize: 13 }}>{item.text}</div>
+                  <div style={{ color: "#5C3D2E", opacity: 0.55, fontSize: 11 }}>{item.sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           {/* Stok */}
           <div style={{ marginBottom: 20 }}>
             {urun.stok > 0 ? (
@@ -228,6 +263,7 @@ export default function UrunDetayClient() {
         <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #E8D5B7", marginBottom: 28, overflowX: "auto" }}>
           {([
             { id: "aciklama", label: "📋 Açıklama" },
+            { id: "sss", label: "❓ Sıkça Sorulanlar" },
             { id: "yorumlar", label: `⭐ Yorumlar (${yorumlar.length})` }
           ] as const).map(sekme => (
             <button key={sekme.id} onClick={() => setAktifSekme(sekme.id)} className="sekme-btn"
@@ -249,6 +285,28 @@ export default function UrunDetayClient() {
             ) : (
               <div style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.5, textAlign: "center", padding: "40px 0" }}>Bu ürün için henüz açıklama eklenmemiş.</div>
             )}
+          </div>
+        )}
+
+        {/* SSS sekmesi — pre-purchase trust + bilgi soruları. accordion
+            UX'i: tek tıkla aç/kapat; '+' rotate 45° olur 'x' efekti verir. */}
+        {aktifSekme === "sss" && (
+          <div style={{ background: "white", borderRadius: 24, padding: "8px 24px" }}>
+            {sssListesi.map((item, i) => (
+              <div key={i} style={{ borderBottom: i < sssListesi.length - 1 ? "1px solid #F3E4CC" : "none" }}>
+                <button
+                  onClick={() => setAcikSss(acikSss === i ? null : i)}
+                  style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "18px 4px", background: "none", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}
+                  aria-expanded={acikSss === i}
+                >
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#5C3D2E" }}>{item.soru}</span>
+                  <span style={{ fontSize: 22, lineHeight: 1, color: "#E8845A", flexShrink: 0, transition: "transform .25s", transform: acikSss === i ? "rotate(45deg)" : "rotate(0)" }}>+</span>
+                </button>
+                {acikSss === i && (
+                  <div style={{ padding: "0 4px 18px", fontSize: 14, color: "#5C3D2E", opacity: 0.78, lineHeight: 1.7 }}>{item.cevap}</div>
+                )}
+              </div>
+            ))}
           </div>
         )}
 
