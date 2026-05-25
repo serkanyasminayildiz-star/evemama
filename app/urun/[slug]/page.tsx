@@ -12,7 +12,6 @@
 import { notFound } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import UrunDetayClient from "./UrunDetayClient";
-import { URUN_SSS } from "../../../lib/sss";
 
 export const dynamic = "force-dynamic";
 
@@ -116,30 +115,10 @@ export default async function UrunPage({ params }: { params: Promise<{ slug: str
         ]),
       ],
     };
-    // FAQPage — urun sayfasinda gosterilen "Sikca Sorulanlar" sekmesi
-    // ayni icerigi server HTML'e de gomeriz; Google bunu rich result
-    // olarak arama sonuclarinda accordion (acilir kapanir SSS) seklinde
-    // gosterir. CTR ortalama %30-40 artar.
-    //
-    // Google sarti: gosterilen UI ile ayni metni server-side rendered
-    // HTML'de de bulmali (cloaking yasak). lib/sss.ts ortak kaynak.
-    const faqLd = {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: URUN_SSS.map((item) => ({
-        "@type": "Question",
-        name: item.soru,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: item.cevap,
-        },
-      })),
-    };
     jsonLdScript = (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
       </>
     );
   }

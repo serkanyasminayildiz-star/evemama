@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import DOMPurify from "isomorphic-dompurify";
 import { supabase } from "../../../lib/supabase";
 import { useCart } from "../../../context/CartContext";
-import { URUN_SSS } from "../../../lib/sss";
 
 export default function UrunDetayClient() {
   const { slug } = useParams();
@@ -24,9 +23,15 @@ export default function UrunDetayClient() {
   // sinyali oldugu icin musteri sayfaya geldiginde gorsun.
   const [acikSss, setAcikSss] = useState<number | null>(0);
 
-  // SSS listesi lib/sss.ts'den import ediliyor (server-side JSON-LD ile
-  // ayni kaynak; tek yerden guncellenir).
-  const sssListesi = URUN_SSS;
+  // Pre-purchase'da en sik sorulan sorular — WhatsApp'tan gelen
+  // sorulari onceden kapatip cevirim oranina katki saglar.
+  const sssListesi = [
+    { soru: "Ürün orijinal mi?", cevap: "Evet. Tüm ürünlerimizi markaların Türkiye resmi distribütörlerinden tedarik ediyoruz. Faturalı satış yapıyoruz; ürün barkodundan üreticinin Türkiye temsilcisinden de teyit alabilirsiniz." },
+    { soru: "Son kullanma tarihi (SKT) ne kadar?", cevap: "Gönderdiğimiz tüm mamaların SKT'si minimum 6 ay, çoğu üründe 12 ay ve üzeridir. Stoklarımızı sürekli rotasyonda tutarız — eskisi gitmeden yenisi gelmez." },
+    { soru: "Kargo ne zaman gelir?", cevap: "Saat 14:00'a kadar verilen siparişler aynı gün kargoya verilir. Anlaşmalı kargo firmamızla çoğu şehre 1-2 iş günü içinde teslim edilir. 1000₺ üzeri siparişlerde kargo ücretsizdir." },
+    { soru: "İade ve değişim nasıl olur?", cevap: "Ambalajı açılmamış ürünleri teslim aldıktan sonra 14 gün içinde koşulsuz iade edebilirsiniz. İade kargosunu da biz karşılıyoruz. Yanlış ürün gelirse aynı gün değişim yapılır." },
+    { soru: "Ödeme güvenli mi?", cevap: "Tüm ödemeler iyzico altyapısı üzerinden 3D Secure ile işlenir. Kart bilgileriniz tarafımıza ulaşmaz, banka tarafında saklanır. Ayrıca iyzico Alıcı Koruma kapsamında siparişiniz teminat altındadır." },
+  ];
 
   useEffect(() => {
     if (!slug) return;
