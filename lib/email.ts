@@ -9,9 +9,9 @@
 // FROM adresi: domain Resend'de dogrulanana kadar `onboarding@resend.dev`
 // kullanilir (sandbox). Domain dogrulanunca `siparis@evemama.net` yapilir.
 import { Resend } from "resend";
-import { resolveFromEmail } from "./email-from";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "evemama.net <onboarding@resend.dev>";
 
 // Lazy init — env var yoksa Resend client olusturmayalim ki module load
 // sirasinda crash etmesin. Production'da env var set olunca otomatik calisir.
@@ -242,7 +242,7 @@ export async function sendSiparisOnayMaili(p: SiparisOnayParams): Promise<boolea
   }
   try {
     const { data, error } = await client.emails.send({
-      from: resolveFromEmail(),
+      from: FROM_EMAIL,
       to: p.email,
       subject: `Siparisiniz alindi - ${p.siparisNo}`,
       html: buildHTML(p),
