@@ -10,15 +10,34 @@
 // Default: domain Resend'de dogrulandi (May 2026), siparis@evemama.net
 // kullanilabilir.
 
-// Hardcoded FROM adresi. Resend'in kabul ettigi format: "Name <email>".
-// Env var lookup'i tamamen kaldirildi cunku Vercel UI'da degerin
-// duzgun yapistirilamadigi durumlar tekrar tekrar yasandi (whitespace
-// vs underscore vs Turkce karakter). Domain (evemama.net) Resend'de
-// dogrulandi → siparis@evemama.net gonderim icin yetkili.
-//
-// Degistirmek isteyince burayi editle, redeploy et — env var degil.
-const HARDCODED_FROM = "evemama.net <siparis@evemama.net>";
+const SAFE_DEFAULT = "evemama.net <siparis@evemama.net>";
+
+// Resend kabul ettigi iki format:
+//  1) email@example.com           → sadece email
+//  2) Display Name <email@x.com>  → isim + acili parantezde email
+// Email kismi ASCII olmali (Resend Turkce karaktere izin vermiyor).
+const PLAIN_EMAIL = /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/;
+const NAMED_EMAIL = /^.+\s<[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+>$/;
 
 export function resolveFromEmail(): string {
-  return HARDCODED_FROM;
+  const raw = process.env.RESEND_FROM_EMAIL;
+  if (!raw) return SAFE_DEFAULT;
+
+  // Tirnak ve whitespace temizle — bazi panellerden kopya/yapistirmada
+  // gizli karakterler gelebiliyor.
+  const cleaned = raw.trim().replace(/^['"]|['"]$/g, "");
+  if (!cleaned) return SAFE_DEFAULT;
+
+  if (PLAIN_EMAIL.test(cleaned) || NAMED_EMAIL.test(cleaned)) {
+    return cleaned;
+  }
+
+  // Bozuk format — log at, default'a dus (her invocation'da bir kez).
+  console.warn(
+    "[email-from] RESEND_FROM_EMAIL malformed, falling back to default. Raw length:",
+    cleaned.length,
+    "starts:",
+    JSON.stringify(cleaned.slice(0, 8)),
+  );
+  return SAFE_DEFAULT;
 }
