@@ -12,7 +12,11 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const ENDPOINT = "/payment/iyzipos/checkoutform/initialize/auth/ecom";
+// 3DS zorunlu Iyzico CheckoutForm endpoint'i. /auth/ ekli versiyonu (eski hali)
+// 3DS adimini atliyor → BDDK 3DS zorunlulugu ihlali + yuksek tutarli
+// kartlarda banka reddi (revenue kaybi). Bu endpoint'te Iyzico kart bankasi
+// risk skoruna gore SMS 3DS sayfasini otomatik tetikliyor.
+const ENDPOINT = "/payment/iyzipos/checkoutform/initialize/ecom";
 
 function generateRandomString(): string {
   return process.hrtime()[0] + Math.random().toString(8).slice(2);
