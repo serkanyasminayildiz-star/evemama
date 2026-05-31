@@ -34,13 +34,21 @@ function OdemeSonucIcerik() {
     if (durum !== "basarili" || conversionFired.current) return;
     if (typeof window === "undefined" || typeof window.gtag !== "function") return;
     conversionFired.current = true;
+    // Enhanced Conversions — email'i user_data icinde gondeririz.
+    // gtag client-side'da SHA256 hash atip Google'a iletir, bizim
+    // gondermemize gerek yok. Boylece cerez bloklanmis kullanicilar
+    // icin de attribution dogru tutulur, Ads dashboard'undaki "Gelismis
+    // donusumler - mudahale edilmesi gerekiyor" uyarisi kapanir.
+    window.gtag("set", "user_data", {
+      email_address: email || undefined,
+    });
     window.gtag("event", "conversion", {
       send_to: `${GOOGLE_ADS_TAG}/${PURCHASE_LABEL}`,
       value: tutar > 0 ? tutar : 1.0,
       currency: "TRY",
       transaction_id: siparis,
     });
-  }, [durum, siparis, tutar]);
+  }, [durum, siparis, tutar, email]);
 
   // Google Customer Reviews opt-in fonksiyonu — Google'in apis.google.com'dan
   // yuklenen script'i sayfa yuklendiginde window.renderOptIn'i cagiriyor.
