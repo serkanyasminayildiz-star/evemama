@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "../../context/CartContext";
+import { supabase } from "../../lib/supabase";
 
 export default function Odeme() {
   const { items, totalPrice, clearCart } = useCart();
@@ -9,6 +10,7 @@ export default function Odeme() {
   const [sozlesme, setSozlesme] = useState(false);
   const [aydinlatma, setAydinlatma] = useState(false);
   const [hata, setHata] = useState("");
+  const [ilkSiparisIndirimi, setIlkSiparisIndirimi] = useState(false);
   const [form, setForm] = useState({
     name: "", surname: "", email: "",
     phone: "", address: "", city: ""
@@ -16,9 +18,36 @@ export default function Odeme() {
 
   const handleChange = (e: any) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  // Ilk siparis indirimi kontrolu — sepet sayfasiyla AYNI mantik.
+  // Bu kontrol yapilmazsa sepette gosterilen indirim odeme sayfasinda
+  // kaybolur, musteri ucret farkini gorup odemeden vazgeciyor.
+  useEffect(() => {
+    const kontrol = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && totalPrice >= 1000) {
+          const { count, error } = await supabase
+            .from("siparisler")
+            .select("*", { count: "exact", head: true })
+            .eq("email", user.email);
+          if (error) throw error;
+          if (count === 0) setIlkSiparisIndirimi(true);
+        }
+      } catch (err) {
+        console.error("[odeme] ilk siparis kontrolu:", err);
+      }
+    };
+    kontrol();
+  }, [totalPrice]);
+
   const kargoUcreti = totalPrice >= 1000 ? 0 : 29.90;
   const kdv = totalPrice * 0.20;
-  const genelToplam = totalPrice + kargoUcreti;
+  // Indirim hesabi — sepet sayfasindaki ile birebir ayni olmali.
+  // 5.000+ TL -> 200 TL, 10.000+ TL -> 500 TL + ilk siparis indirimi
+  // (ek 200 TL). genelToplam'a kargoyu ekle, indirimi cikar.
+  const indirimMiktari = (totalPrice >= 10000 ? 500 : totalPrice >= 5000 ? 200 : 0) + (ilkSiparisIndirimi ? 200 : 0);
+  const indirimAciklama = totalPrice >= 10000 ? "10.000₺ üzeri indirim" : totalPrice >= 5000 ? "5.000₺ üzeri indirim" : "";
+  const genelToplam = totalPrice + kargoUcreti - indirimMiktari;
 
   const handleOde = async () => {
     if (!sozlesme || !aydinlatma) { setHata("Lütfen sözleşmeleri kabul edin."); return; }
@@ -188,6 +217,12 @@ export default function Odeme() {
                   {kargoUcreti === 0 ? "Ücretsiz 🎉" : `₺${kargoUcreti.toFixed(2)}`}
                 </span>
               </div>
+              {indirimMiktari > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14, fontSize: 13, color: "#2E7D32", fontWeight: 600 }}>
+                  <span>🎁 {indirimAciklama}{ilkSiparisIndirimi ? (indirimAciklama ? " + İlk sipariş" : "İlk sipariş indirimi") : ""}</span>
+                  <span>−₺{indirimMiktari.toFixed(2)}</span>
+                </div>
+              )}
               <div style={{ borderTop: "2px solid #FDF6EE", paddingTop: 14, display: "flex", justifyContent: "space-between" }}>
                 <span style={{ fontFamily: "Georgia, serif", fontSize: 17, fontWeight: 700, color: "#5C3D2E" }}>Toplam</span>
                 <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#E8845A" }}>₺{genelToplam.toFixed(2)}</span>
