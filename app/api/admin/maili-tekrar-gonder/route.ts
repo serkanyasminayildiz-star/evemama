@@ -18,7 +18,31 @@ export const revalidate = 0;
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { Resend } from "resend";
 import { sendSiparisOnayMaili } from "../../../../lib/email";
+
+// Diagnostic helper — Resend'i direkt cagirip hatayi RESPONSE BODY'sinde
+// gosteririz. Boylece "send_failed" yerine "Invalid from field..." gibi
+// gerçek mesaji curl çıktısında okuyabiliriz.
+const FROM_EMAIL_TEST = "evemama.net <siparis@evemama.net>";
+async function sendDiagnostic(to: string): Promise<{ ok: boolean; error?: any; data?: any }> {
+  try {
+    const apiKey = process.env.RESEND_API_KEY || "";
+    if (!apiKey) return { ok: false, error: "RESEND_API_KEY env var yok" };
+    const resend = new Resend(apiKey);
+    const result = await resend.emails.send({
+      from: FROM_EMAIL_TEST,
+      to,
+      subject: "Diagnostic Test - evemama.net",
+      html: "<p>Bu mail email pipeline'ı test etmek için gönderildi.</p>",
+      text: "Diagnostic test mail.",
+    });
+    if (result.error) return { ok: false, error: result.error };
+    return { ok: true, data: result.data };
+  } catch (e: any) {
+    return { ok: false, error: { exception: e?.message || String(e), name: e?.name } };
+  }
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -64,6 +88,18 @@ export async function GET(req: NextRequest) {
   const gun = parseInt(searchParams.get("gun") || "7", 10);
   const dryRun = searchParams.get("dryRun") === "true";
   const tekSiparis = searchParams.get("siparis"); // ornek: EVE05823721
+  const diagnostic = searchParams.get("diag"); // diag=email@x.com -> direkt Resend cagrisi
+
+  // Diagnostic mode: tek bir email'e direkt Resend cagrisi yap, hata
+  // mesajini RESPONSE'da goster. Database'e dokunmadan email pipeline'i
+  // izole eder.
+  if (diagnostic) {
+    const result = await sendDiagnostic(diagnostic);
+    return NextResponse.json(
+      { mode: "diagnostic", to: diagnostic, ...result },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
 
   // Supabase sorgusu
   let query = supabase.from("siparisler").select("*").order("created_at", { ascending: false });
