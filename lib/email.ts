@@ -11,7 +11,11 @@
 import { Resend } from "resend";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "evemama.net <onboarding@resend.dev>";
+// FROM adresi hardcoded — Vercel UI'da env var'i set ederken yapistirma
+// sorunlari (underscore vs space, gizli karakterler) iki kez musteri
+// mailleri patlatti. Domain (evemama.net) Resend'de Verified, "siparis@"
+// inbox'i olmasa bile FROM olarak gonderim icin yetkili.
+const FROM_EMAIL = "evemama.net <siparis@evemama.net>";
 
 // Lazy init — env var yoksa Resend client olusturmayalim ki module load
 // sirasinda crash etmesin. Production'da env var set olunca otomatik calisir.
