@@ -6,8 +6,7 @@
 // hata loglanir, false donulur. Siparis Supabase'e zaten kaydedilmis olur,
 // musteri /siparislerim sayfasindan goruntuleyebilir.
 //
-// FROM adresi: domain Resend'de dogrulanana kadar `onboarding@resend.dev`
-// kullanilir (sandbox). Domain dogrulanunca `siparis@evemama.net` yapilir.
+// FROM adresi: evemama.net Resend'de Verified, siparis@evemama.net ile gonderilir.
 import { Resend } from "resend";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
