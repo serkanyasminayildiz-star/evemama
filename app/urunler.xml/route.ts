@@ -51,17 +51,33 @@ function aciklamaZenginlestir(u: any): string {
     parcalar.push(mevcut);
   }
 
+  // Hayvan turu tespiti: "evcil hayvan" yerine spesifik "kedi"/"kopek"
+  // kullanarak musterilerin aradigi dogal ifadeleri ("kedi mamasi",
+  // "kisir kedi mamasi", "yavru kopek mamasi") CUMLE ICINDE kapsar — etiket/
+  // liste DEGIL (Google keyword stuffing saymaz). Rakip marka adi (purina,
+  // proplan vb.) ASLA eklenmez; her urun yalniz kendi markasiyla anilir.
+  const tip = `${ad} ${kategori}`.toLowerCase();
+  const tur = /kedi|cat|kitten/.test(tip) ? "kedi" : /k[oö]pek|dog|puppy/.test(tip) ? "köpek" : "evcil hayvan";
+
+  // Regex'ler Turkce karakteri de yakalar (kisir/kısır, yasli/yaşlı, yetiskin/
+  // yetişkin) — aksi halde Turkce yazilmis urun adlari kacirilirdi.
   const adLow = ad.toLowerCase();
   const ozellikler: string[] = [];
-  if (/yavru|kitten|puppy/.test(adLow)) ozellikler.push("yavru evcil hayvanlar için");
-  if (/yetiskin|adult/.test(adLow)) ozellikler.push("yetişkin evcil hayvanlar için");
-  if (/yasli|senior|mature/.test(adLow)) ozellikler.push("yaşlı evcil hayvanlar için");
-  if (/tahil ?siz|grain ?free/.test(adLow)) ozellikler.push("tahılsız formül");
-  if (/kisir|sterilised/.test(adLow)) ozellikler.push("kısırlaştırılmış hayvanlar için");
+  if (/yavru|kitten|puppy/.test(adLow)) ozellikler.push(`yavru ${tur}ler için`);
+  if (/yeti[sş]kin|adult/.test(adLow)) ozellikler.push(`yetişkin ${tur}ler için`);
+  if (/ya[sş]l[iı]|senior|mature/.test(adLow)) ozellikler.push(`yaşlı ${tur}ler için`);
+  if (/tah[iı]l ?s[iı]z|grain ?free/.test(adLow)) ozellikler.push("tahılsız formül");
+  if (/k[iı]s[iı]r|sterilised/.test(adLow)) ozellikler.push(`kısırlaştırılmış (kısır) ${tur}ler için`);
   if (/hipoaler|hypoallergenic/.test(adLow)) ozellikler.push("hipoalerjenik");
-  if (/ilac|sa[gğ]l[iı]k|tedavi|veterinary/.test(adLow)) ozellikler.push("sağlık desteği");
+  if (/ila[cç]|sa[gğ]l[iı]k|tedavi|veterinary/.test(adLow)) ozellikler.push("sağlık desteği");
   if (ozellikler.length > 0) {
     parcalar.push(`Özellikler: ${ozellikler.join(", ")}.`);
+  }
+
+  // Mama urunlerinde dogal kapanis cumlesi — "kedi mamasi"/"kopek mamasi"
+  // ifadesi musteri araminda dogal eslessin (tam cumle, etiket degil).
+  if (/mama|food/.test(tip) && tur !== "evcil hayvan") {
+    parcalar.push(`Evcil dostunuz için kaliteli bir ${tur} mamasıdır.`);
   }
 
   return parcalar.join(" ").trim().slice(0, 1500);
