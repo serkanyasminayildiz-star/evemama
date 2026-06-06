@@ -8,6 +8,7 @@ import Kuponlar from "./components/Kuponlar";
 import Markalar from "./components/Markalar";
 import Kategoriler from "./components/Kategoriler";
 import Blog from "./components/Blog";
+import Uyeler from "./components/Uyeler";
 
 const ADMIN_SIFRE = "evemama2025";
 const SAYFA_BOYUTU = 50;
@@ -212,6 +213,7 @@ export default function Admin() {
     if (aktifSayfa === "kategoriler") kategorileriYukle();
     if (aktifSayfa === "markalar") markalariYukle();
     if (aktifSayfa === "kuponlar") kuponlariYukle();
+    if (aktifSayfa === "uyeler") kuponlariYukle();
     if (aktifSayfa === "blog") blogSorulariYukle();
   }, [aktifSayfa, giris]);
 
@@ -540,6 +542,7 @@ export default function Admin() {
     { id: "urunler", icon: "📦", ad: "Ürünler" },
     { id: "stok", icon: "📉", ad: "Stok Takibi", badge: stokIstatistik.stok_yok + stokIstatistik.kritik },
     { id: "siparisler", icon: "🛒", ad: "Siparişler", badge: istatistikler.bekleyen_siparis },
+    { id: "uyeler", icon: "👤", ad: "Üyeler" },
     { id: "kategoriler", icon: "📁", ad: "Kategoriler" },
     { id: "markalar", icon: "🏷️", ad: "Markalar" },
     { id: "kuponlar", icon: "🎟️", ad: "Kuponlar" },
@@ -1522,6 +1525,10 @@ export default function Admin() {
 
         {aktifSayfa === "kuponlar" && (
           <Kuponlar yeniKupon={yeniKupon} setYeniKupon={setYeniKupon} kuponlar={kuponlar} kuponEkle={kuponEkle} kuponlariYukle={kuponlariYukle} goster={goster} s={s} btn={btn} />
+        )}
+
+        {aktifSayfa === "uyeler" && (
+          <Uyeler kuponlar={kuponlar} goster={goster} />
         )}
 
         {/* ── BLOG SORULARI ────────────────────────────────────────────────── */}

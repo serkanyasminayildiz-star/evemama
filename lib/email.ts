@@ -262,3 +262,77 @@ export async function sendSiparisOnayMaili(p: SiparisOnayParams): Promise<boolea
     return false;
   }
 }
+
+// ── Kampanya / kupon maili ─────────────────────────────────────────────
+// Admin panelindeki "Üyeler" sayfasından seçili üyelere, "Kuponlar"da
+// oluşturulmuş bir kuponu hazır şablonla gönderir.
+export type KuponMailParams = {
+  email: string;
+  ad?: string;
+  kod: string;
+  indirimMetni: string;    // ör. "%15 indirim" / "₺50 indirim"
+  minSepetMetni?: string;  // ör. "Min. ₺200 sepet tutarı"
+  bitisMetni?: string;     // ör. "Son kullanım: 30.06.2026"
+};
+
+function buildKuponHTML(p: KuponMailParams): string {
+  return `<!DOCTYPE html>
+<html lang="tr"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>Size özel indirim kuponu</title></head>
+<body style="margin:0;padding:0;background:#f5f7fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;">
+    <div style="background:linear-gradient(135deg,#ff6b35 0%,#f7931e 100%);padding:32px 24px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:28px;font-weight:700;">evemama.net</h1>
+      <p style="margin:8px 0 0 0;color:rgba(255,255,255,0.95);font-size:14px;">Evcil dostunuzun dükkanı</p>
+    </div>
+    <div style="padding:32px 24px 8px;text-align:center;">
+      <div style="font-size:46px;margin-bottom:8px;">🎁</div>
+      <h2 style="margin:0 0 8px 0;color:#1a1a1a;font-size:22px;">Size özel bir hediyemiz var!</h2>
+      <p style="margin:0;color:#555;font-size:15px;line-height:1.5;">Merhaba ${p.ad || "değerli müşterimiz"},<br>Aşağıdaki kuponu ödeme adımında kullanarak ${p.indirimMetni.toLocaleLowerCase("tr-TR")} kazanabilirsiniz.</p>
+    </div>
+    <div style="padding:16px 24px 24px;">
+      <div style="border:2px dashed #ff6b35;border-radius:16px;padding:24px 16px;text-align:center;background:#fff7ed;">
+        <div style="font-size:26px;font-weight:800;color:#ff6b35;margin-bottom:12px;">${p.indirimMetni}</div>
+        <div style="display:inline-block;background:#1a1a1a;color:#fff;font-family:monospace;font-size:22px;font-weight:700;letter-spacing:2px;padding:12px 22px;border-radius:10px;">${p.kod}</div>
+        ${p.minSepetMetni ? `<p style="margin:14px 0 0;font-size:13px;color:#6b7280;">${p.minSepetMetni}</p>` : ""}
+        ${p.bitisMetni ? `<p style="margin:4px 0 0;font-size:13px;color:#9ca3af;">${p.bitisMetni}</p>` : ""}
+      </div>
+    </div>
+    <div style="padding:0 24px 32px;text-align:center;">
+      <a href="https://www.evemama.net" style="display:inline-block;padding:14px 32px;background:#ff6b35;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;">Hemen Alışverişe Başla →</a>
+    </div>
+    <div style="padding:20px 24px;background:#f9fafb;text-align:center;border-top:1px solid #eee;">
+      <p style="margin:0 0 8px 0;font-size:13px;color:#666;">Sorularınız için bize ulaşın:</p>
+      <p style="margin:0;font-size:14px;color:#333;"><a href="https://wa.me/905347488001" style="color:#25D366;text-decoration:none;font-weight:600;">WhatsApp: 0534 748 80 01</a></p>
+    </div>
+    <div style="padding:18px 24px;text-align:center;background:#1a1a1a;color:#9ca3af;font-size:12px;line-height:1.6;">
+      <p style="margin:0 0 6px 0;">evemama.net — Evcil Dostunuzun Dükkanı</p>
+      <p style="margin:0;">© ${new Date().getFullYear()} Tüm hakları saklıdır.</p>
+    </div>
+  </div>
+</body></html>`;
+}
+
+export async function sendKuponMaili(p: KuponMailParams): Promise<boolean> {
+  const client = getResend();
+  if (!client) {
+    console.warn("[email] RESEND_API_KEY tanimli degil, kupon maili gonderilmedi:", p.email);
+    return false;
+  }
+  if (!p.email) return false;
+  try {
+    const { data, error } = await client.emails.send({
+      from: FROM_EMAIL,
+      to: p.email,
+      subject: `🎁 Size özel indirim kuponu: ${p.kod}`,
+      html: buildKuponHTML(p),
+    });
+    if (error) {
+      console.error("[email] kupon maili hatasi:", { email: p.email, error });
+      return false;
+    }
+    return Boolean(data?.id);
+  } catch (err: any) {
+    console.error("[email] kupon maili exception:", { email: p.email, err: err?.message || err });
+    return false;
+  }
+}
