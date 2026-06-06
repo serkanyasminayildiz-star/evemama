@@ -12,6 +12,14 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// Sadakat bonusu RLS korumalı tablodadır → okumak/işaretlemek service_role
+// gerektirir (anon göremez).
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { auth: { persistSession: false, autoRefreshToken: false } },
+);
+
 // 3DS zorunlu Iyzico CheckoutForm endpoint'i. /auth/ ekli versiyonu (eski hali)
 // 3DS adimini atliyor → BDDK 3DS zorunlulugu ihlali + yuksek tutarli
 // kartlarda banka reddi (revenue kaybi). Bu endpoint'te Iyzico kart bankasi
@@ -93,7 +101,33 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const genelToplam = Math.max(0, basketTotal + kargo - tutarIndirimi - ilkSiparisIndirimi);
+  // Sadakat bonusu — üyenin geçerli (kullanılmamış, süresi geçmemiş) bonusu
+  // varsa ve sepet bonusun min_sepet'ini karşılıyorsa ödenecek tutardan düşülür.
+  // SUNUCUDA doğrulanır; hangi bonusun harcandığı odeme_gecici'ye yazılır,
+  // ödeme başarılı olunca (odeme/sonuc) "kullanıldı" işaretlenir.
+  let bonusIndirimi = 0;
+  let kullanilanBonusId: number | null = null;
+  if (uyeEmail) {
+    try {
+      const { data: bonuslar } = await supabaseAdmin
+        .from("sadakat_bonuslari")
+        .select("id, tutar, min_sepet")
+        .eq("email", uyeEmail)
+        .eq("kullanildi", false)
+        .gt("bitis_tarihi", new Date().toISOString())
+        .order("tutar", { ascending: false })
+        .limit(1);
+      const b = bonuslar && bonuslar[0];
+      if (b && basketTotal >= (Number(b.min_sepet) || 1000)) {
+        bonusIndirimi = Number(b.tutar) || 0;
+        kullanilanBonusId = b.id;
+      }
+    } catch (e) {
+      console.error("[odeme] sadakat bonusu dogrulama:", e);
+    }
+  }
+
+  const genelToplam = Math.max(0, basketTotal + kargo - tutarIndirimi - ilkSiparisIndirimi - bonusIndirimi);
   const priceStr = basketTotal.toFixed(2);
   const paidPriceStr = genelToplam.toFixed(2);
 
@@ -171,6 +205,7 @@ export async function POST(req: NextRequest) {
         ara_toplam: parseFloat(priceStr),
         urunler: JSON.stringify(items),
         uye_email: uyeEmail, // null ise misafir → sadakat bonusu verilmez
+        kullanilan_bonus_id: kullanilanBonusId, // bu siparişte harcanan bonus (varsa)
         created_at: new Date().toISOString(),
       }, { onConflict: "token" });
     }

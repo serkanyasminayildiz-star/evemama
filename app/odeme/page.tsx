@@ -11,6 +11,7 @@ export default function Odeme() {
   const [aydinlatma, setAydinlatma] = useState(false);
   const [hata, setHata] = useState("");
   const [ilkSiparisIndirimi, setIlkSiparisIndirimi] = useState(false);
+  const [bonus, setBonus] = useState<{ tutar: number; min_sepet: number } | null>(null);
   const [form, setForm] = useState({
     name: "", surname: "", email: "",
     phone: "", address: "", city: ""
@@ -40,13 +41,30 @@ export default function Odeme() {
     kontrol();
   }, [totalPrice]);
 
+  // Sadakat bonusu — üye giriş yapmışsa geçerli bonusu (gösterim için;
+  // gerçek indirim handleOde'de sunucuda doğrulanır).
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const res = await fetch("/api/bonus", { headers: { Authorization: `Bearer ${session.access_token}` } });
+        const d = await res.json();
+        if (d.bonus) setBonus(d.bonus);
+      } catch { /* bonus gosterilemezse odeme calismaya devam eder */ }
+    })();
+  }, []);
+
   const kargoUcreti = totalPrice >= 1000 ? 0 : 29.90;
   const kdv = totalPrice * 0.20;
   // Indirim hesabi — sepet sayfasindaki ile birebir ayni olmali.
   // 5.000+ TL -> 200 TL, 10.000+ TL -> 500 TL + ilk siparis indirimi
   // (ek 200 TL). genelToplam'a kargoyu ekle, indirimi cikar.
-  const indirimMiktari = (totalPrice >= 10000 ? 500 : totalPrice >= 5000 ? 200 : 0) + (ilkSiparisIndirimi ? 200 : 0);
+  const bonusUygulanabilir = !!bonus && totalPrice >= bonus.min_sepet;
+  const bonusIndirimi = bonusUygulanabilir ? bonus!.tutar : 0;
+  const indirimMiktari = (totalPrice >= 10000 ? 500 : totalPrice >= 5000 ? 200 : 0) + (ilkSiparisIndirimi ? 200 : 0) + bonusIndirimi;
   const indirimAciklama = totalPrice >= 10000 ? "10.000₺ üzeri indirim" : totalPrice >= 5000 ? "5.000₺ üzeri indirim" : "";
+  const indirimEtiketleri = [indirimAciklama, ilkSiparisIndirimi ? "İlk sipariş" : "", bonusUygulanabilir ? "Sadakat bonusu" : ""].filter(Boolean).join(" + ");
   const genelToplam = totalPrice + kargoUcreti - indirimMiktari;
 
   const handleOde = async () => {
@@ -226,7 +244,7 @@ export default function Odeme() {
               </div>
               {indirimMiktari > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14, fontSize: 13, color: "#2E7D32", fontWeight: 600 }}>
-                  <span>🎁 {indirimAciklama}{ilkSiparisIndirimi ? (indirimAciklama ? " + İlk sipariş" : "İlk sipariş indirimi") : ""}</span>
+                  <span>🎁 {indirimEtiketleri}</span>
                   <span>−₺{indirimMiktari.toFixed(2)}</span>
                 </div>
               )}

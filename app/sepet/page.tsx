@@ -10,6 +10,7 @@ export default function Sepet() {
   const [eklendi, setEklendi] = useState<number | null>(null);
   const [ilkSiparisIndirimi, setIlkSiparisIndirimi] = useState(false);
   const [kullanici, setKullanici] = useState<any>(null);
+  const [bonus, setBonus] = useState<{ tutar: number; min_sepet: number } | null>(null);
 
   useEffect(() => {
     const kontrol = async () => {
@@ -33,10 +34,26 @@ export default function Sepet() {
     kontrol();
   }, [totalPrice]);
 
+  // Sadakat bonusu — üye giriş yapmışsa geçerli bonusunu çek (gösterim için;
+  // gerçek indirim ödeme adımında sunucuda yeniden doğrulanır).
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const res = await fetch("/api/bonus", { headers: { Authorization: `Bearer ${session.access_token}` } });
+        const d = await res.json();
+        if (d.bonus) setBonus(d.bonus);
+      } catch { /* bonus gosterilemezse sepet calismaya devam eder */ }
+    })();
+  }, []);
+
   const kargoUcreti = totalPrice >= 1000 ? 0 : 29.90;
   const kargoyaKalan = 1000 - totalPrice;
 
-  const indirimMiktari = (totalPrice >= 10000 ? 500 : totalPrice >= 5000 ? 200 : 0) + (ilkSiparisIndirimi ? 200 : 0);
+  const bonusUygulanabilir = !!bonus && totalPrice >= bonus.min_sepet;
+  const bonusIndirimi = bonusUygulanabilir ? bonus!.tutar : 0;
+  const indirimMiktari = (totalPrice >= 10000 ? 500 : totalPrice >= 5000 ? 200 : 0) + (ilkSiparisIndirimi ? 200 : 0) + bonusIndirimi;
   const indirimAciklama = totalPrice >= 10000 ? "10.000₺ üzeri alışveriş indirimi 🎉" : totalPrice >= 5000 ? "5.000₺ üzeri alışveriş indirimi 🎁" : "";
 
   const sonrakiIndirim = totalPrice < 5000
@@ -223,6 +240,18 @@ export default function Sepet() {
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 14 }}>
               <span style={{ color: "#2E7D32", fontWeight: 600 }}>🎉 İlk sipariş indirimi</span>
               <span style={{ color: "#2E7D32", fontWeight: 700 }}>−₺200.00</span>
+            </div>
+          )}
+
+          {bonusUygulanabilir && (
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 14 }}>
+              <span style={{ color: "#2E7D32", fontWeight: 600 }}>🎁 Sadakat bonusu</span>
+              <span style={{ color: "#2E7D32", fontWeight: 700 }}>−₺{bonus!.tutar.toFixed(2)}</span>
+            </div>
+          )}
+          {bonus && !bonusUygulanabilir && (
+            <div style={{ background: "#FFF7ED", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12, color: "#E8845A", textAlign: "center", border: "1.5px dashed #E8845A" }}>
+              🎁 ₺{bonus.tutar.toFixed(2)} sadakat bonusunuz var! Min. ₺{bonus.min_sepet.toFixed(0)} sepet ile kullanabilirsiniz.
             </div>
           )}
 

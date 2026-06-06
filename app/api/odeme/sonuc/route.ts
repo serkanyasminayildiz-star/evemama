@@ -142,9 +142,23 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Sadakat bonusu — sipariş başarılı + ÜYE (gecici.uye_email) + ödenen
-        // tutar eşiği. Misafir (uye_email null) bonus ALMAZ. Ödenen tutara göre:
-        // ≥5000 → 200 TL, ≥3000 → 150 TL. Bonus min 1000 TL sepet + 60 gün geçerli.
+        // Kullanılan sadakat bonusunu "kullanıldı" işaretle. odeme/route bu
+        // siparişe bonus uyguladıysa kullanilan_bonus_id dolu gelir.
+        // .eq(kullanildi=false) → double-spend koruması (zaten kullanılmışsa etkisiz).
+        if (gecici?.kullanilan_bonus_id) {
+          try {
+            await supabaseAdmin.from("sadakat_bonuslari")
+              .update({ kullanildi: true, kullanildi_siparis_no: siparisNo })
+              .eq("id", gecici.kullanilan_bonus_id)
+              .eq("kullanildi", false);
+          } catch (e) {
+            console.error("[odeme/sonuc] bonus isaretleme hatasi:", e);
+          }
+        }
+
+        // Sadakat bonusu KAZANMA — sipariş başarılı + ÜYE + ödenen tutar eşiği.
+        // Misafir (uye_email null) bonus ALMAZ. ≥5000 → 200 TL, ≥3000 → 150 TL.
+        // Bonus min 1000 TL sepet + 60 gün geçerli.
         const odenen = parseFloat(String(data.paidPrice)) || 0;
         const bonusTutar = odenen >= 5000 ? 200 : odenen >= 3000 ? 150 : 0;
         if (gecici?.uye_email && bonusTutar > 0) {
