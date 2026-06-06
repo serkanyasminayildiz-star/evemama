@@ -108,19 +108,30 @@ export async function POST(req: NextRequest) {
 
         // Sipariş onay maili — best-effort, hata olsa bile akışı bozma.
         // RESEND_API_KEY yoksa fonksiyon zaten sessizce false döner.
+        //
+        // await ŞART: Vercel serverless'te response (redirect) dönünce
+        // function sonlanır. await edilmeyen (fire-and-forget) mail gönderimi
+        // yarıda kesilir → bazı siparişlerde mail GİTMEZ (race condition:
+        // redirect'e yetişen gider, yetişemeyen ölür). await ile gönderim
+        // redirect'ten ÖNCE tamamlanır. sendSiparisOnayMaili kendi içinde
+        // hatayı yutar (false döner), yine de dış try/catch güvence.
         if (gecici?.email) {
-          sendSiparisOnayMaili({
-            siparisNo,
-            ad: gecici.ad || "",
-            soyad: gecici.soyad || "",
-            email: gecici.email,
-            urunler: gecici.urunler || [],
-            toplam: data.paidPrice,
-            araToplam: data.price,
-            adres: gecici.adres || "",
-            sehir: gecici.sehir || "",
-            telefon: gecici.telefon || "",
-          }).catch((e) => console.error("[odeme/sonuc] mail gonderim hatasi:", e));
+          try {
+            await sendSiparisOnayMaili({
+              siparisNo,
+              ad: gecici.ad || "",
+              soyad: gecici.soyad || "",
+              email: gecici.email,
+              urunler: gecici.urunler || [],
+              toplam: data.paidPrice,
+              araToplam: data.price,
+              adres: gecici.adres || "",
+              sehir: gecici.sehir || "",
+              telefon: gecici.telefon || "",
+            });
+          } catch (e) {
+            console.error("[odeme/sonuc] mail gonderim hatasi:", e);
+          }
         }
       }
 
