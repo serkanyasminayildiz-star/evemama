@@ -14,6 +14,14 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// Sadakat bonusu RLS korumalı tabloya (sadakat_bonuslari) yazılır → service_role
+// gerekir. Yoksa anon'a düşer (insert RLS'e takılır, sessizce başarısız olur).
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { auth: { persistSession: false, autoRefreshToken: false } },
+);
+
 const ENDPOINT = "/payment/iyzipos/checkoutform/auth/ecom/detail";
 
 function generateRandomString(): string {
@@ -131,6 +139,26 @@ export async function POST(req: NextRequest) {
             });
           } catch (e) {
             console.error("[odeme/sonuc] mail gonderim hatasi:", e);
+          }
+        }
+
+        // Sadakat bonusu — sipariş başarılı + ÜYE (gecici.uye_email) + ödenen
+        // tutar eşiği. Misafir (uye_email null) bonus ALMAZ. Ödenen tutara göre:
+        // ≥5000 → 200 TL, ≥3000 → 150 TL. Bonus min 1000 TL sepet + 60 gün geçerli.
+        const odenen = parseFloat(String(data.paidPrice)) || 0;
+        const bonusTutar = odenen >= 5000 ? 200 : odenen >= 3000 ? 150 : 0;
+        if (gecici?.uye_email && bonusTutar > 0) {
+          try {
+            await supabaseAdmin.from("sadakat_bonuslari").insert({
+              email: gecici.uye_email,
+              tutar: bonusTutar,
+              min_sepet: 1000,
+              bitis_tarihi: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+              kaynak_siparis_no: siparisNo,
+            });
+            console.log("[odeme/sonuc] sadakat bonusu olusturuldu:", { email: gecici.uye_email, tutar: bonusTutar, siparisNo });
+          } catch (e) {
+            console.error("[odeme/sonuc] sadakat bonusu hatasi:", e);
           }
         }
       }

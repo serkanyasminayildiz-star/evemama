@@ -63,26 +63,33 @@ export async function POST(req: NextRequest) {
   const kargo = basketTotal >= 1000 ? 0 : 29.90;
   const tutarIndirimi = basketTotal >= 10000 ? 500 : basketTotal >= 5000 ? 200 : 0;
 
-  // İlk sipariş 200 TL indirimi — SADECE giriş yapmış (üye) ve bu hesapla hiç
-  // siparişi olmayan müşteriye. Üyelik, client'tan gelen Authorization Bearer
-  // token (Supabase access_token) ile SUNUCUDA doğrulanır; üye olmayan veya
-  // 2. siparişini veren bu indirimi ALAMAZ.
-  let ilkSiparisIndirimi = 0;
+  // Üye doğrulama (Supabase access_token) — hem ilk sipariş indirimi hem
+  // sadakat bonusu için ortak. Üye e-postası odeme_gecici'ye yazılır ki
+  // callback'te (odeme/sonuc) "üye mi" belli olsun; sadakat bonusu yalnızca
+  // üyelere verilir.
+  let uyeEmail: string | null = null;
   const reqAuth = req.headers.get("authorization") || "";
-  if (reqAuth.startsWith("Bearer ") && basketTotal >= 1000) {
+  if (reqAuth.startsWith("Bearer ")) {
     try {
       const { data: authData } = await supabase.auth.getUser(reqAuth.slice(7));
-      const uyeEmail = authData?.user?.email;
-      if (uyeEmail) {
-        const { count } = await supabase
-          .from("siparisler")
-          .select("*", { count: "exact", head: true })
-          .eq("email", uyeEmail);
-        if (count === 0) ilkSiparisIndirimi = 200;
-      }
+      uyeEmail = authData?.user?.email || null;
     } catch (e) {
-      console.error("[odeme] uyelik/ilk siparis dogrulama:", e);
-      // Doğrulanamazsa indirim verilmez (güvenli taraf).
+      console.error("[odeme] uye token dogrulama:", e);
+    }
+  }
+
+  // İlk sipariş 200 TL indirimi — SADECE giriş yapmış (üye) ve bu hesapla hiç
+  // siparişi olmayan müşteriye. Üye olmayan / 2. siparişini veren ALAMAZ.
+  let ilkSiparisIndirimi = 0;
+  if (uyeEmail && basketTotal >= 1000) {
+    try {
+      const { count } = await supabase
+        .from("siparisler")
+        .select("*", { count: "exact", head: true })
+        .eq("email", uyeEmail);
+      if (count === 0) ilkSiparisIndirimi = 200;
+    } catch (e) {
+      console.error("[odeme] ilk siparis dogrulama:", e);
     }
   }
 
@@ -163,6 +170,7 @@ export async function POST(req: NextRequest) {
         toplam: parseFloat(paidPriceStr),
         ara_toplam: parseFloat(priceStr),
         urunler: JSON.stringify(items),
+        uye_email: uyeEmail, // null ise misafir → sadakat bonusu verilmez
         created_at: new Date().toISOString(),
       }, { onConflict: "token" });
     }
