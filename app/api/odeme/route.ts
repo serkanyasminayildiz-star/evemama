@@ -39,7 +39,7 @@ function generateAuth(randomString: string, uri: string, body: any): string {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { items, buyer, totalPrice } = body;
+  const { items, buyer } = body;
 
   const conversationId = Date.now().toString();
   const randomString = generateRandomString();
@@ -56,8 +56,39 @@ export async function POST(req: NextRequest) {
     sum + (item.price * item.quantity), 0
   );
 
+  // GÜVENLİK: ödenecek tutar CLIENT'tan ALINMAZ — server hesaplar. Aksi
+  // halde tarayıcıdan düşük paidPrice gönderilip indirim manipüle edilebilirdi.
+  // Kargo + tutar indirimleri basketTotal'dan; ilk sipariş indirimi ise
+  // ÜYELİK + sipariş geçmişi doğrulanarak verilir.
+  const kargo = basketTotal >= 1000 ? 0 : 29.90;
+  const tutarIndirimi = basketTotal >= 10000 ? 500 : basketTotal >= 5000 ? 200 : 0;
+
+  // İlk sipariş 200 TL indirimi — SADECE giriş yapmış (üye) ve bu hesapla hiç
+  // siparişi olmayan müşteriye. Üyelik, client'tan gelen Authorization Bearer
+  // token (Supabase access_token) ile SUNUCUDA doğrulanır; üye olmayan veya
+  // 2. siparişini veren bu indirimi ALAMAZ.
+  let ilkSiparisIndirimi = 0;
+  const reqAuth = req.headers.get("authorization") || "";
+  if (reqAuth.startsWith("Bearer ") && basketTotal >= 1000) {
+    try {
+      const { data: authData } = await supabase.auth.getUser(reqAuth.slice(7));
+      const uyeEmail = authData?.user?.email;
+      if (uyeEmail) {
+        const { count } = await supabase
+          .from("siparisler")
+          .select("*", { count: "exact", head: true })
+          .eq("email", uyeEmail);
+        if (count === 0) ilkSiparisIndirimi = 200;
+      }
+    } catch (e) {
+      console.error("[odeme] uyelik/ilk siparis dogrulama:", e);
+      // Doğrulanamazsa indirim verilmez (güvenli taraf).
+    }
+  }
+
+  const genelToplam = Math.max(0, basketTotal + kargo - tutarIndirimi - ilkSiparisIndirimi);
   const priceStr = basketTotal.toFixed(2);
-  const paidPriceStr = totalPrice.toFixed(2);
+  const paidPriceStr = genelToplam.toFixed(2);
 
   const requestBody = {
     locale: "tr",

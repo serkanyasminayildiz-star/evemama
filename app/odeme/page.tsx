@@ -56,10 +56,17 @@ export default function Odeme() {
     setYukleniyor(true);
     if (odemeYontemi === "havale") { window.location.href = "/odeme/havale"; return; }
     try {
+      // Üyelik doğrulaması SUNUCUDA yapılır (ilk sipariş indirimi için).
+      // Oturum token'ını gönderiyoruz; sunucu indirimi/tutarı kendisi
+      // hesaplar — bu yüzden tutar artık tarayıcıdan güven kaynağı değil.
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch("/api/odeme", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, totalPrice: genelToplam, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.address, city: form.city } }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.address, city: form.city } }),
       });
       const data = await res.json();
       if (data.status === "success" && data.paymentPageUrl) {
