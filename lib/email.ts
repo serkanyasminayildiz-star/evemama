@@ -336,3 +336,75 @@ export async function sendKuponMaili(p: KuponMailParams): Promise<boolean> {
     return false;
   }
 }
+
+// ── Terk edilmiş sepet hatırlatma maili ────────────────────────────────
+// Admin "Terk Edilen Sepetler" sayfasından, ödemesini tamamlamamış
+// müşterilere sepet hatırlatması + indirim kuponu gönderir.
+export type HatirlatmaMailParams = {
+  email: string;
+  ad?: string;
+  urunOzet?: string;       // ör. "1x Royal Canin Kitten 10 Kg"
+  kod: string;
+  indirimMetni: string;
+  minSepetMetni?: string;
+  bitisMetni?: string;
+};
+
+function buildHatirlatmaHTML(p: HatirlatmaMailParams): string {
+  return `<!DOCTYPE html>
+<html lang="tr"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>Sepetinizi unutmadınız mı?</title></head>
+<body style="margin:0;padding:0;background:#f5f7fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;">
+    <div style="background:linear-gradient(135deg,#ff6b35 0%,#f7931e 100%);padding:32px 24px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:28px;font-weight:700;">evemama.net</h1>
+      <p style="margin:8px 0 0 0;color:rgba(255,255,255,0.95);font-size:14px;">Evcil dostunuzun dükkanı</p>
+    </div>
+    <div style="padding:32px 24px 8px;text-align:center;">
+      <div style="font-size:46px;margin-bottom:8px;">🛒</div>
+      <h2 style="margin:0 0 8px 0;color:#1a1a1a;font-size:22px;">Sepetinizi unutmadınız mı?</h2>
+      <p style="margin:0;color:#555;font-size:15px;line-height:1.5;">Merhaba ${p.ad || "değerli müşterimiz"},<br>Sepetinizde sizi bekleyen ürünler var. Üstelik size özel bir de indirim kuponumuz!</p>
+    </div>
+    ${p.urunOzet ? `<div style="padding:8px 24px 0;"><div style="background:#f9fafb;border:1px solid #eee;border-radius:12px;padding:14px 18px;font-size:14px;color:#374151;text-align:center;">🐾 ${p.urunOzet}</div></div>` : ""}
+    <div style="padding:16px 24px 8px;">
+      <div style="border:2px dashed #ff6b35;border-radius:16px;padding:22px 16px;text-align:center;background:#fff7ed;">
+        <div style="font-size:24px;font-weight:800;color:#ff6b35;margin-bottom:10px;">${p.indirimMetni}</div>
+        <div style="display:inline-block;background:#1a1a1a;color:#fff;font-family:monospace;font-size:21px;font-weight:700;letter-spacing:2px;padding:11px 20px;border-radius:10px;">${p.kod}</div>
+        ${p.minSepetMetni ? `<p style="margin:12px 0 0;font-size:13px;color:#6b7280;">${p.minSepetMetni}</p>` : ""}
+        ${p.bitisMetni ? `<p style="margin:4px 0 0;font-size:13px;color:#9ca3af;">${p.bitisMetni}</p>` : ""}
+      </div>
+    </div>
+    <div style="padding:8px 24px 32px;text-align:center;">
+      <a href="https://www.evemama.net/sepet" style="display:inline-block;padding:14px 32px;background:#ff6b35;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;">Sepete Dön & Tamamla →</a>
+    </div>
+    <div style="padding:18px 24px;text-align:center;background:#1a1a1a;color:#9ca3af;font-size:12px;line-height:1.6;">
+      <p style="margin:0 0 6px 0;">evemama.net — Evcil Dostunuzun Dükkanı</p>
+      <p style="margin:0;">© ${new Date().getFullYear()} Tüm hakları saklıdır.</p>
+    </div>
+  </div>
+</body></html>`;
+}
+
+export async function sendHatirlatmaMaili(p: HatirlatmaMailParams): Promise<boolean> {
+  const client = getResend();
+  if (!client) {
+    console.warn("[email] RESEND_API_KEY tanimli degil, hatirlatma maili gonderilmedi:", p.email);
+    return false;
+  }
+  if (!p.email) return false;
+  try {
+    const { data, error } = await client.emails.send({
+      from: FROM_EMAIL,
+      to: p.email,
+      subject: `🛒 Sepetinizi unutmadınız mı? Size özel ${p.kod} kuponu`,
+      html: buildHatirlatmaHTML(p),
+    });
+    if (error) {
+      console.error("[email] hatirlatma maili hatasi:", { email: p.email, error });
+      return false;
+    }
+    return Boolean(data?.id);
+  } catch (err: any) {
+    console.error("[email] hatirlatma maili exception:", { email: p.email, err: err?.message || err });
+    return false;
+  }
+}
