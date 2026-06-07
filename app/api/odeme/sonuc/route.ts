@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { sendSiparisOnayMaili } from "../../../../lib/email";
+import { SADAKAT } from "../../../../lib/indirim";
 
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
 const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
@@ -28,7 +29,7 @@ function generateRandomString(): string {
   return process.hrtime()[0] + Math.random().toString(8).slice(2);
 }
 
-function generateAuth(randomString: string, uri: string, body: any): string {
+function generateAuth(randomString: string, uri: string, body: Record<string, unknown>): string {
   const signature = crypto
     .createHmac("sha256", IYZICO_SECRET_KEY)
     .update(randomString + uri + JSON.stringify(body))
@@ -173,14 +174,14 @@ export async function POST(req: NextRequest) {
         // Misafir (uye_email null) bonus ALMAZ. ≥5000 → 200 TL, ≥3000 → 150 TL.
         // Bonus min 1000 TL sepet + 60 gün geçerli.
         const odenen = parseFloat(String(data.paidPrice)) || 0;
-        const bonusTutar = odenen >= 5000 ? 200 : odenen >= 3000 ? 150 : 0;
+        const bonusTutar = odenen >= SADAKAT.KAZAN_ESIK_2 ? SADAKAT.KAZAN_2 : odenen >= SADAKAT.KAZAN_ESIK_1 ? SADAKAT.KAZAN_1 : 0;
         if (gecici?.uye_email && bonusTutar > 0) {
           try {
             await supabaseAdmin.from("sadakat_bonuslari").insert({
               email: gecici.uye_email,
               tutar: bonusTutar,
-              min_sepet: 1000,
-              bitis_tarihi: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+              min_sepet: SADAKAT.MIN_SEPET,
+              bitis_tarihi: new Date(Date.now() + SADAKAT.GECERLILIK_GUN * 24 * 60 * 60 * 1000).toISOString(),
               kaynak_siparis_no: siparisNo,
             });
             console.log("[odeme/sonuc] sadakat bonusu olusturuldu:", { email: gecici.uye_email, tutar: bonusTutar, siparisNo });
@@ -200,7 +201,7 @@ export async function POST(req: NextRequest) {
     } else {
       return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz`, { status: 303 });
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error("[odeme/sonuc] callback error:", err);
     return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz`, { status: 303 });
   }

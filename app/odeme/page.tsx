@@ -1,16 +1,19 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
+import Link from "next/link";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
+import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT } from "../../lib/indirim";
 
 export default function Odeme() {
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice } = useCart();
   const [yukleniyor, setYukleniyor] = useState(false);
   const [odemeYontemi, setOdemeYontemi] = useState<"kart" | "havale">("kart");
   const [sozlesme, setSozlesme] = useState(false);
   const [aydinlatma, setAydinlatma] = useState(false);
   const [hata, setHata] = useState("");
   const [ilkSiparisIndirimi, setIlkSiparisIndirimi] = useState(false);
+  const [uye, setUye] = useState(false);
   const [bonus, setBonus] = useState<{ tutar: number; min_sepet: number } | null>(null);
   const [kuponKodu, setKuponKodu] = useState("");
   const [uygulananKupon, setUygulananKupon] = useState<{ kod: string; indirim: number } | null>(null);
@@ -21,7 +24,7 @@ export default function Odeme() {
     phone: "", address: "", city: ""
   });
 
-  const handleChange = (e: any) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [e.target.name]: e.target.value });
 
   // Ilk siparis indirimi kontrolu — sepet sayfasiyla AYNI mantik.
   // Bu kontrol yapilmazsa sepette gosterilen indirim odeme sayfasinda
@@ -30,7 +33,8 @@ export default function Odeme() {
     const kontrol = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (user && totalPrice >= 1000) {
+        setUye(!!user);
+        if (user && totalPrice >= ILK_SIPARIS.MIN_SEPET) {
           const { count, error } = await supabase
             .from("siparisler")
             .select("*", { count: "exact", head: true })
@@ -96,7 +100,7 @@ export default function Odeme() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalPrice]);
 
-  const kargoUcreti = totalPrice >= 1000 ? 0 : 29.90;
+  const kargoUcreti = totalPrice >= KARGO.BEDAVA_ESIK ? 0 : KARGO.UCRET;
   const kdv = totalPrice * 0.20;
   // Indirim hesabi — sepet sayfasindaki ile birebir ayni olmali.
   // 5.000+ TL -> 200 TL, 10.000+ TL -> 500 TL + ilk siparis indirimi
@@ -104,15 +108,22 @@ export default function Odeme() {
   const bonusUygulanabilir = !!bonus && totalPrice >= bonus.min_sepet;
   const bonusIndirimi = bonusUygulanabilir ? bonus!.tutar : 0;
   // Otomatik indirimler vs kupon — EN AVANTAJLISI uygulanır (üst üste binmez).
-  const otomatikToplam = (totalPrice >= 10000 ? 500 : totalPrice >= 5000 ? 200 : 0) + (ilkSiparisIndirimi ? 200 : 0) + bonusIndirimi;
+  const otomatikToplam = (totalPrice >= TUTAR_INDIRIMI.ESIK_2 ? TUTAR_INDIRIMI.INDIRIM_2 : totalPrice >= TUTAR_INDIRIMI.ESIK_1 ? TUTAR_INDIRIMI.INDIRIM_1 : 0) + (ilkSiparisIndirimi ? ILK_SIPARIS.INDIRIM : 0) + bonusIndirimi;
   const kuponIndirimi = uygulananKupon ? uygulananKupon.indirim : 0;
   const kuponKazandi = kuponIndirimi > otomatikToplam;
   const indirimMiktari = Math.max(otomatikToplam, kuponIndirimi);
-  const indirimAciklama = totalPrice >= 10000 ? "10.000₺ üzeri indirim" : totalPrice >= 5000 ? "5.000₺ üzeri indirim" : "";
+  const indirimAciklama = totalPrice >= TUTAR_INDIRIMI.ESIK_2 ? "10.000₺ üzeri indirim" : totalPrice >= TUTAR_INDIRIMI.ESIK_1 ? "5.000₺ üzeri indirim" : "";
   const indirimEtiketleri = kuponKazandi
     ? `Kupon ${uygulananKupon!.kod}`
     : [indirimAciklama, ilkSiparisIndirimi ? "İlk sipariş" : "", bonusUygulanabilir ? "Sadakat bonusu" : ""].filter(Boolean).join(" + ");
   const genelToplam = totalPrice + kargoUcreti - indirimMiktari;
+
+  // Sadakat bonusu KAZANMA (bu sipariş → BİR SONRAKİ alışveriş). Yalnızca ÜYE.
+  // Ödenecek tutara (genelToplam) göre eşik: ≥5000 → 200, ≥3000 → 150 —
+  // odeme/sonuc'taki kurallarla BİREBİR AYNI. Sepetteki ile de aynı (tek kaynak).
+  // Eşik ÖDENEN tutara (genelToplam) göredir; "sepete X ekle" deltası YANLIŞ
+  // olurdu (ekledikçe tutar indirimi paidPrice'ı düşürür). Net eşik ifadesi.
+  const kazanilacakBonus = genelToplam >= SADAKAT.KAZAN_ESIK_2 ? SADAKAT.KAZAN_2 : genelToplam >= SADAKAT.KAZAN_ESIK_1 ? SADAKAT.KAZAN_1 : 0;
 
   const handleOde = async () => {
     if (!sozlesme || !aydinlatma) { setHata("Lütfen sözleşmeleri kabul edin."); return; }
@@ -139,7 +150,7 @@ export default function Odeme() {
       } else {
         setHata("Ödeme başlatılamadı: " + (data.errorMessage || "Bilinmeyen hata"));
       }
-    } catch (err) {
+    } catch {
       setHata("Bir hata oluştu, lütfen tekrar deneyin.");
     }
     setYukleniyor(false);
@@ -175,9 +186,9 @@ export default function Odeme() {
       `}</style>
 
       <header className="odeme-header" style={{ background: "white", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100 }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
+        <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
           evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span>
-        </a>
+        </Link>
         <div style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E" }}>💳 Güvenli Ödeme</div>
         <a href="/sepet" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>← Sepet</a>
       </header>
@@ -219,7 +230,7 @@ export default function Odeme() {
 
             {odemeYontemi === "kart" && (
               <div style={{ marginTop: 14, background: "#FDF6EE", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "#5C3D2E", opacity: 0.8 }}>
-                🔒 Kart bilgileriniz <strong>iyzico</strong>'nun güvenli sayfasında girilecektir.
+                🔒 Kart bilgileriniz <strong>iyzico</strong>&apos;nun güvenli sayfasında girilecektir.
               </div>
             )}
 
@@ -247,16 +258,16 @@ export default function Odeme() {
               <input type="checkbox" checked={sozlesme} onChange={e => setSozlesme(e.target.checked)}
                 style={{ width: 18, height: 18, marginTop: 2, accentColor: "#E8845A", flexShrink: 0, cursor: "pointer" }} />
               <span style={{ fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
-                <a href="/mesafeli-satis" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Mesafeli Satış Sözleşmesi</a>'ni ve{" "}
-                <a href="/kullanim-kosullari" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Ön Bilgilendirme Formu</a>'nu okudum, onaylıyorum. <span style={{ color: "red" }}>*</span>
+                <a href="/mesafeli-satis" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Mesafeli Satış Sözleşmesi</a>&apos;ni ve{" "}
+                <a href="/kullanim-kosullari" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Ön Bilgilendirme Formu</a>&apos;nu okudum, onaylıyorum. <span style={{ color: "red" }}>*</span>
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
               <input type="checkbox" checked={aydinlatma} onChange={e => setAydinlatma(e.target.checked)}
                 style={{ width: 18, height: 18, marginTop: 2, accentColor: "#E8845A", flexShrink: 0, cursor: "pointer" }} />
               <span style={{ fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
-                <a href="/kvkk" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>KVKK Aydınlatma Metni</a>'ni okudum,{" "}
-                <a href="/gizlilik" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Gizlilik Politikası</a>'nı kabul ediyorum. <span style={{ color: "red" }}>*</span>
+                <a href="/kvkk" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>KVKK Aydınlatma Metni</a>&apos;ni okudum,{" "}
+                <a href="/gizlilik" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Gizlilik Politikası</a>&apos;nı kabul ediyorum. <span style={{ color: "red" }}>*</span>
               </span>
             </div>
             {hata && (
@@ -320,6 +331,23 @@ export default function Odeme() {
                 )}
               </div>
 
+              {/* Sadakat bonusu KAZANMA — bu sipariş, BİR SONRAKİ alışveriş için.
+                  Uygulanan indirimlerden (yukarıdaki yeşil satır) görsel olarak
+                  ayrı (altın tema) ki "şimdi mi / sonra mı" karışmasın. */}
+              {uye && kazanilacakBonus > 0 && (
+                <div style={{ background: "linear-gradient(135deg,#FFF3D6,#FFE7B0)", borderRadius: 12, padding: "12px 14px", marginBottom: 14, fontSize: 12.5, color: "#6B4E00", textAlign: "center", border: "1.5px solid #E6B800" }}>
+                  🎁 Bu siparişle <strong>bir sonraki alışverişinizde</strong> kullanmak üzere <strong>₺{kazanilacakBonus}</strong> sadakat bonusu kazanıyorsunuz!
+                  {kazanilacakBonus === 150 && (
+                    <><br />Ödemeniz <strong>₺5.000</strong> ve üzeri olursa bonusunuz <strong>₺200</strong> olur.</>
+                  )}
+                </div>
+              )}
+              {uye && kazanilacakBonus === 0 && genelToplam >= KARGO.BEDAVA_ESIK && (
+                <div style={{ background: "linear-gradient(135deg,#FFF3D6,#FFE7B0)", borderRadius: 12, padding: "12px 14px", marginBottom: 14, fontSize: 12.5, color: "#6B4E00", textAlign: "center", border: "1.5px solid #E6B800" }}>
+                  🎁 Ödemeniz <strong>₺3.000</strong> ve üzeri olursa, bir sonraki alışverişiniz için <strong>₺150</strong> sadakat bonusu kazanırsınız!
+                </div>
+              )}
+
               <div style={{ borderTop: "2px solid #FDF6EE", paddingTop: 14, display: "flex", justifyContent: "space-between" }}>
                 <span style={{ fontFamily: "Georgia, serif", fontSize: 17, fontWeight: 700, color: "#5C3D2E" }}>Toplam</span>
                 <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#E8845A" }}>₺{genelToplam.toFixed(2)}</span>
@@ -346,9 +374,9 @@ export default function Odeme() {
 
       <style>{`.odeme-bottom-nav { display: none; } @media(max-width:768px){ .odeme-bottom-nav { display: grid !important; grid-template-columns: repeat(4,1fr); position: fixed; bottom: 0; left: 0; right: 0; z-index: 300; background: rgba(253,246,238,0.97); backdrop-filter: blur(14px); border-top: 1px solid rgba(92,61,46,.08); padding: 8px 0 20px; } }`}</style>
       <nav className="odeme-bottom-nav" style={{ display: "none" }}>
-        <a href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+        <Link href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
           <span style={{ fontSize: 22 }}>🏠</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Anasayfa</span>
-        </a>
+        </Link>
         <a href="/urunler" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
           <span style={{ fontSize: 22 }}>🛍️</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Ürünler</span>
         </a>

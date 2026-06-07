@@ -2,14 +2,17 @@
 import { useCart } from "../../context/CartContext";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import type { User } from "@supabase/supabase-js";
+import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT } from "../../lib/indirim";
 
 export default function Sepet() {
   const { items, removeItem, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
   const [silindi, setSilindi] = useState<number | null>(null);
   const [eklendi, setEklendi] = useState<number | null>(null);
   const [ilkSiparisIndirimi, setIlkSiparisIndirimi] = useState(false);
-  const [kullanici, setKullanici] = useState<any>(null);
+  const [kullanici, setKullanici] = useState<User | null>(null);
   const [bonus, setBonus] = useState<{ tutar: number; min_sepet: number } | null>(null);
   const [kuponKodu, setKuponKodu] = useState("");
   const [uygulananKupon, setUygulananKupon] = useState<{ kod: string; indirim: number } | null>(null);
@@ -21,7 +24,7 @@ export default function Sepet() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         setKullanici(user);
-        if (user && totalPrice >= 1000) {
+        if (user && totalPrice >= ILK_SIPARIS.MIN_SEPET) {
           const { count, error } = await supabase
             .from("siparisler")
             .select("*", { count: "exact", head: true })
@@ -91,26 +94,44 @@ export default function Sepet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalPrice]);
 
-  const kargoUcreti = totalPrice >= 1000 ? 0 : 29.90;
-  const kargoyaKalan = 1000 - totalPrice;
+  const kargoUcreti = totalPrice >= KARGO.BEDAVA_ESIK ? 0 : KARGO.UCRET;
+  const kargoyaKalan = KARGO.BEDAVA_ESIK - totalPrice;
 
   const bonusUygulanabilir = !!bonus && totalPrice >= bonus.min_sepet;
   const bonusIndirimi = bonusUygulanabilir ? bonus!.tutar : 0;
   // Otomatik indirimler (tutar + ilk sipariş + sadakat) vs kupon — EN AVANTAJLISI
   // uygulanır (üst üste binmez, kâr koruması).
-  const otomatikToplam = (totalPrice >= 10000 ? 500 : totalPrice >= 5000 ? 200 : 0) + (ilkSiparisIndirimi ? 200 : 0) + bonusIndirimi;
+  const otomatikToplam = (totalPrice >= TUTAR_INDIRIMI.ESIK_2 ? TUTAR_INDIRIMI.INDIRIM_2 : totalPrice >= TUTAR_INDIRIMI.ESIK_1 ? TUTAR_INDIRIMI.INDIRIM_1 : 0) + (ilkSiparisIndirimi ? ILK_SIPARIS.INDIRIM : 0) + bonusIndirimi;
   const kuponIndirimi = uygulananKupon ? uygulananKupon.indirim : 0;
   const kuponKazandi = kuponIndirimi > otomatikToplam;
   const indirimMiktari = Math.max(otomatikToplam, kuponIndirimi);
-  const indirimAciklama = totalPrice >= 10000 ? "10.000₺ üzeri alışveriş indirimi 🎉" : totalPrice >= 5000 ? "5.000₺ üzeri alışveriş indirimi 🎁" : "";
+  const indirimAciklama = totalPrice >= TUTAR_INDIRIMI.ESIK_2 ? "10.000₺ üzeri alışveriş indirimi 🎉" : totalPrice >= TUTAR_INDIRIMI.ESIK_1 ? "5.000₺ üzeri alışveriş indirimi 🎁" : "";
 
-  const sonrakiIndirim = totalPrice < 5000
-    ? { hedef: 5000, indirim: 200, kalan: 5000 - totalPrice }
-    : totalPrice < 10000
-    ? { hedef: 10000, indirim: 500, kalan: 10000 - totalPrice }
+  // Teşvik, o eşikte görülecek TOPLAM indirimi gösterir (yalnız tutar tier'ı
+  // değil): eşikteki tutar indirimine, halihazırda geçerli ek otomatik indirimler
+  // (ilk sipariş + sadakat bonusu harcaması) eklenir — bunlar eşik üstünde de
+  // geçerli kalır. Örn. ilk sipariş indirimi olan üye 5000₺'de 200+200=400₺ görür.
+  // (ilk sipariş ve bonus harcaması birbirini dışlar; formül yine de güvenle toplar.)
+  const ekOtomatikIndirim = (ilkSiparisIndirimi ? ILK_SIPARIS.INDIRIM : 0) + bonusIndirimi;
+  const sonrakiIndirim = totalPrice < TUTAR_INDIRIMI.ESIK_1
+    ? { hedef: TUTAR_INDIRIMI.ESIK_1, indirim: TUTAR_INDIRIMI.INDIRIM_1 + ekOtomatikIndirim, kalan: TUTAR_INDIRIMI.ESIK_1 - totalPrice }
+    : totalPrice < TUTAR_INDIRIMI.ESIK_2
+    ? { hedef: TUTAR_INDIRIMI.ESIK_2, indirim: TUTAR_INDIRIMI.INDIRIM_2 + ekOtomatikIndirim, kalan: TUTAR_INDIRIMI.ESIK_2 - totalPrice }
     : null;
 
   const genelToplam = totalPrice + kargoUcreti - indirimMiktari;
+
+  // Sadakat bonusu KAZANMA (bu sipariş → BİR SONRAKİ alışveriş). Yalnızca ÜYE.
+  // Ödenecek tutara (genelToplam = sunucudaki paidPrice karşılığı) göre eşik:
+  // ≥5000 → 200, ≥3000 → 150 — odeme/sonuc'taki kurallarla BİREBİR AYNI.
+  // Misafir kazanmaz. DİKKAT: bu, "5000₺ üzeri tutar indirimi" teşvikinden
+  // (sonrakiIndirim — bu siparişe ANINDA uygulanır) AYRI bir şeydir; o BU
+  // sipariş için, bu ise SONRAKİ sipariş için kazanılır. İkisi karışmasın diye
+  // gösterimde net ayrıldı.
+  // Eşik ÖDENEN tutara (genelToplam) göredir; "sepete X ekle" deltası YANLIŞ
+  // olurdu çünkü ekledikçe tutar indirimi de devreye girip paidPrice'ı düşürür.
+  // O yüzden müşterinin gördüğü Toplam üzerinden net eşik ifadesi kullanılır.
+  const kazanilacakBonus = genelToplam >= SADAKAT.KAZAN_ESIK_2 ? SADAKAT.KAZAN_2 : genelToplam >= SADAKAT.KAZAN_ESIK_1 ? SADAKAT.KAZAN_1 : 0;
 
   const handleArtir = (id: number, quantity: number) => {
     setEklendi(id);
@@ -125,11 +146,11 @@ export default function Sepet() {
   if (items.length === 0) return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
       <header style={{ background: "white", padding: "16px 24px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
+        <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
           evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span>
-        </a>
+        </Link>
         <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E" }}>🛒 Sepetim</div>
-        <a href="/" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>← Alışverişe Devam</a>
+        <Link href="/" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>← Alışverişe Devam</Link>
       </header>
 
       <div style={{ background: "linear-gradient(135deg, #5C3D2E, #8B5E42)", padding: "12px 24px", textAlign: "center", color: "white", fontSize: 13, fontWeight: 600 }}>
@@ -141,9 +162,9 @@ export default function Sepet() {
           <div style={{ fontSize: 64, marginBottom: 16 }}>🛒</div>
           <div style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>Sepetiniz boş</div>
           <div style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.5, marginBottom: 28 }}>Ürün eklemek için alışverişe başlayın</div>
-          <a href="/" style={{ background: "#E8845A", color: "white", padding: "14px 28px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14, display: "inline-block", boxShadow: "0 8px 20px rgba(232,132,90,0.3)" }}>
+          <Link href="/" style={{ background: "#E8845A", color: "white", padding: "14px 28px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14, display: "inline-block", boxShadow: "0 8px 20px rgba(232,132,90,0.3)" }}>
             Alışverişe Başla 🐾
-          </a>
+          </Link>
         </div>
       </div>
     </main>
@@ -152,14 +173,14 @@ export default function Sepet() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
       <header style={{ background: "white", padding: "16px 24px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100 }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
+        <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
           evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span>
-        </a>
+        </Link>
         <div style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E" }}>
           🛒 Sepetim
           <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 12, fontWeight: 700, padding: "2px 9px", marginLeft: 8 }}>{totalItems}</span>
         </div>
-        <a href="/" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>← Devam</a>
+        <Link href="/" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>← Devam</Link>
       </header>
 
       {kargoUcreti > 0 ? (
@@ -181,7 +202,7 @@ export default function Sepet() {
       {sonrakiIndirim && (
         <div style={{ background: "linear-gradient(135deg,#FFF5E0,#FFE8C0)", padding: "12px 24px", textAlign: "center" }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 6 }}>
-            🎁 <strong style={{ color: "#E8845A" }}>₺{sonrakiIndirim.kalan.toFixed(2)}</strong> daha ekle, <strong>{sonrakiIndirim.indirim}₺ indirim</strong> kazan!
+            🎁 <strong style={{ color: "#E8845A" }}>₺{sonrakiIndirim.kalan.toFixed(2)}</strong> daha ekle, <strong>bu siparişte toplam {sonrakiIndirim.indirim}₺ indirim</strong> kazan!
           </div>
           <div style={{ maxWidth: 400, margin: "0 auto", background: "rgba(92,61,46,0.12)", borderRadius: 50, height: 8, overflow: "hidden" }}>
             <div style={{ width: `${Math.min((totalPrice / sonrakiIndirim.hedef) * 100, 100)}%`, height: "100%", background: "#E8845A", borderRadius: 50, transition: "width .4s ease" }} />
@@ -194,12 +215,12 @@ export default function Sepet() {
 
       {indirimMiktari > 0 && (
         <div style={{ background: "linear-gradient(135deg,#E8F5E9,#C8E6C9)", padding: "12px 24px", textAlign: "center", color: "#2E7D32", fontSize: 13, fontWeight: 700 }}>
-          🎉 Tebrikler! <strong>{indirimMiktari}₺ indirim</strong> kazandınız — sepetinize otomatik uygulandı!
+          ✓ Bu siparişe <strong>{indirimMiktari}₺ indirim</strong> uygulandı 🎉
         </div>
       )}
 
       {/* İlk sipariş indirimi bildirimi - giriş yapılmamışsa */}
-      {!kullanici && totalPrice >= 1000 && (
+      {!kullanici && totalPrice >= ILK_SIPARIS.MIN_SEPET && (
         <div style={{ background: "linear-gradient(135deg,#FFF5F0,#FFE8D5)", padding: "12px 24px", textAlign: "center" }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 6 }}>
             🎁 İlk siparişinize <strong style={{ color: "#E8845A" }}>200₺ indirim</strong> kazanmak için
@@ -277,10 +298,10 @@ export default function Sepet() {
             <span>₺{totalPrice.toFixed(2)}</span>
           </div>
 
-          {!kuponKazandi && (totalPrice >= 5000 || totalPrice >= 10000) && (
+          {!kuponKazandi && (totalPrice >= TUTAR_INDIRIMI.ESIK_1 || totalPrice >= TUTAR_INDIRIMI.ESIK_2) && (
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 14 }}>
               <span style={{ color: "#2E7D32", fontWeight: 600 }}>🎁 {indirimAciklama}</span>
-              <span style={{ color: "#2E7D32", fontWeight: 700 }}>−₺{(totalPrice >= 10000 ? 500 : 200).toFixed(2)}</span>
+              <span style={{ color: "#2E7D32", fontWeight: 700 }}>−₺{(totalPrice >= TUTAR_INDIRIMI.ESIK_2 ? TUTAR_INDIRIMI.INDIRIM_2 : TUTAR_INDIRIMI.INDIRIM_1).toFixed(2)}</span>
             </div>
           )}
 
@@ -344,13 +365,30 @@ export default function Sepet() {
 
           {sonrakiIndirim && (
             <div style={{ background: "#FFF8E8", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#5C3D2E", textAlign: "center", border: "1.5px dashed #F4C09A" }}>
-              🎁 <strong>₺{sonrakiIndirim.kalan.toFixed(2)}</strong> daha ekle, <strong>{sonrakiIndirim.indirim}₺ indirim</strong> kazan!
+              🎁 <strong>₺{sonrakiIndirim.kalan.toFixed(2)}</strong> daha ekle, <strong>bu siparişte toplam {sonrakiIndirim.indirim}₺ indirim</strong> kazan!
             </div>
           )}
 
-          {!kullanici && totalPrice >= 1000 && (
+          {!kullanici && totalPrice >= ILK_SIPARIS.MIN_SEPET && (
             <div style={{ background: "#FFF5F0", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#5C3D2E", textAlign: "center", border: "1.5px dashed #E8845A" }}>
               🎁 İlk siparişinize <strong>200₺ indirim</strong> için <a href="/giris" style={{ color: "#E8845A", fontWeight: 700 }}>giriş yapın →</a>
+            </div>
+          )}
+
+          {/* Sadakat bonusu KAZANMA — bu sipariş, BİR SONRAKİ alışveriş için. Bu
+              siparişe uygulanan indirimlerden (yukarıdaki yeşil satırlar) GÖRSEL
+              olarak ayrı (altın tema) ki "şimdi mi kazandım / sonra mı" karışmasın. */}
+          {kullanici && kazanilacakBonus > 0 && (
+            <div style={{ background: "linear-gradient(135deg,#FFF3D6,#FFE7B0)", borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 12.5, color: "#6B4E00", textAlign: "center", border: "1.5px solid #E6B800" }}>
+              🎁 Bu siparişle <strong>bir sonraki alışverişinizde</strong> kullanmak üzere <strong>₺{kazanilacakBonus}</strong> sadakat bonusu kazanıyorsunuz!
+              {kazanilacakBonus === 150 && (
+                <><br />Ödemeniz <strong>₺5.000</strong> ve üzeri olursa bonusunuz <strong>₺200</strong> olur.</>
+              )}
+            </div>
+          )}
+          {kullanici && kazanilacakBonus === 0 && genelToplam >= KARGO.BEDAVA_ESIK && (
+            <div style={{ background: "linear-gradient(135deg,#FFF3D6,#FFE7B0)", borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 12.5, color: "#6B4E00", textAlign: "center", border: "1.5px solid #E6B800" }}>
+              🎁 Ödemeniz <strong>₺3.000</strong> ve üzeri olursa, bir sonraki alışverişiniz için <strong>₺150</strong> sadakat bonusu kazanırsınız!
             </div>
           )}
 

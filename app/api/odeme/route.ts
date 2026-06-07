@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
+import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT } from "../../../lib/indirim";
+
+// Sepet ürünü — client'tan gelen JSON şekli (explicit any yerine).
+type SepetUrun = { id: string | number; name: string; price: number; quantity: number };
 
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
 const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
@@ -31,7 +35,7 @@ function generateRandomString(): string {
   return process.hrtime()[0] + Math.random().toString(8).slice(2);
 }
 
-function generateAuth(randomString: string, uri: string, body: any): string {
+function generateAuth(randomString: string, uri: string, body: Record<string, unknown>): string {
   const signature = crypto
     .createHmac("sha256", IYZICO_SECRET_KEY)
     .update(randomString + uri + JSON.stringify(body))
@@ -53,7 +57,7 @@ export async function POST(req: NextRequest) {
   const conversationId = Date.now().toString();
   const randomString = generateRandomString();
 
-  const basketItems = items.map((item: any) => ({
+  const basketItems = items.map((item: SepetUrun) => ({
     id: item.id.toString(),
     name: item.name,
     category1: "Evcil Hayvan",
@@ -61,7 +65,7 @@ export async function POST(req: NextRequest) {
     price: (item.price * item.quantity).toFixed(2),
   }));
 
-  const basketTotal = items.reduce((sum: number, item: any) =>
+  const basketTotal = items.reduce((sum: number, item: SepetUrun) =>
     sum + (item.price * item.quantity), 0
   );
 
@@ -69,8 +73,8 @@ export async function POST(req: NextRequest) {
   // halde tarayıcıdan düşük paidPrice gönderilip indirim manipüle edilebilirdi.
   // Kargo + tutar indirimleri basketTotal'dan; ilk sipariş indirimi ise
   // ÜYELİK + sipariş geçmişi doğrulanarak verilir.
-  const kargo = basketTotal >= 1000 ? 0 : 29.90;
-  const tutarIndirimi = basketTotal >= 10000 ? 500 : basketTotal >= 5000 ? 200 : 0;
+  const kargo = basketTotal >= KARGO.BEDAVA_ESIK ? 0 : KARGO.UCRET;
+  const tutarIndirimi = basketTotal >= TUTAR_INDIRIMI.ESIK_2 ? TUTAR_INDIRIMI.INDIRIM_2 : basketTotal >= TUTAR_INDIRIMI.ESIK_1 ? TUTAR_INDIRIMI.INDIRIM_1 : 0;
 
   // Üye doğrulama (Supabase access_token) — hem ilk sipariş indirimi hem
   // sadakat bonusu için ortak. Üye e-postası odeme_gecici'ye yazılır ki
@@ -90,13 +94,13 @@ export async function POST(req: NextRequest) {
   // İlk sipariş 200 TL indirimi — SADECE giriş yapmış (üye) ve bu hesapla hiç
   // siparişi olmayan müşteriye. Üye olmayan / 2. siparişini veren ALAMAZ.
   let ilkSiparisIndirimi = 0;
-  if (uyeEmail && basketTotal >= 1000) {
+  if (uyeEmail && basketTotal >= ILK_SIPARIS.MIN_SEPET) {
     try {
       const { count } = await supabase
         .from("siparisler")
         .select("*", { count: "exact", head: true })
         .eq("email", uyeEmail);
-      if (count === 0) ilkSiparisIndirimi = 200;
+      if (count === 0) ilkSiparisIndirimi = ILK_SIPARIS.INDIRIM;
     } catch (e) {
       console.error("[odeme] ilk siparis dogrulama:", e);
     }
@@ -119,7 +123,7 @@ export async function POST(req: NextRequest) {
         .order("tutar", { ascending: false })
         .limit(1);
       const b = bonuslar && bonuslar[0];
-      if (b && basketTotal >= (Number(b.min_sepet) || 1000)) {
+      if (b && basketTotal >= (Number(b.min_sepet) || SADAKAT.MIN_SEPET)) {
         bonusIndirimi = Number(b.tutar) || 0;
         kullanilanBonusId = b.id;
       }
@@ -245,8 +249,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(data);
-  } catch (err: any) {
+  } catch (err) {
     console.error("[odeme] payment init error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const mesaj = err instanceof Error ? err.message : "odeme baslatilamadi";
+    return NextResponse.json({ error: mesaj }, { status: 500 });
   }
 }
