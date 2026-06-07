@@ -11,6 +11,10 @@ export default function Sepet() {
   const [ilkSiparisIndirimi, setIlkSiparisIndirimi] = useState(false);
   const [kullanici, setKullanici] = useState<any>(null);
   const [bonus, setBonus] = useState<{ tutar: number; min_sepet: number } | null>(null);
+  const [kuponKodu, setKuponKodu] = useState("");
+  const [uygulananKupon, setUygulananKupon] = useState<{ kod: string; indirim: number } | null>(null);
+  const [kuponMesaj, setKuponMesaj] = useState("");
+  const [kuponYukleniyor, setKuponYukleniyor] = useState(false);
 
   useEffect(() => {
     const kontrol = async () => {
@@ -48,12 +52,56 @@ export default function Sepet() {
     })();
   }, []);
 
+  // Kupon kodu doğrulama — sunucuda (kupon-dogrula) sepet tutarına göre.
+  const kuponDogrula = async (kod: string, sessiz = false) => {
+    if (!kod.trim()) return;
+    setKuponYukleniyor(true);
+    if (!sessiz) setKuponMesaj("");
+    try {
+      const res = await fetch("/api/kupon-dogrula", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kod, sepetTutari: totalPrice }),
+      });
+      const d = await res.json();
+      if (d.gecerli) {
+        setUygulananKupon({ kod: d.kod, indirim: d.indirim });
+        if (typeof window !== "undefined") localStorage.setItem("evemama_kupon", d.kod);
+        setKuponMesaj("");
+      } else {
+        setUygulananKupon(null);
+        if (!sessiz) setKuponMesaj(d.mesaj || "Kupon geçersiz.");
+        else if (typeof window !== "undefined") localStorage.removeItem("evemama_kupon");
+      }
+    } catch {
+      if (!sessiz) setKuponMesaj("Kupon doğrulanamadı, tekrar deneyin.");
+    }
+    setKuponYukleniyor(false);
+  };
+
+  const kuponKaldir = () => {
+    setUygulananKupon(null); setKuponKodu(""); setKuponMesaj("");
+    if (typeof window !== "undefined") localStorage.removeItem("evemama_kupon");
+  };
+
+  // Açılışta / sepet değişince kayıtlı kuponu yeniden doğrula (sepet tutarı
+  // değişmiş olabilir → min_sepet / indirim güncel kalsın).
+  useEffect(() => {
+    const kayitli = typeof window !== "undefined" ? localStorage.getItem("evemama_kupon") : null;
+    if (kayitli) { setKuponKodu(kayitli); kuponDogrula(kayitli, true); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPrice]);
+
   const kargoUcreti = totalPrice >= 1000 ? 0 : 29.90;
   const kargoyaKalan = 1000 - totalPrice;
 
   const bonusUygulanabilir = !!bonus && totalPrice >= bonus.min_sepet;
   const bonusIndirimi = bonusUygulanabilir ? bonus!.tutar : 0;
-  const indirimMiktari = (totalPrice >= 10000 ? 500 : totalPrice >= 5000 ? 200 : 0) + (ilkSiparisIndirimi ? 200 : 0) + bonusIndirimi;
+  // Otomatik indirimler (tutar + ilk sipariş + sadakat) vs kupon — EN AVANTAJLISI
+  // uygulanır (üst üste binmez, kâr koruması).
+  const otomatikToplam = (totalPrice >= 10000 ? 500 : totalPrice >= 5000 ? 200 : 0) + (ilkSiparisIndirimi ? 200 : 0) + bonusIndirimi;
+  const kuponIndirimi = uygulananKupon ? uygulananKupon.indirim : 0;
+  const kuponKazandi = kuponIndirimi > otomatikToplam;
+  const indirimMiktari = Math.max(otomatikToplam, kuponIndirimi);
   const indirimAciklama = totalPrice >= 10000 ? "10.000₺ üzeri alışveriş indirimi 🎉" : totalPrice >= 5000 ? "5.000₺ üzeri alışveriş indirimi 🎁" : "";
 
   const sonrakiIndirim = totalPrice < 5000
@@ -229,29 +277,55 @@ export default function Sepet() {
             <span>₺{totalPrice.toFixed(2)}</span>
           </div>
 
-          {(totalPrice >= 5000 || totalPrice >= 10000) && (
+          {!kuponKazandi && (totalPrice >= 5000 || totalPrice >= 10000) && (
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 14 }}>
               <span style={{ color: "#2E7D32", fontWeight: 600 }}>🎁 {indirimAciklama}</span>
               <span style={{ color: "#2E7D32", fontWeight: 700 }}>−₺{(totalPrice >= 10000 ? 500 : 200).toFixed(2)}</span>
             </div>
           )}
 
-          {ilkSiparisIndirimi && (
+          {!kuponKazandi && ilkSiparisIndirimi && (
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 14 }}>
               <span style={{ color: "#2E7D32", fontWeight: 600 }}>🎉 İlk sipariş indirimi</span>
               <span style={{ color: "#2E7D32", fontWeight: 700 }}>−₺200.00</span>
             </div>
           )}
 
-          {bonusUygulanabilir && (
+          {!kuponKazandi && bonusUygulanabilir && (
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 14 }}>
               <span style={{ color: "#2E7D32", fontWeight: 600 }}>🎁 Sadakat bonusu</span>
               <span style={{ color: "#2E7D32", fontWeight: 700 }}>−₺{bonus!.tutar.toFixed(2)}</span>
             </div>
           )}
-          {bonus && !bonusUygulanabilir && (
+          {!kuponKazandi && bonus && !bonusUygulanabilir && (
             <div style={{ background: "#FFF7ED", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12, color: "#E8845A", textAlign: "center", border: "1.5px dashed #E8845A" }}>
               🎁 ₺{bonus.tutar.toFixed(2)} sadakat bonusunuz var! Min. ₺{bonus.min_sepet.toFixed(0)} sepet ile kullanabilirsiniz.
+            </div>
+          )}
+
+          {/* Kupon kodu */}
+          {uygulananKupon ? (
+            kuponKazandi ? (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, fontSize: 14 }}>
+                <span style={{ color: "#2E7D32", fontWeight: 600 }}>🎟️ Kupon: {uygulananKupon.kod}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#2E7D32", fontWeight: 700 }}>−₺{uygulananKupon.indirim.toFixed(2)}</span>
+                  <button onClick={kuponKaldir} style={{ background: "none", border: "none", color: "#C62828", cursor: "pointer", fontSize: 12, textDecoration: "underline", fontFamily: "inherit" }}>kaldır</button>
+                </span>
+              </div>
+            ) : (
+              <div style={{ background: "#FFF7ED", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12, color: "#E8845A", textAlign: "center", border: "1.5px dashed #E8845A" }}>
+                🎟️ {uygulananKupon.kod} uygulandı ama mevcut indiriminiz daha avantajlı.{" "}
+                <button onClick={kuponKaldir} style={{ background: "none", border: "none", color: "#C62828", cursor: "pointer", fontSize: 12, textDecoration: "underline", fontFamily: "inherit" }}>kaldır</button>
+              </div>
+            )
+          ) : (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input value={kuponKodu} onChange={e => setKuponKodu(e.target.value.toUpperCase())} onKeyDown={e => e.key === "Enter" && kuponDogrula(kuponKodu)} placeholder="Kupon kodu" style={{ flex: 1, padding: "10px 12px", border: "2px solid #E8D5B7", borderRadius: 10, fontSize: 13, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const }} />
+                <button onClick={() => kuponDogrula(kuponKodu)} disabled={kuponYukleniyor || !kuponKodu.trim()} style={{ background: kuponYukleniyor || !kuponKodu.trim() ? "#C9B79C" : "#5C3D2E", color: "white", border: "none", borderRadius: 10, padding: "0 16px", fontSize: 13, fontWeight: 700, cursor: kuponYukleniyor || !kuponKodu.trim() ? "not-allowed" : "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{kuponYukleniyor ? "..." : "Uygula"}</button>
+              </div>
+              {kuponMesaj && <div style={{ fontSize: 12, color: "#C62828", marginTop: 6 }}>{kuponMesaj}</div>}
             </div>
           )}
 

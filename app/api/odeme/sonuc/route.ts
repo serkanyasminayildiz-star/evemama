@@ -156,6 +156,19 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // Kullanılan kupon varsa kullanım sayacını artır (kullanım limiti takibi).
+        if (gecici?.kullanilan_kupon_kod) {
+          try {
+            const { data: k } = await supabaseAdmin
+              .from("kuponlar").select("kullanim_sayisi").eq("kod", gecici.kullanilan_kupon_kod).maybeSingle();
+            await supabaseAdmin.from("kuponlar")
+              .update({ kullanim_sayisi: (Number(k?.kullanim_sayisi) || 0) + 1 })
+              .eq("kod", gecici.kullanilan_kupon_kod);
+          } catch (e) {
+            console.error("[odeme/sonuc] kupon kullanim sayaci hatasi:", e);
+          }
+        }
+
         // Sadakat bonusu KAZANMA — sipariş başarılı + ÜYE + ödenen tutar eşiği.
         // Misafir (uye_email null) bonus ALMAZ. ≥5000 → 200 TL, ≥3000 → 150 TL.
         // Bonus min 1000 TL sepet + 60 gün geçerli.

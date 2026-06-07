@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
+import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
 
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
 const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
@@ -127,7 +128,39 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const genelToplam = Math.max(0, basketTotal + kargo - tutarIndirimi - ilkSiparisIndirimi - bonusIndirimi);
+  // Otomatik indirimler toplamı (5000+ tutar + ilk sipariş + sadakat bonusu)
+  const otomatikToplam = tutarIndirimi + ilkSiparisIndirimi + bonusIndirimi;
+
+  // Kupon kodu (müşteri girdiyse) — SUNUCUDA doğrulanır (client'tan gelen
+  // tutara güvenilmez). Aynı doğrulama mantığı kupon-dogrula API'siyle ortak.
+  let kuponIndirimi = 0;
+  let gecerliKuponKod: string | null = null;
+  const kuponKodu = (typeof body.kuponKodu === "string" ? body.kuponKodu : "").trim().toUpperCase();
+  if (kuponKodu) {
+    try {
+      const { data: kupon } = await supabaseAdmin.from("kuponlar").select("*").eq("kod", kuponKodu).maybeSingle();
+      const sonuc = kuponIndirimiHesapla(kupon, basketTotal);
+      if (sonuc.gecerli && kupon) { kuponIndirimi = sonuc.indirim; gecerliKuponKod = kupon.kod; }
+    } catch (e) {
+      console.error("[odeme] kupon dogrulama:", e);
+    }
+  }
+
+  // EN AVANTAJLISI uygulanır — kupon vs otomatik indirimler ÜST ÜSTE BİNMEZ.
+  // Kupon daha avantajlıysa otomatik indirimler (bonus dahil) iptal; değilse
+  // otomatik indirimler geçerli, kupon yok sayılır.
+  let nihaiIndirim: number;
+  let kullanilanKuponKod: string | null = null;
+  let nihaiBonusId: number | null = null;
+  if (kuponIndirimi > otomatikToplam) {
+    nihaiIndirim = kuponIndirimi;
+    kullanilanKuponKod = gecerliKuponKod;
+  } else {
+    nihaiIndirim = otomatikToplam;
+    nihaiBonusId = kullanilanBonusId; // otomatik kazandı → bonus (varsa) harcanır
+  }
+
+  const genelToplam = Math.max(0, basketTotal + kargo - nihaiIndirim);
   const priceStr = basketTotal.toFixed(2);
   const paidPriceStr = genelToplam.toFixed(2);
 
@@ -205,7 +238,8 @@ export async function POST(req: NextRequest) {
         ara_toplam: parseFloat(priceStr),
         urunler: JSON.stringify(items),
         uye_email: uyeEmail, // null ise misafir → sadakat bonusu verilmez
-        kullanilan_bonus_id: kullanilanBonusId, // bu siparişte harcanan bonus (varsa)
+        kullanilan_bonus_id: nihaiBonusId, // bonus yalnızca otomatik indirim kazandıysa harcanır
+        kullanilan_kupon_kod: kullanilanKuponKod, // kupon avantajlıysa harcanır
         created_at: new Date().toISOString(),
       }, { onConflict: "token" });
     }
