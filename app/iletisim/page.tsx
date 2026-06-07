@@ -57,20 +57,20 @@ export default function Iletisim() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>Ad *</label>
-                  <input value={form.ad} onChange={e => setForm({ ...form, ad: e.target.value })} placeholder="Adınız" style={{ width: "100%", padding: "12px 14px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const }} />
+                  <input value={form.ad} onChange={e => setForm({ ...form, ad: e.target.value })} placeholder="Adınız" style={{ width: "100%", padding: "12px 14px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const }} />
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>Soyad</label>
-                  <input value={form.soyad} onChange={e => setForm({ ...form, soyad: e.target.value })} placeholder="Soyadınız" style={{ width: "100%", padding: "12px 14px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const }} />
+                  <input value={form.soyad} onChange={e => setForm({ ...form, soyad: e.target.value })} placeholder="Soyadınız" style={{ width: "100%", padding: "12px 14px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const }} />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>E-posta *</label>
-                <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} type="email" placeholder="ornek@mail.com" style={{ width: "100%", padding: "12px 14px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const }} />
+                <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} type="email" placeholder="ornek@mail.com" style={{ width: "100%", padding: "12px 14px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const }} />
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>Mesajınız *</label>
-                <textarea value={form.mesaj} onChange={e => setForm({ ...form, mesaj: e.target.value })} placeholder="Mesajınızı buraya yazın..." rows={5} style={{ width: "100%", padding: "12px 14px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const, resize: "vertical" }} />
+                <textarea value={form.mesaj} onChange={e => setForm({ ...form, mesaj: e.target.value })} placeholder="Mesajınızı buraya yazın..." rows={5} style={{ width: "100%", padding: "12px 14px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const, resize: "vertical" }} />
               </div>
               <div style={{ marginBottom: 10, display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <input type="checkbox" checked={form.kvkk} onChange={e => setForm({ ...form, kvkk: e.target.checked })} style={{ marginTop: 3, accentColor: "#E8845A", width: 16, height: 16, flexShrink: 0 }} />

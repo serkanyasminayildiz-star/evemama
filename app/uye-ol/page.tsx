@@ -28,7 +28,7 @@ export default function UyeOl() {
     }
   };
 
-  const input = { width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const };
+  const input = { width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const };
   const label = { fontSize: 13, fontWeight: 600, color: "#5C3D2E", display: "block", marginBottom: 6 };
 
   return (

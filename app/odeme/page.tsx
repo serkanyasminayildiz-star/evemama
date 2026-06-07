@@ -102,7 +102,7 @@ export default function Odeme() {
     width: "100%", padding: "12px 16px",
     border: "2px solid #E8D5B7", borderRadius: 12,
     fontSize: 14, outline: "none",
-    fontFamily: "inherit", boxSizing: "border-box" as const,
+    fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const,
     marginBottom: 12,
   };
 

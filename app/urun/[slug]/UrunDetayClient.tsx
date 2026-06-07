@@ -278,7 +278,7 @@ export default function UrunDetayClient() {
                 <div style={{ background: "#E8F5E9", color: "#2E7D32", padding: "12px 16px", borderRadius: 12, marginBottom: 16, fontSize: 14 }}>✅ Yorumunuz için teşekkürler!</div>
               )}
               <input value={yeniYorum.ad} onChange={e => setYeniYorum({ ...yeniYorum, ad: e.target.value })}
-                placeholder="Adınız *" style={{ width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const, marginBottom: 12 }} />
+                placeholder="Adınız *" style={{ width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const, marginBottom: 12 }} />
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 8 }}>Puanınız:</div>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -290,7 +290,7 @@ export default function UrunDetayClient() {
               </div>
               <textarea value={yeniYorum.yorum} onChange={e => setYeniYorum({ ...yeniYorum, yorum: e.target.value })}
                 placeholder="Yorumunuz *" rows={4}
-                style={{ width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const, marginBottom: 16, resize: "vertical" as const }} />
+                style={{ width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const, marginBottom: 16, resize: "vertical" as const }} />
               <button onClick={handleYorumGonder}
                 style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 12, padding: "14px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                 Yorum Gönder ✨

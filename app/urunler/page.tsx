@@ -139,7 +139,7 @@ export default function Urunler() {
       <div style={{ marginBottom: 14 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 6 }}>🔍 Ara</div>
         <input value={aramaMetni} onChange={e => setAramaMetni(e.target.value)}
-          placeholder="Ürün ara..." style={{ width: "100%", padding: "9px 12px", border: "2px solid #E8D5B7", borderRadius: 10, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const }} />
+          placeholder="Ürün ara..." style={{ width: "100%", padding: "9px 12px", border: "2px solid #E8D5B7", borderRadius: 10, fontSize: 13, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const }} />
       </div>
 
       <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => setSadeceStoktaki(!sadeceStoktaki)}>
