@@ -25,7 +25,7 @@ export default function Iletisim() {
           </p>
 
           {[
-            { icon: "📞", title: "Müşteri Hizmetleri", value: "+90 552 090 80 01", sub: "Çalışma saatleri: 09:00 - 18:00" },
+            { icon: "📞", title: "Müşteri Hizmetleri", value: "+90 552 090 80 01", sub: "Pazartesi–Cuma 09:00–17:00 arası arayabilirsiniz; harici saatlerde telefona cevap verilememektedir." },
             { icon: "📧", title: "E-posta", value: "info@evemama.net", sub: "En geç 24 saat içinde yanıt" },
             { icon: "📍", title: "Adres", value: "Atilla Mah. 349. Sok. No:55/A", sub: "Konak / İzmir" },
           ].map((item, i) => (
