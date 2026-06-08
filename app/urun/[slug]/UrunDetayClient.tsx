@@ -209,7 +209,7 @@ export default function UrunDetayClient() {
             <div style={{ fontFamily: "Georgia, serif", fontSize: 14, fontWeight: 700, color: "#5C3D2E", marginBottom: 12 }}>🚚 Kargo & Teslimat</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
-                { icon: "⚡", text: <><strong>Aynı Gün Kargo</strong> — Saat 14:00'a kadar verilen siparişler bugün kargoya verilir</> },
+                { icon: "⚡", text: <><strong>Aynı Gün Kargo</strong> — Saat 14:00&apos;a kadar verilen siparişler bugün kargoya verilir</> },
                 { icon: "🎁", text: <><strong>1000₺ Üzeri Ücretsiz Kargo</strong> — {kargoUcreti === 0 ? "Siparişiniz kapsam dahilinde!" : `₺${kargoyaKalan.toFixed(2)} daha ekleyin`}</> },
                 { icon: "↩️", text: <><strong>14 Gün İade Garantisi</strong> — Koşulsuz iade hakkı</> },
               ].map((item, i) => (

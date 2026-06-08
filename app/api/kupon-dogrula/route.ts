@@ -13,7 +13,18 @@ const supabase = createClient(
 // Bir kuponun sepete uygulanabilirliğini ve indirim tutarını hesaplar.
 // odeme/route.ts de AYNI mantığı kullanır (tek kaynak gibi davranması için
 // kurallar burada net tutuldu).
-export function kuponIndirimiHesapla(kupon: any, sepetTutari: number): { gecerli: boolean; indirim: number; mesaj?: string } {
+export type KuponKaydi = {
+  kod: string;
+  aktif?: boolean;
+  bitis_tarihi?: string | null;
+  kullanim_limiti?: number | null;
+  kullanim_sayisi?: number | null;
+  min_sepet?: number | null;
+  indirim_tipi?: string;
+  indirim_degeri?: number | string | null;
+};
+
+export function kuponIndirimiHesapla(kupon: KuponKaydi | null, sepetTutari: number): { gecerli: boolean; indirim: number; mesaj?: string } {
   if (!kupon) return { gecerli: false, indirim: 0, mesaj: "Kupon bulunamadı." };
   if (kupon.aktif === false) return { gecerli: false, indirim: 0, mesaj: "Bu kupon artık geçerli değil." };
   if (kupon.bitis_tarihi && new Date(kupon.bitis_tarihi) < new Date()) {

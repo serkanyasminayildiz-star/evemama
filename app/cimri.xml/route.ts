@@ -4,7 +4,7 @@ export const runtime = 'nodejs';
 // build time'da static cache → fiyat/stok degisiklikleri yansimaz.
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -30,7 +30,7 @@ function xmlEscape(str: string): string {
 //    yazmis, kaliteli).
 // 2) Aksi halde: urun adi + "marka X kategorisinde yer alan ürünüdür" +
 //    urun adindan cikartilan ozellikler (yas, tahilsiz, kisir vs.).
-function aciklamaZenginlestir(u: any): string {
+function aciklamaZenginlestir(u: { kisa_aciklama?: string; ad?: string; markalar?: { ad?: string } | null; kategoriler?: { ad?: string } | null }): string {
   const mevcut = (u.kisa_aciklama || "").trim();
   const ad = (u.ad || "").trim();
   const marka = (u.markalar?.ad || "").trim();
@@ -90,7 +90,7 @@ function aciklamaZenginlestir(u: any): string {
   return parcalar.join(" ").trim().slice(0, 1500);
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   // Stoku 0 olanlari da feed'de tut → Google Merchant'ta history korunur,
   // sadece availability "out of stock" gosterilir. Stok 0 -> feed'den
   // cikinca Merchant 30 gun "in stock" cache'ler, yanlis bilgi yansir.

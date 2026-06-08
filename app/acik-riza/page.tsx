@@ -17,7 +17,7 @@ export default function AcikRiza() {
         <p style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.5, marginBottom: 40 }}>Son güncelleme tarihi: 01/02/2026</p>
         <div style={{ background: "white", borderRadius: 24, padding: "40px 48px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
           <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8, marginBottom: 24 }}>
-            6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında, <Link href="/kvkk" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>KVKK Aydınlatma Metni</Link>'ni okuduğumu ve anladığımı,
+            6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;) kapsamında, <Link href="/kvkk" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>KVKK Aydınlatma Metni</Link>&apos;ni okuduğumu ve anladığımı,
           </p>
           <div style={{ background: "#FDF6EE", borderRadius: 16, padding: "24px", marginBottom: 24 }}>
             <p style={{ fontSize: 15, color: "#5C3D2E", fontWeight: 600, marginBottom: 12 }}>Kimlik, iletişim ve işlem güvenliğine ilişkin kişisel verilerimin:</p>

@@ -16,9 +16,13 @@ const { values } = parseArgs({
   options: {
     limit: { type: "string", default: "1" },
     "dry-run": { type: "boolean", default: false },
+    skip: { type: "string", default: "" },
+    only: { type: "string", default: "" },
   },
 });
 
+const SKIP = (values.skip || "").split(",").map((x) => x.trim()).filter(Boolean);
+const ONLY = (values.only || "").split(",").map((x) => x.trim()).filter(Boolean);
 const LIMIT = parseInt(values.limit, 10);
 const DRY_RUN = values["dry-run"];
 
@@ -105,11 +109,11 @@ function buildHTML(s) {
       <p style="margin:8px 0 0 0;color:rgba(255,255,255,0.95);font-size:14px;">Evcil dostunuzun dukkani</p>
     </div>
     <div style="padding:32px 24px;text-align:center;border-bottom:1px solid #eee;">
-      <div style="font-size:48px;margin-bottom:8px;">📦</div>
-      <h2 style="margin:0 0 8px 0;color:#1a1a1a;font-size:22px;">Siparisiniz alindi!</h2>
-      <p style="margin:0;color:#555;font-size:15px;line-height:1.5;">Merhaba ${s.ad || ""},<br>Siparisinizi aldik ve hazirladik.</p>
+      <div style="font-size:48px;margin-bottom:8px;">📋</div>
+      <h2 style="margin:0 0 8px 0;color:#1a1a1a;font-size:22px;">Sipariş Onay Kaydınız</h2>
+      <p style="margin:0;color:#555;font-size:15px;line-height:1.5;">Merhaba ${s.ad || ""},<br>Daha önce verdiğiniz <strong>#${s.siparis_no}</strong> numaralı siparişinizin onay kaydıdır.</p>
       <div style="display:inline-block;margin-top:16px;padding:8px 18px;background:#fff5ed;border:1px solid #ff6b35;border-radius:8px;color:#ff6b35;font-weight:600;font-size:15px;">Siparis No: ${s.siparis_no}</div>
-      <p style="margin:16px 0 0 0;font-size:12px;color:#999;font-style:italic;">Not: Bu onay mailiniz teknik bir gecikmeyle gonderildi. Siparisiniz zaten hazirlaniyor / kargolanmistir.</p>
+      <div style="margin:16px auto 0;max-width:440px;padding:12px 16px;background:#f0f7ff;border:1px solid #cfe3ff;border-radius:8px;font-size:13px;color:#345;line-height:1.6;">ℹ️ <strong>Bilgilendirme:</strong> Bu, daha önce verdiğiniz sipariş için <strong>gecikmiş onay mailidir</strong> (teknik bir aksaklık nedeniyle zamanında gönderilememiştir). Yeni bir sipariş değildir — siparişiniz çoktan hazırlandı/kargolandı. Ekstra bir işlem yapmanıza gerek yoktur.</div>
     </div>
     <div style="padding:24px;">
       <h3 style="margin:0 0 16px 0;color:#1a1a1a;font-size:16px;">Siparis Detayi</h3>
@@ -143,6 +147,15 @@ for (const s of siparisler) {
   const tarih = new Date(s.created_at).toLocaleString("tr-TR");
   const label = `${s.siparis_no} | ${s.email} | ${tarih} | ${tr(s.toplam)} TL`;
 
+  if (ONLY.length && !ONLY.includes(s.siparis_no)) {
+    continue;
+  }
+
+  if (SKIP.includes(s.siparis_no)) {
+    console.log(`ATLA ${label} (zaten gonderildi)`);
+    continue;
+  }
+
   if (DRY_RUN) {
     console.log(`[dry-run] ${label}`);
     basarili++;
@@ -153,7 +166,7 @@ for (const s of siparisler) {
     const { data, error: sendErr } = await resend.emails.send({
       from: FROM_EMAIL,
       to: s.email,
-      subject: `Siparisiniz alindi - ${s.siparis_no}`,
+      subject: `Sipariş onay kaydınız (gecikmiş bilgilendirme) - ${s.siparis_no}`,
       html: buildHTML(s),
     });
     if (sendErr) {

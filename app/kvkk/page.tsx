@@ -18,7 +18,7 @@ export default function KVKK() {
 
         <div style={{ background: "white", borderRadius: 24, padding: "40px 48px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
           <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8, marginBottom: 24 }}>
-            6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") ve ilgili mevzuatlar kapsamında, kişisel verileriniz veri sorumlusu sıfatıyla <strong>TNB Pet Mamaları ve Aksesuarları İthalat İhracat Sanayi ve Ticaret Limited Şirketi</strong> tarafından işlenmektedir.
+            6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;) ve ilgili mevzuatlar kapsamında, kişisel verileriniz veri sorumlusu sıfatıyla <strong>TNB Pet Mamaları ve Aksesuarları İthalat İhracat Sanayi ve Ticaret Limited Şirketi</strong> tarafından işlenmektedir.
           </p>
 
           {[

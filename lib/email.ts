@@ -257,8 +257,8 @@ export async function sendSiparisOnayMaili(p: SiparisOnayParams): Promise<boolea
     }
     console.log("[email] gonderildi:", { siparisNo: p.siparisNo, id: data?.id, to: p.email });
     return true;
-  } catch (err: any) {
-    console.error("[email] exception:", { siparisNo: p.siparisNo, err: err?.message || err });
+  } catch (err) {
+    console.error("[email] exception:", { siparisNo: p.siparisNo, err: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }
@@ -331,8 +331,8 @@ export async function sendKuponMaili(p: KuponMailParams): Promise<boolean> {
       return false;
     }
     return Boolean(data?.id);
-  } catch (err: any) {
-    console.error("[email] kupon maili exception:", { email: p.email, err: err?.message || err });
+  } catch (err) {
+    console.error("[email] kupon maili exception:", { email: p.email, err: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }
@@ -403,8 +403,8 @@ export async function sendHatirlatmaMaili(p: HatirlatmaMailParams): Promise<bool
       return false;
     }
     return Boolean(data?.id);
-  } catch (err: any) {
-    console.error("[email] hatirlatma maili exception:", { email: p.email, err: err?.message || err });
+  } catch (err) {
+    console.error("[email] hatirlatma maili exception:", { email: p.email, err: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }

@@ -17,7 +17,7 @@ export default function KullanimKosullari() {
         <p style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.5, marginBottom: 40 }}>Son güncelleme tarihi: 01/02/2026</p>
         <div style={{ background: "white", borderRadius: 24, padding: "40px 48px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
           <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8, marginBottom: 32 }}>
-            Hoş geldiniz! "www.evemama.net" web sitesini veya mobil uygulamasını kullanarak, aşağıdaki Kullanım Koşulları ve şartlarına uymayı kabul etmiş olursunuz.
+            Hoş geldiniz! &quot;www.evemama.net&quot; web sitesini veya mobil uygulamasını kullanarak, aşağıdaki Kullanım Koşulları ve şartlarına uymayı kabul etmiş olursunuz.
           </p>
           {[
             { no: "1", baslik: "Üyelik ve Hesap", icerik: "Web sitemizi kullanmak için üyelik oluşturmanız gerekebilir. Hesap bilgilerinizin güncel ve doğru olduğundan emin olun. Hesabınızın güvenliğinden siz sorumlusunuz. Hesabınızı başka bir kişiye devretmek veya paylaşmak yasaktır." },

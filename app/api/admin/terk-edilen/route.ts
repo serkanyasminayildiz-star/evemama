@@ -55,8 +55,8 @@ export async function GET(req: NextRequest) {
         try {
           const arr = typeof g.urunler === "string" ? JSON.parse(g.urunler) : g.urunler;
           if (Array.isArray(arr)) {
-            urunSayisi = arr.reduce((s: number, i: any) => s + (Number(i.quantity) || 1), 0);
-            urunOzet = arr.map((i: any) => `${Number(i.quantity) || 1}x ${i.name || "Ürün"}`).join(", ");
+            urunSayisi = arr.reduce((s: number, i: { quantity?: number }) => s + (Number(i.quantity) || 1), 0);
+            urunOzet = arr.map((i: { quantity?: number; name?: string }) => `${Number(i.quantity) || 1}x ${i.name || "Ürün"}`).join(", ");
           }
         } catch { /* urunler parse edilemezse ozet bos kalir */ }
         map.set(e, {

@@ -4,7 +4,7 @@ export const runtime = 'nodejs';
 // build time'da static cache → fiyat/stok degisiklikleri yansimaz.
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -28,7 +28,7 @@ function duzeltResim(url: string): string {
 
 // Aciklama zenginlestirme — cimri.xml ile ayni mantik. Mevcut aciklama
 // 120+ karakter ise dokunmaz; aksi halde yapisal sablonla doldurur.
-function aciklamaZenginlestir(u: any): string {
+function aciklamaZenginlestir(u: { kisa_aciklama?: string; ad?: string; markalar?: { ad?: string } | null; kategoriler?: { ad?: string } | null }): string {
   const mevcut = (u.kisa_aciklama || "").trim();
   const ad = (u.ad || "").trim();
   const marka = (u.markalar?.ad || "").trim();
@@ -115,7 +115,7 @@ function basliZenginlestir(ad: string, marka?: string, kategori?: string): strin
   return baslik;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   // Stoku 0 olan urunleri feed'den CIKARMAK yerine icinde tutup
   // availability'yi out_of_stock isaretliyoruz. Aksi halde Google
   // Merchant urunun feed'den kaybolmasini 30 gun gecikme ile islerken

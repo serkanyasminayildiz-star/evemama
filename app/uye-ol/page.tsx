@@ -21,7 +21,7 @@ export default function UyeOl() {
         options: { data: { full_name: ad, phone: telefon } }
       });
       setMesaj(error ? "Hata: " + error.message : "✅ Kayıt başarılı! E-postanı kontrol et.");
-    } catch (err: any) {
+    } catch (err) {
       console.error("[uye-ol] signUp beklenmeyen hata:", err);
       setMesaj("Hata: Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.");
     } finally {

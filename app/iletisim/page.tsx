@@ -76,13 +76,13 @@ export default function Iletisim() {
               <div style={{ marginBottom: 10, display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <input type="checkbox" checked={form.kvkk} onChange={e => setForm({ ...form, kvkk: e.target.checked })} style={{ marginTop: 3, accentColor: "#E8845A", width: 16, height: 16, flexShrink: 0 }} />
                 <span style={{ fontSize: 12, color: "#5C3D2E", lineHeight: 1.6 }}>
-                  <Link href="/kvkk" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>KVKK Aydınlatma Metni</Link>'ni okudum, anladım ve kabul ediyorum. <span style={{ color: "red" }}>*</span>
+                  <Link href="/kvkk" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>KVKK Aydınlatma Metni</Link>&apos;ni okudum, anladım ve kabul ediyorum. <span style={{ color: "red" }}>*</span>
                 </span>
               </div>
               <div style={{ marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <input type="checkbox" checked={form.acikRiza} onChange={e => setForm({ ...form, acikRiza: e.target.checked })} style={{ marginTop: 3, accentColor: "#E8845A", width: 16, height: 16, flexShrink: 0 }} />
                 <span style={{ fontSize: 12, color: "#5C3D2E", lineHeight: 1.6 }}>
-                  <Link href="/acik-riza" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>Açık Rıza Metni</Link>'ni okudum, anladım ve kabul ediyorum.
+                  <Link href="/acik-riza" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>Açık Rıza Metni</Link>&apos;ni okudum, anladım ve kabul ediyorum.
                 </span>
               </div>
               <button onClick={handleGonder} disabled={!form.ad || !form.email || !form.mesaj || !form.kvkk}

@@ -270,7 +270,7 @@ export default function Urunler() {
               <option value="varsayilan">Varsayılan</option>
               <option value="ucuz">Önce Ucuz</option>
               <option value="pahali">Önce Pahalı</option>
-              <option value="az">A'dan Z'ye</option>
+              <option value="az">A&apos;dan Z&apos;ye</option>
               <option value="stok">Stok Durumu</option>
             </select>
           </div>

@@ -70,11 +70,11 @@ export default function Hakkimizda() {
         <div style={{ background: "white", borderRadius: 24, padding: "40px", marginBottom: 24, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
           <h2 style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 700, color: "#5C3D2E", marginBottom: 20 }}>Taahhüdümüz</h2>
           <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8, marginBottom: 16 }}>
-            EVEmama.net'te her sipariş, güvenli ödeme altyapısı ile korunur, ürünleriniz özenle paketlenerek en kısa sürede adresinize ulaştırılır. Müşteri memnuniyetini merkeze alan bu anlayışımızla, alışveriş sürecinin her aşamasında yanınızda olmaya devam ederiz.
+            EVEmama.net&apos;te her sipariş, güvenli ödeme altyapısı ile korunur, ürünleriniz özenle paketlenerek en kısa sürede adresinize ulaştırılır. Müşteri memnuniyetini merkeze alan bu anlayışımızla, alışveriş sürecinin her aşamasında yanınızda olmaya devam ederiz.
           </p>
           <div style={{ background: "#FDF6EE", borderRadius: 16, padding: "20px 24px", borderLeft: "4px solid #E8845A" }}>
             <p style={{ fontSize: 14, color: "#5C3D2E", fontStyle: "italic", lineHeight: 1.7, margin: 0 }}>
-              "EVEmama.net, Türkiye Cumhuriyeti mevzuatına uygun olarak faaliyet gösteren, faturalı satış yapan bir e-ticaret sitesidir."
+              &quot;EVEmama.net, Türkiye Cumhuriyeti mevzuatına uygun olarak faaliyet gösteren, faturalı satış yapan bir e-ticaret sitesidir.&quot;
             </p>
           </div>
         </div>

@@ -19,7 +19,7 @@ export default function GirisYap() {
         setMesaj("✅ Giriş başarılı! Yönlendiriliyorsunuz...");
         setTimeout(() => { window.location.href = "/"; }, 1500);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("[giris] signIn beklenmeyen hata:", err);
       setMesaj("Hata: Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.");
     } finally {
