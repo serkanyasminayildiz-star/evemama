@@ -3,7 +3,7 @@ import { useState, useEffect, type ChangeEvent } from "react";
 import Link from "next/link";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
-import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT } from "../../lib/indirim";
+import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim } from "../../lib/indirim";
 
 export default function Odeme() {
   const { items, totalPrice } = useCart();
@@ -100,23 +100,24 @@ export default function Odeme() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalPrice]);
 
-  const kargoUcreti = totalPrice >= KARGO.BEDAVA_ESIK ? 0 : KARGO.UCRET;
   const kdv = totalPrice * 0.20;
-  // Indirim hesabi — sepet sayfasindaki ile birebir ayni olmali.
-  // 5.000+ TL -> 200 TL, 10.000+ TL -> 500 TL + ilk siparis indirimi
-  // (ek 200 TL). genelToplam'a kargoyu ekle, indirimi cikar.
   const bonusUygulanabilir = !!bonus && totalPrice >= bonus.min_sepet;
-  const bonusIndirimi = bonusUygulanabilir ? bonus!.tutar : 0;
-  // Otomatik indirimler vs kupon — EN AVANTAJLISI uygulanır (üst üste binmez).
-  const otomatikToplam = (totalPrice >= TUTAR_INDIRIMI.ESIK_2 ? TUTAR_INDIRIMI.INDIRIM_2 : totalPrice >= TUTAR_INDIRIMI.ESIK_1 ? TUTAR_INDIRIMI.INDIRIM_1 : 0) + (ilkSiparisIndirimi ? ILK_SIPARIS.INDIRIM : 0) + bonusIndirimi;
-  const kuponIndirimi = uygulananKupon ? uygulananKupon.indirim : 0;
-  const kuponKazandi = kuponIndirimi > otomatikToplam;
-  const indirimMiktari = Math.max(otomatikToplam, kuponIndirimi);
+
+  // TEK KAYNAK indirim hesabı — server (api/odeme) + sepet ile AYNI saf fonksiyon.
+  const hesap = hesaplaIndirim({
+    sepetTutari: totalPrice,
+    ilkSiparis: ilkSiparisIndirimi,
+    bonusTutar: bonusUygulanabilir ? bonus!.tutar : 0,
+    kuponIndirimi: uygulananKupon ? uygulananKupon.indirim : 0,
+  });
+  const kargoUcreti = hesap.kargo;
+  const kuponKazandi = hesap.kuponKazandi;
+  const indirimMiktari = hesap.indirimMiktari;
   const indirimAciklama = totalPrice >= TUTAR_INDIRIMI.ESIK_2 ? "10.000₺ üzeri indirim" : totalPrice >= TUTAR_INDIRIMI.ESIK_1 ? "5.000₺ üzeri indirim" : "";
   const indirimEtiketleri = kuponKazandi
     ? `Kupon ${uygulananKupon!.kod}`
     : [indirimAciklama, ilkSiparisIndirimi ? "İlk sipariş" : "", bonusUygulanabilir ? "Sadakat bonusu" : ""].filter(Boolean).join(" + ");
-  const genelToplam = totalPrice + kargoUcreti - indirimMiktari;
+  const genelToplam = hesap.genelToplam;
 
   // Sadakat bonusu KAZANMA (bu sipariş → BİR SONRAKİ alışveriş). Yalnızca ÜYE.
   // Ödenecek tutara (genelToplam) göre eşik: ≥5000 → 200, ≥3000 → 150 —

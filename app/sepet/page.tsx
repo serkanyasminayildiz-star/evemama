@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import type { User } from "@supabase/supabase-js";
-import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT } from "../../lib/indirim";
+import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim } from "../../lib/indirim";
 
 export default function Sepet() {
   const { items, removeItem, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
@@ -94,17 +94,21 @@ export default function Sepet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalPrice]);
 
-  const kargoUcreti = totalPrice >= KARGO.BEDAVA_ESIK ? 0 : KARGO.UCRET;
   const kargoyaKalan = KARGO.BEDAVA_ESIK - totalPrice;
 
   const bonusUygulanabilir = !!bonus && totalPrice >= bonus.min_sepet;
-  const bonusIndirimi = bonusUygulanabilir ? bonus!.tutar : 0;
-  // Otomatik indirimler (tutar + ilk sipariş + sadakat) vs kupon — EN AVANTAJLISI
-  // uygulanır (üst üste binmez, kâr koruması).
-  const otomatikToplam = (totalPrice >= TUTAR_INDIRIMI.ESIK_2 ? TUTAR_INDIRIMI.INDIRIM_2 : totalPrice >= TUTAR_INDIRIMI.ESIK_1 ? TUTAR_INDIRIMI.INDIRIM_1 : 0) + (ilkSiparisIndirimi ? ILK_SIPARIS.INDIRIM : 0) + bonusIndirimi;
-  const kuponIndirimi = uygulananKupon ? uygulananKupon.indirim : 0;
-  const kuponKazandi = kuponIndirimi > otomatikToplam;
-  const indirimMiktari = Math.max(otomatikToplam, kuponIndirimi);
+
+  // TEK KAYNAK indirim hesabı — server (api/odeme) ile AYNI saf fonksiyon.
+  // EN AVANTAJLISI (kupon vs otomatik üst üste binmez) ve genelToplam burada.
+  const hesap = hesaplaIndirim({
+    sepetTutari: totalPrice,
+    ilkSiparis: ilkSiparisIndirimi,
+    bonusTutar: bonusUygulanabilir ? bonus!.tutar : 0,
+    kuponIndirimi: uygulananKupon ? uygulananKupon.indirim : 0,
+  });
+  const kargoUcreti = hesap.kargo;
+  const kuponKazandi = hesap.kuponKazandi;
+  const indirimMiktari = hesap.indirimMiktari;
   const indirimAciklama = totalPrice >= TUTAR_INDIRIMI.ESIK_2 ? "10.000₺ üzeri alışveriş indirimi 🎉" : totalPrice >= TUTAR_INDIRIMI.ESIK_1 ? "5.000₺ üzeri alışveriş indirimi 🎁" : "";
 
   // Teşvik, o eşikte görülecek TOPLAM indirimi gösterir (yalnız tutar tier'ı
@@ -112,14 +116,14 @@ export default function Sepet() {
   // (ilk sipariş + sadakat bonusu harcaması) eklenir — bunlar eşik üstünde de
   // geçerli kalır. Örn. ilk sipariş indirimi olan üye 5000₺'de 200+200=400₺ görür.
   // (ilk sipariş ve bonus harcaması birbirini dışlar; formül yine de güvenle toplar.)
-  const ekOtomatikIndirim = (ilkSiparisIndirimi ? ILK_SIPARIS.INDIRIM : 0) + bonusIndirimi;
+  const ekOtomatikIndirim = hesap.ilkSiparisIndirimi + hesap.bonusIndirimi;
   const sonrakiIndirim = totalPrice < TUTAR_INDIRIMI.ESIK_1
     ? { hedef: TUTAR_INDIRIMI.ESIK_1, indirim: TUTAR_INDIRIMI.INDIRIM_1 + ekOtomatikIndirim, kalan: TUTAR_INDIRIMI.ESIK_1 - totalPrice }
     : totalPrice < TUTAR_INDIRIMI.ESIK_2
     ? { hedef: TUTAR_INDIRIMI.ESIK_2, indirim: TUTAR_INDIRIMI.INDIRIM_2 + ekOtomatikIndirim, kalan: TUTAR_INDIRIMI.ESIK_2 - totalPrice }
     : null;
 
-  const genelToplam = totalPrice + kargoUcreti - indirimMiktari;
+  const genelToplam = hesap.genelToplam;
 
   // Sadakat bonusu KAZANMA (bu sipariş → BİR SONRAKİ alışveriş). Yalnızca ÜYE.
   // Ödenecek tutara (genelToplam = sunucudaki paidPrice karşılığı) göre eşik:

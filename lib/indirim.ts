@@ -35,3 +35,53 @@ export const SADAKAT = {
   MIN_SEPET: 1000,                  // bonusu KULLANMAK için minimum sepet (varsayılan)
   GECERLILIK_GUN: 60,               // kazanım tarihinden itibaren geçerlilik (gün)
 } as const;
+
+// ── Ortak indirim hesabı (SAF fonksiyon) ───────────────────────────────────
+// Hem client (sepet/odeme GÖSTERİM) hem server (api/odeme paidPrice) AYNI
+// hesabı buradan yapar → mantık drift'i biter. GİRDİLER (üyelik, ilk sipariş
+// hakkı, geçerli bonus, doğrulanmış kupon) ÇAĞIRAN tarafça çözülür — bunlar
+// async DB/token gerektirir, saf fonksiyona giremez. Bu fonksiyon yalnız
+// aritmetik yapar; yan etkisi yoktur, aynı girdiye hep aynı sonucu verir.
+//
+// Kurallar (DEĞİŞMEDEN korundu):
+//  • kargo: sepet < eşik ise ücret, değilse 0
+//  • tutar indirimi: kademeli (≥5000 / ≥10000)
+//  • otomatikToplam = tutar + ilk sipariş + sadakat bonusu (hepsi birikir)
+//  • EN AVANTAJLISI: kupon vs otomatik ÜST ÜSTE BİNMEZ → büyük olan uygulanır
+//  • genelToplam (ödenecek) = max(0, sepet + kargo - uygulanan indirim)
+
+export type IndirimGirdi = {
+  sepetTutari: number;   // ürünler toplamı (kargo hariç) = basketTotal / totalPrice
+  ilkSiparis: boolean;   // ilk sipariş indirimi HAK EDİLDİ mi (çağıran: üye + ilk sipariş + min sepet)
+  bonusTutar: number;    // uygulanabilir sadakat bonusu tutarı (çağıran çözer; 0 = yok/uygulanamaz)
+  kuponIndirimi: number; // doğrulanmış kupon indirimi (çağıran çözer; 0 = yok)
+};
+
+export type IndirimSonuc = {
+  kargo: number;
+  tutarIndirimi: number;
+  ilkSiparisIndirimi: number;
+  bonusIndirimi: number;
+  otomatikToplam: number; // tutar + ilk sipariş + bonus
+  kuponIndirimi: number;
+  kuponKazandi: boolean;  // kupon otomatikten avantajlı mı (en avantajlısı kuralı)
+  indirimMiktari: number; // uygulanan indirim = max(otomatik, kupon)
+  genelToplam: number;    // ödenecek tutar = max(0, sepet + kargo - indirim)
+};
+
+export function hesaplaIndirim(g: IndirimGirdi): IndirimSonuc {
+  const sepetTutari = g.sepetTutari;
+  const kargo = sepetTutari >= KARGO.BEDAVA_ESIK ? 0 : KARGO.UCRET;
+  const tutarIndirimi =
+    sepetTutari >= TUTAR_INDIRIMI.ESIK_2 ? TUTAR_INDIRIMI.INDIRIM_2
+    : sepetTutari >= TUTAR_INDIRIMI.ESIK_1 ? TUTAR_INDIRIMI.INDIRIM_1
+    : 0;
+  const ilkSiparisIndirimi = g.ilkSiparis ? ILK_SIPARIS.INDIRIM : 0;
+  const bonusIndirimi = g.bonusTutar > 0 ? g.bonusTutar : 0;
+  const otomatikToplam = tutarIndirimi + ilkSiparisIndirimi + bonusIndirimi;
+  const kuponIndirimi = g.kuponIndirimi > 0 ? g.kuponIndirimi : 0;
+  const kuponKazandi = kuponIndirimi > otomatikToplam;
+  const indirimMiktari = Math.max(otomatikToplam, kuponIndirimi);
+  const genelToplam = Math.max(0, sepetTutari + kargo - indirimMiktari);
+  return { kargo, tutarIndirimi, ilkSiparisIndirimi, bonusIndirimi, otomatikToplam, kuponIndirimi, kuponKazandi, indirimMiktari, genelToplam };
+}

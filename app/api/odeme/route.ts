@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
-import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT } from "../../../lib/indirim";
+import { ILK_SIPARIS, SADAKAT, hesaplaIndirim } from "../../../lib/indirim";
 
 // Sepet ürünü — client'tan gelen JSON şekli (explicit any yerine).
 type SepetUrun = { id: string | number; name: string; price: number; quantity: number };
@@ -71,10 +71,9 @@ export async function POST(req: NextRequest) {
 
   // GÜVENLİK: ödenecek tutar CLIENT'tan ALINMAZ — server hesaplar. Aksi
   // halde tarayıcıdan düşük paidPrice gönderilip indirim manipüle edilebilirdi.
-  // Kargo + tutar indirimleri basketTotal'dan; ilk sipariş indirimi ise
-  // ÜYELİK + sipariş geçmişi doğrulanarak verilir.
-  const kargo = basketTotal >= KARGO.BEDAVA_ESIK ? 0 : KARGO.UCRET;
-  const tutarIndirimi = basketTotal >= TUTAR_INDIRIMI.ESIK_2 ? TUTAR_INDIRIMI.INDIRIM_2 : basketTotal >= TUTAR_INDIRIMI.ESIK_1 ? TUTAR_INDIRIMI.INDIRIM_1 : 0;
+  // Kargo + tutar indirimi + en-avantajlısı ARİTMETİĞİ aşağıda hesaplaIndirim()
+  // ile yapılır (client ile TEK KAYNAK). Burada yalnız üyelik bağımlı HAK'lar
+  // (ilk sipariş, sadakat bonusu, kupon) DB'den doğrulanıp çözülür.
 
   // Üye doğrulama (Supabase access_token) — hem ilk sipariş indirimi hem
   // sadakat bonusu için ortak. Üye e-postası odeme_gecici'ye yazılır ki
@@ -93,14 +92,14 @@ export async function POST(req: NextRequest) {
 
   // İlk sipariş 200 TL indirimi — SADECE giriş yapmış (üye) ve bu hesapla hiç
   // siparişi olmayan müşteriye. Üye olmayan / 2. siparişini veren ALAMAZ.
-  let ilkSiparisIndirimi = 0;
+  let ilkSiparisHak = false;
   if (uyeEmail && basketTotal >= ILK_SIPARIS.MIN_SEPET) {
     try {
       const { count } = await supabase
         .from("siparisler")
         .select("*", { count: "exact", head: true })
         .eq("email", uyeEmail);
-      if (count === 0) ilkSiparisIndirimi = ILK_SIPARIS.INDIRIM;
+      if (count === 0) ilkSiparisHak = true;
     } catch (e) {
       console.error("[odeme] ilk siparis dogrulama:", e);
     }
@@ -110,7 +109,7 @@ export async function POST(req: NextRequest) {
   // varsa ve sepet bonusun min_sepet'ini karşılıyorsa ödenecek tutardan düşülür.
   // SUNUCUDA doğrulanır; hangi bonusun harcandığı odeme_gecici'ye yazılır,
   // ödeme başarılı olunca (odeme/sonuc) "kullanıldı" işaretlenir.
-  let bonusIndirimi = 0;
+  let bonusTutar = 0;
   let kullanilanBonusId: number | null = null;
   if (uyeEmail) {
     try {
@@ -124,16 +123,13 @@ export async function POST(req: NextRequest) {
         .limit(1);
       const b = bonuslar && bonuslar[0];
       if (b && basketTotal >= (Number(b.min_sepet) || SADAKAT.MIN_SEPET)) {
-        bonusIndirimi = Number(b.tutar) || 0;
+        bonusTutar = Number(b.tutar) || 0;
         kullanilanBonusId = b.id;
       }
     } catch (e) {
       console.error("[odeme] sadakat bonusu dogrulama:", e);
     }
   }
-
-  // Otomatik indirimler toplamı (5000+ tutar + ilk sipariş + sadakat bonusu)
-  const otomatikToplam = tutarIndirimi + ilkSiparisIndirimi + bonusIndirimi;
 
   // Kupon kodu (müşteri girdiyse) — SUNUCUDA doğrulanır (client'tan gelen
   // tutara güvenilmez). Aynı doğrulama mantığı kupon-dogrula API'siyle ortak.
@@ -150,23 +146,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // EN AVANTAJLISI uygulanır — kupon vs otomatik indirimler ÜST ÜSTE BİNMEZ.
-  // Kupon daha avantajlıysa otomatik indirimler (bonus dahil) iptal; değilse
-  // otomatik indirimler geçerli, kupon yok sayılır.
-  let nihaiIndirim: number;
-  let kullanilanKuponKod: string | null = null;
-  let nihaiBonusId: number | null = null;
-  if (kuponIndirimi > otomatikToplam) {
-    nihaiIndirim = kuponIndirimi;
-    kullanilanKuponKod = gecerliKuponKod;
-  } else {
-    nihaiIndirim = otomatikToplam;
-    nihaiBonusId = kullanilanBonusId; // otomatik kazandı → bonus (varsa) harcanır
-  }
+  // TEK KAYNAK indirim hesabı — client (sepet/odeme) ile AYNI saf fonksiyon.
+  // EN AVANTAJLISI (kupon vs otomatik üst üste binmez) ve genelToplam burada.
+  const hesap = hesaplaIndirim({ sepetTutari: basketTotal, ilkSiparis: ilkSiparisHak, bonusTutar, kuponIndirimi });
 
-  const genelToplam = Math.max(0, basketTotal + kargo - nihaiIndirim);
+  // Kupon kazandıysa kupon harcanır (kod işaretlenir); değilse bonus (varsa)
+  // harcanır. Hangisi → odeme_gecici'ye yazılır, odeme/sonuc'ta işaretlenir.
+  const kullanilanKuponKod: string | null = hesap.kuponKazandi ? gecerliKuponKod : null;
+  const nihaiBonusId: number | null = hesap.kuponKazandi ? null : kullanilanBonusId;
+
   const priceStr = basketTotal.toFixed(2);
-  const paidPriceStr = genelToplam.toFixed(2);
+  const paidPriceStr = hesap.genelToplam.toFixed(2);
 
   const requestBody = {
     locale: "tr",
