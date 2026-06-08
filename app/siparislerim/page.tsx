@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 // Müşteri sipariş takip sayfası — giriş yapmis kullanicinin tum
 // siparislerini ve durumlarini gosterir. Müşteri kendi email'iyle eslestirilen
 // siparisleri görür (siparisler.email = auth.user.email).
@@ -135,12 +136,12 @@ export default function Siparislerim() {
         <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.7, lineHeight: 1.6, marginBottom: 24 }}>
           Siparişlerinizi görüntülemek için lütfen giriş yapın.
         </p>
-        <a href="/giris" style={{ background: "#E8845A", color: "white", padding: "14px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "inline-block", marginRight: 8 }}>
+        <Link href="/giris" style={{ background: "#E8845A", color: "white", padding: "14px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "inline-block", marginRight: 8 }}>
           Giriş Yap
-        </a>
-        <a href="/uye-ol" style={{ background: "#FDF6EE", color: "#5C3D2E", border: "2px solid #E8D5B7", padding: "12px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "inline-block" }}>
+        </Link>
+        <Link href="/uye-ol" style={{ background: "#FDF6EE", color: "#5C3D2E", border: "2px solid #E8D5B7", padding: "12px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "inline-block" }}>
           Üye Ol
-        </a>
+        </Link>
       </div>
     </main>
   );
@@ -158,10 +159,10 @@ export default function Siparislerim() {
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
       {/* HEADER */}
       <header style={{ background: "white", padding: "16px 48px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
+        <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
           evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span>
-        </a>
-        <a href="/" style={{ color: "#E8845A", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>← Ana Sayfa</a>
+        </Link>
+        <Link href="/" style={{ color: "#E8845A", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>← Ana Sayfa</Link>
       </header>
 
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px 80px" }}>
@@ -179,9 +180,9 @@ export default function Siparislerim() {
             <div style={{ fontSize: 56, marginBottom: 16 }}>📦</div>
             <h2 style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", marginBottom: 10 }}>Henüz siparişiniz yok</h2>
             <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.7, marginBottom: 24 }}>Alışverişe başlamak için ürünleri keşfedin.</p>
-            <a href="/urunler" style={{ background: "#E8845A", color: "white", padding: "12px 28px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14, display: "inline-block" }}>
+            <Link href="/urunler" style={{ background: "#E8845A", color: "white", padding: "12px 28px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14, display: "inline-block" }}>
               Ürünlere Göz At →
-            </a>
+            </Link>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

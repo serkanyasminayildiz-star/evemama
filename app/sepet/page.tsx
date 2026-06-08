@@ -228,7 +228,7 @@ export default function Sepet() {
         <div style={{ background: "linear-gradient(135deg,#FFF5F0,#FFE8D5)", padding: "12px 24px", textAlign: "center" }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 6 }}>
             🎁 İlk siparişinize <strong style={{ color: "#E8845A" }}>200₺ indirim</strong> kazanmak için
-            <a href="/giris" style={{ color: "#E8845A", fontWeight: 700, marginLeft: 6, textDecoration: "none" }}>giriş yapın →</a>
+            <Link href="/giris" style={{ color: "#E8845A", fontWeight: 700, marginLeft: 6, textDecoration: "none" }}>giriş yapın →</Link>
           </div>
         </div>
       )}
@@ -375,7 +375,7 @@ export default function Sepet() {
 
           {!kullanici && totalPrice >= ILK_SIPARIS.MIN_SEPET && (
             <div style={{ background: "#FFF5F0", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#5C3D2E", textAlign: "center", border: "1.5px dashed #E8845A" }}>
-              🎁 İlk siparişinize <strong>200₺ indirim</strong> için <a href="/giris" style={{ color: "#E8845A", fontWeight: 700 }}>giriş yapın →</a>
+              🎁 İlk siparişinize <strong>200₺ indirim</strong> için <Link href="/giris" style={{ color: "#E8845A", fontWeight: 700 }}>giriş yapın →</Link>
             </div>
           )}
 
@@ -408,14 +408,14 @@ export default function Sepet() {
             </div>
           </div>
 
-          <a href="/odeme"
+          <Link href="/odeme"
             style={{ display: "block", background: "#E8845A", color: "white", borderRadius: 14, padding: "16px", textAlign: "center", textDecoration: "none", fontWeight: 700, fontSize: 16, boxShadow: "0 8px 20px rgba(232,132,90,0.3)", transition: "all .2s" }}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 28px rgba(232,132,90,0.45)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(232,132,90,0.3)"; }}
             onMouseDown={e => e.currentTarget.style.transform = "scale(0.97)"}
             onMouseUp={e => e.currentTarget.style.transform = "translateY(-2px)"}>
             Ödemeye Geç →
-          </a>
+          </Link>
 
           <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginTop: 16 }}>
             {["🔒 Güvenli Ödeme", "✅ Orijinal Ürün", "🚀 Hızlı Teslimat", "↩️ İade Garantisi"].map((t, i) => (

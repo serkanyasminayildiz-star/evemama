@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 
 const sorular = [
@@ -42,7 +43,7 @@ export default function SSS() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
       <header style={{ background: "white", padding: "16px 48px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></a>
+        <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></Link>
       </header>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px" }}>
         <h1 style={{ fontFamily: "Georgia, serif", fontSize: 36, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>Sıkça Sorulan Sorular</h1>
@@ -79,7 +80,7 @@ export default function SSS() {
           <div style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "white", marginBottom: 8 }}>Sorunuzu Bulamadınız mı?</div>
           <p style={{ fontSize: 14, color: "#F4C09A", opacity: 0.8, marginBottom: 20 }}>Müşteri hizmetlerimiz size yardımcı olmaktan mutluluk duyar.</p>
           <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href="/iletisim" style={{ background: "#E8845A", color: "white", padding: "12px 24px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14 }}>📧 Bize Yazın</a>
+            <Link href="/iletisim" style={{ background: "#E8845A", color: "white", padding: "12px 24px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14 }}>📧 Bize Yazın</Link>
             <a href="tel:+905520908001" style={{ background: "rgba(255,255,255,0.1)", color: "white", padding: "12px 24px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14 }}>📞 +90 552 090 80 01</a>
           </div>
         </div>

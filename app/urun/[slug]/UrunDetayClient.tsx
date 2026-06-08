@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
@@ -63,7 +64,7 @@ export default function UrunDetayClient() {
 
   if (!urun) return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
-      <div style={{ textAlign: "center" }}><div style={{ fontSize: 48, marginBottom: 16 }}>😢</div><div style={{ fontFamily: "Georgia, serif", fontSize: 18, color: "#5C3D2E", marginBottom: 20 }}>Ürün bulunamadı</div><a href="/" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>← Ana Sayfaya Dön</a></div>
+      <div style={{ textAlign: "center" }}><div style={{ fontSize: 48, marginBottom: 16 }}>😢</div><div style={{ fontFamily: "Georgia, serif", fontSize: 18, color: "#5C3D2E", marginBottom: 20 }}>Ürün bulunamadı</div><Link href="/" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>← Ana Sayfaya Dön</Link></div>
     </main>
   );
 
@@ -89,10 +90,10 @@ export default function UrunDetayClient() {
 
       {/* Header */}
       <header className="urun-header" style={{ background: "white", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100 }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
+        <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
           evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span>
-        </a>
-        <a href="/sepet" style={{ background: "#5C3D2E", color: "white", padding: "9px 18px", borderRadius: 50, textDecoration: "none", fontSize: 13, fontWeight: 700 }}>🛒 Sepet</a>
+        </Link>
+        <Link href="/sepet" style={{ background: "#5C3D2E", color: "white", padding: "9px 18px", borderRadius: 50, textDecoration: "none", fontSize: 13, fontWeight: 700 }}>🛒 Sepet</Link>
       </header>
 
       {/* Kargo Bildirimi */}
@@ -113,8 +114,8 @@ export default function UrunDetayClient() {
 
       {/* Breadcrumb */}
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "12px 16px", fontSize: 13, color: "#5C3D2E", opacity: 0.6, overflowX: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        <a href="/" style={{ color: "#E8845A", textDecoration: "none" }}>Ana Sayfa</a>
-        {urun.kategoriler && <> / <a href={`/kategori/${urun.kategoriler.slug}`} style={{ color: "#E8845A", textDecoration: "none" }}>{urun.kategoriler.ad}</a></>}
+        <Link href="/" style={{ color: "#E8845A", textDecoration: "none" }}>Ana Sayfa</Link>
+        {urun.kategoriler && <> / <Link href={`/kategori/${urun.kategoriler.slug}`} style={{ color: "#E8845A", textDecoration: "none" }}>{urun.kategoriler.ad}</Link></>}
         / <span style={{ opacity: 0.7 }}>{urun.ad.substring(0, 30)}{urun.ad.length > 30 ? "..." : ""}</span>
       </div>
 
@@ -198,10 +199,10 @@ export default function UrunDetayClient() {
             {eklendi ? "✅ Sepete Eklendi!" : urun.stok === 0 ? "Stokta Yok" : `🛒 Sepete Ekle (${adet} adet)`}
           </button>
 
-          <a href="/sepet"
+          <Link href="/sepet"
             style={{ display: "block", width: "100%", background: "white", color: "#5C3D2E", border: "2px solid #E8D5B7", borderRadius: 16, padding: "14px", fontSize: 15, fontWeight: 700, textAlign: "center", textDecoration: "none", boxSizing: "border-box" as const }}>
             Sepete Git →
-          </a>
+          </Link>
 
           {/* Kargo Bilgisi */}
           <div style={{ marginTop: 20, background: "white", borderRadius: 16, padding: "16px 18px" }}>
@@ -309,7 +310,7 @@ export default function UrunDetayClient() {
             </h2>
             <div className="benzer-grid">
               {benzerUrunler.map(u => (
-                <a key={u.id} href={`/urun/${u.slug}`}
+                <Link key={u.id} href={`/urun/${u.slug}`}
                   style={{ background: "#FDF6EE", borderRadius: 18, overflow: "hidden", textDecoration: "none", display: "block" }}>
                   <div style={{ height: 130, background: "white", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                     {u.resim_url ? (
@@ -322,7 +323,7 @@ export default function UrunDetayClient() {
                     <div style={{ fontFamily: "Georgia, serif", fontSize: 13, fontWeight: 700, color: "#5C3D2E", marginBottom: 4, lineHeight: 1.3 }}>{u.ad.substring(0, 40)}{u.ad.length > 40 ? "..." : ""}</div>
                     <div style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 700, color: "#E8845A" }}>₺{(u.indirimli_fiyat || u.fiyat).toFixed(2)}</div>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
           </div>
@@ -332,18 +333,18 @@ export default function UrunDetayClient() {
       {/* Mobil bottom nav */}
       <style>{`.urun-bottom-nav { display: none; } @media(max-width:768px){ .urun-bottom-nav { display: grid !important; grid-template-columns: repeat(4,1fr); position: fixed; bottom: 0; left: 0; right: 0; z-index: 300; background: rgba(253,246,238,0.97); backdrop-filter: blur(14px); border-top: 1px solid rgba(92,61,46,.08); padding: 8px 0 20px; } }`}</style>
       <nav className="urun-bottom-nav" style={{ display: "none" }}>
-        <a href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+        <Link href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
           <span style={{ fontSize: 22 }}>🏠</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Anasayfa</span>
-        </a>
-        <a href="/urunler" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+        </Link>
+        <Link href="/urunler" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
           <span style={{ fontSize: 22 }}>🛍️</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Ürünler</span>
-        </a>
-        <a href="/favoriler" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+        </Link>
+        <Link href="/favoriler" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
           <span style={{ fontSize: 22 }}>❤️</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Favoriler</span>
-        </a>
-        <a href="/sepet" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+        </Link>
+        <Link href="/sepet" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
           <span style={{ fontSize: 22 }}>🛒</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Sepet</span>
-        </a>
+        </Link>
       </nav>
 
     </main>

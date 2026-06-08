@@ -1,3 +1,4 @@
+import Link from "next/link";
 export const metadata = {
   title: "Hakkımızda",
   description: "evemama.net — evcil hayvan tutkunlarının güvendiği online dükkân. Hikâyemiz, misyonumuz ve değerlerimiz.",
@@ -16,10 +17,10 @@ export default function Hakkimizda() {
       
       {/* Header */}
       <header style={{ background: "white", padding: "16px 48px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
+        <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
           evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span>
-        </a>
-        <a href="/" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>← Ana Sayfa</a>
+        </Link>
+        <Link href="/" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>← Ana Sayfa</Link>
       </header>
 
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px" }}>

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { supabase } from "../lib/supabase";
@@ -334,15 +335,15 @@ export default function AnaSayfaClient() {
           <div style={{ background: "rgba(244,192,154,0.15)", borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 8 }}>👋 {kullanici.user_metadata?.full_name?.split(" ")[0] || "Üyemiz"}</div>
             <div style={{ display: "flex", gap: 6 }}>
-              <a href="/siparislerim" style={{ background: "#E8845A", color: "white", textDecoration: "none", fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 50 }}>📦 Siparişlerim</a>
+              <Link href="/siparislerim" style={{ background: "#E8845A", color: "white", textDecoration: "none", fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 50 }}>📦 Siparişlerim</Link>
               <button onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}
                 style={{ background: "none", border: "1px solid #E8D5B7", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#5C3D2E", padding: "6px 14px", borderRadius: 50 }}>Çıkış Yap</button>
             </div>
           </div>
         ) : (
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            <a href="/giris" style={{ flex: 1, textAlign: "center", fontSize: 13, fontWeight: 600, color: "#5C3D2E", padding: 10, borderRadius: 10, textDecoration: "none", border: "1px solid #E8D5B7" }}>Giriş Yap</a>
-            <a href="/uye-ol" style={{ flex: 1, textAlign: "center", border: "2px solid #E8845A", fontSize: 13, fontWeight: 700, color: "#E8845A", padding: 10, borderRadius: 50, textDecoration: "none" }}>Üye Ol</a>
+            <Link href="/giris" style={{ flex: 1, textAlign: "center", fontSize: 13, fontWeight: 600, color: "#5C3D2E", padding: 10, borderRadius: 10, textDecoration: "none", border: "1px solid #E8D5B7" }}>Giriş Yap</Link>
+            <Link href="/uye-ol" style={{ flex: 1, textAlign: "center", border: "2px solid #E8845A", fontSize: 13, fontWeight: 700, color: "#E8845A", padding: 10, borderRadius: 50, textDecoration: "none" }}>Üye Ol</Link>
           </div>
         )}
         {[
@@ -355,12 +356,12 @@ export default function AnaSayfaClient() {
           { href: "/hakkimizda", label: "ℹ️ Hakkımızda" },
           { href: "/iletisim", label: "📞 İletişim" },
         ].map((item, i) => (
-          <a key={i} href={item.href}
+          <Link key={i} href={item.href}
             style={{ display: "block", padding: "13px 16px", fontSize: 15, fontWeight: 600, color: "#5C3D2E", textDecoration: "none", borderRadius: 12 }}
             onMouseEnter={e => e.currentTarget.style.background = "rgba(244,192,154,0.15)"}
             onMouseLeave={e => e.currentTarget.style.background = "none"}>
             {item.label}
-          </a>
+          </Link>
         ))}
       </div>
 
@@ -370,19 +371,19 @@ export default function AnaSayfaClient() {
           <div style={{ display: "flex", alignItems: "center" }}>
             <button className="hamburger-btn" onClick={() => setMobMenuAcik(true)}>☰</button>
           </div>
-          <a href="/" style={{ textAlign: "center", textDecoration: "none" }}>
+          <Link href="/" style={{ textAlign: "center", textDecoration: "none" }}>
             <div style={{ fontFamily: "Georgia,serif", fontSize: 26, fontWeight: 700, color: "#5C3D2E" }}>
               evemama<span style={{ color: "#E8845A", fontSize: 17, fontStyle: "italic" }}>.net</span>
             </div>
             <div style={{ fontSize: 10, color: "#5C3D2E", opacity: 0.4, letterSpacing: "0.8px", textTransform: "uppercase" }}>Dostunuzun Dükkânı</div>
-          </a>
+          </Link>
           <div className="hdr-right">
             {kullanici ? (
               <>
                 <span style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E" }}>👋 {kullanici.user_metadata?.full_name?.split(" ")[0] || "Üyemiz"}</span>
-                <a href="/siparislerim" style={{ background: "#E8845A", color: "white", textDecoration: "none", fontSize: 13, fontWeight: 700, padding: "8px 16px", borderRadius: 50 }}
+                <Link href="/siparislerim" style={{ background: "#E8845A", color: "white", textDecoration: "none", fontSize: 13, fontWeight: 700, padding: "8px 16px", borderRadius: 50 }}
                   onMouseEnter={e => e.currentTarget.style.background = "#D67248"}
-                  onMouseLeave={e => e.currentTarget.style.background = "#E8845A"}>📦 Siparişlerim</a>
+                  onMouseLeave={e => e.currentTarget.style.background = "#E8845A"}>📦 Siparişlerim</Link>
                 <button onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}
                   style={{ background: "none", border: "2px solid #E8D5B7", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#5C3D2E", padding: "8px 16px", borderRadius: 50 }}
                   onMouseEnter={e => e.currentTarget.style.background = "#E8D5B7"}
@@ -390,31 +391,31 @@ export default function AnaSayfaClient() {
               </>
             ) : (
               <>
-                <a href="/giris" style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", opacity: 0.7, padding: "8px 12px", borderRadius: 10, textDecoration: "none" }}
+                <Link href="/giris" style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", opacity: 0.7, padding: "8px 12px", borderRadius: 10, textDecoration: "none" }}
                   onMouseEnter={e => e.currentTarget.style.opacity = "1"}
-                  onMouseLeave={e => e.currentTarget.style.opacity = "0.7"}>Giriş Yap</a>
-                <a href="/uye-ol" style={{ border: "2px solid #E8845A", fontSize: 13, fontWeight: 700, color: "#E8845A", padding: "8px 16px", borderRadius: 50, textDecoration: "none" }}
+                  onMouseLeave={e => e.currentTarget.style.opacity = "0.7"}>Giriş Yap</Link>
+                <Link href="/uye-ol" style={{ border: "2px solid #E8845A", fontSize: 13, fontWeight: 700, color: "#E8845A", padding: "8px 16px", borderRadius: 50, textDecoration: "none" }}
                   onMouseEnter={e => { e.currentTarget.style.background = "#E8845A"; e.currentTarget.style.color = "white"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#E8845A"; }}>Üye Ol</a>
+                  onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#E8845A"; }}>Üye Ol</Link>
               </>
             )}
-            <a href="/sepet" style={{ background: "#5C3D2E", color: "white", borderRadius: 50, padding: "10px 20px", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}
+            <Link href="/sepet" style={{ background: "#5C3D2E", color: "white", borderRadius: 50, padding: "10px 20px", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}
               onMouseEnter={e => e.currentTarget.style.background = "#E8845A"}
               onMouseLeave={e => e.currentTarget.style.background = "#5C3D2E"}>
               🛒 Sepet {totalItems > 0 && <span style={{ background: "#E8845A", borderRadius: 50, padding: "1px 7px", fontSize: 12 }}>{totalItems}</span>}
-            </a>
+            </Link>
           </div>
           <div className="hdr-right-mob">
-            <a href="/favoriler" style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", opacity: 0.7, padding: "6px 10px", borderRadius: 10, textDecoration: "none" }}>❤️ Favoriler</a>
-            <a href="/sepet" style={{ fontSize: 22, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+            <Link href="/favoriler" style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", opacity: 0.7, padding: "6px 10px", borderRadius: 10, textDecoration: "none" }}>❤️ Favoriler</Link>
+            <Link href="/sepet" style={{ fontSize: 22, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
               🛒 {totalItems > 0 && <span style={{ background: "#E8845A", color: "white", borderRadius: 50, padding: "1px 6px", fontSize: 11, fontWeight: 700 }}>{totalItems}</span>}
-            </a>
+            </Link>
           </div>
         </div>
 
         <nav style={{ borderTop: "1px solid rgba(92,61,46,0.06)", background: "#FFFCF8" }}>
           <div className="nav-bar-inner" style={{ display: "flex", maxWidth: 1400, margin: "0 auto", padding: "0 48px", overflowX: "auto", scrollbarWidth: "none" }}>
-            <a href="/" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#E8845A", textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid #E8845A" }}>🏠 Anasayfa</a>
+            <Link href="/" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#E8845A", textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid #E8845A" }}>🏠 Anasayfa</Link>
             {["kedi", "kopek"].map((slug) => {
               const kat = kategoriler.find(k => k.slug === slug);
               if (!kat) return null;
@@ -426,22 +427,22 @@ export default function AnaSayfaClient() {
                   </div>
                   {acikMenu === slug && altKategoriler[slug]?.length > 0 && (
                     <div style={{ position: "absolute", top: "100%", left: 0, background: "white", borderRadius: 16, boxShadow: "0 12px 40px rgba(92,61,46,0.15)", padding: "12px 8px", minWidth: 240, zIndex: 300, border: "1px solid #E8D5B7" }}>
-                      <a href={`/kategori/${slug}`} style={{ display: "block", padding: "10px 16px", fontSize: 13, fontWeight: 700, color: "#E8845A", textDecoration: "none", borderRadius: 10, marginBottom: 4 }}>Tüm {kat.ad} →</a>
+                      <Link href={`/kategori/${slug}`} style={{ display: "block", padding: "10px 16px", fontSize: 13, fontWeight: 700, color: "#E8845A", textDecoration: "none", borderRadius: 10, marginBottom: 4 }}>Tüm {kat.ad} →</Link>
                       <div style={{ height: 1, background: "#F0E8E0", margin: "8px" }} />
                       {altKategoriler[slug].map((alt, j) => (
-                        <a key={j} href={`/kategori/${alt.slug}`}
+                        <Link key={j} href={`/kategori/${alt.slug}`}
                           style={{ display: "block", padding: "9px 16px", fontSize: 13, color: "#5C3D2E", textDecoration: "none", borderRadius: 10 }}
                           onMouseEnter={e => e.currentTarget.style.background = "#FDF6EE"}
-                          onMouseLeave={e => e.currentTarget.style.background = "none"}>{alt.ad}</a>
+                          onMouseLeave={e => e.currentTarget.style.background = "none"}>{alt.ad}</Link>
                       ))}
                     </div>
                   )}
                 </div>
               );
             })}
-            <a href="/urunler" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>🛍️ Tüm Ürünler</a>
-            <a href="/kampanyalar" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>🏷️ Kampanyalar</a>
-            <a href="/blog" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>📝 Blog</a>
+            <Link href="/urunler" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>🛍️ Tüm Ürünler</Link>
+            <Link href="/kampanyalar" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>🏷️ Kampanyalar</Link>
+            <Link href="/blog" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>📝 Blog</Link>
           </div>
         </nav>
       </header>
@@ -469,9 +470,9 @@ export default function AnaSayfaClient() {
                 <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.7, marginBottom: 24 }}>{slide.alt}</p>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <div style={{ background: "rgba(255,255,255,.3)", color: "#5C3D2E", fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 50 }}>{slide.kod}</div>
-                  <a href={slide.link} style={{ background: "#5C3D2E", color: "white", fontSize: 13, fontWeight: 700, padding: "10px 20px", borderRadius: 50, textDecoration: "none" }}
+                  <Link href={slide.link} style={{ background: "#5C3D2E", color: "white", fontSize: 13, fontWeight: 700, padding: "10px 20px", borderRadius: 50, textDecoration: "none" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#2C1A0E"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#5C3D2E"}>Keşfet →</a>
+                    onMouseLeave={e => e.currentTarget.style.background = "#5C3D2E"}>Keşfet →</Link>
                 </div>
               </div>
             </div>
@@ -485,19 +486,19 @@ export default function AnaSayfaClient() {
           </div>
         </div>
         <div className="hero-right">
-          <a href="/urunler" style={{ background: "#E8845A", color: "white", borderRadius: 18, padding: "20px 28px", fontSize: 17, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, boxShadow: "0 10px 28px rgba(232,132,90,.32)", textDecoration: "none" }}
+          <Link href="/urunler" style={{ background: "#E8845A", color: "white", borderRadius: 18, padding: "20px 28px", fontSize: 17, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, boxShadow: "0 10px 28px rgba(232,132,90,.32)", textDecoration: "none" }}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}>
             Alışverişe Başla
             <span style={{ background: "rgba(255,255,255,.22)", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center" }}>→</span>
-          </a>
-          <a href="/kategori/kopek" style={{ borderRadius: 20, padding: "24px 26px", background: "linear-gradient(135deg,#C8DEC9,rgba(139,175,142,.33))", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none" }}>
+          </Link>
+          <Link href="/kategori/kopek" style={{ borderRadius: 20, padding: "24px 26px", background: "linear-gradient(135deg,#C8DEC9,rgba(139,175,142,.33))", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none" }}>
             <div>
               <div style={{ fontSize: 10, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, textTransform: "uppercase", marginBottom: 4 }}>🐶 Köpek Ürünleri</div>
               <div style={{ fontFamily: "Georgia,serif", fontSize: 19, fontWeight: 700, color: "#5C3D2E" }}>Yeni sezon<br />köpek mamaları</div>
             </div>
             <div style={{ fontSize: 52, animation: "floatAnim 4s ease-in-out infinite" }}>🦴</div>
-          </a>
+          </Link>
           <div style={{ borderRadius: 20, padding: "18px 20px", background: "#5C3D2E", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: 10, fontWeight: 700, color: "#F4C09A", textTransform: "uppercase", marginBottom: 3 }}>🚀 Ücretsiz Kargo</div>
@@ -512,7 +513,7 @@ export default function AnaSayfaClient() {
       <div className="kat-section" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px 52px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <h2 className="sec-title" style={{ fontFamily: "Georgia,serif", fontSize: 28, fontWeight: 700, color: "#5C3D2E" }}>Kategorilere <span style={{ color: "#E8845A", fontStyle: "italic" }}>Göz At</span></h2>
-          <a href="/urunler" style={{ fontSize: 14, fontWeight: 600, color: "#E8845A", textDecoration: "none" }}>Tümünü gör →</a>
+          <Link href="/urunler" style={{ fontSize: 14, fontWeight: 600, color: "#E8845A", textDecoration: "none" }}>Tümünü gör →</Link>
         </div>
         <div className="kat-grid">
           {kategoriler
@@ -521,14 +522,14 @@ export default function AnaSayfaClient() {
             .map((kat, i) => {
             const g = getKatGorsel(kat.slug);
             return (
-              <a key={i} href={`/kategori/${kat.slug}`} className="kat-card">
+              <Link key={i} href={`/kategori/${kat.slug}`} className="kat-card">
                 <div className="kat-card-img" style={{ background: g.bg }}>
                   <span style={{ fontSize: 48, filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.12))" }}>{g.emoji}</span>
                 </div>
                 <div className="kat-card-label">
                   <div style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E" }}>{kat.ad}</div>
                 </div>
-              </a>
+              </Link>
             );
           })}
         </div>
@@ -539,7 +540,7 @@ export default function AnaSayfaClient() {
         <div className="urun-section" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 36 }}>
             <h2 className="sec-title" style={{ fontFamily: "Georgia,serif", fontSize: 28, fontWeight: 700, color: "#5C3D2E" }}>Öne Çıkan <span style={{ color: "#E8845A", fontStyle: "italic" }}>Ürünler</span></h2>
-            <a href="/urunler" style={{ fontSize: 14, fontWeight: 600, color: "#E8845A", textDecoration: "none" }}>Tümü →</a>
+            <Link href="/urunler" style={{ fontSize: 14, fontWeight: 600, color: "#E8845A", textDecoration: "none" }}>Tümü →</Link>
           </div>
 
           {urunGruplari.length === 0 ? (
@@ -562,12 +563,12 @@ export default function AnaSayfaClient() {
                         <div style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.4, marginTop: 2 }}>{grup.urunler.length} ürün gösteriliyor</div>
                       </div>
                     </div>
-                    <a href={`/kategori/${grup.slug}`}
+                    <Link href={`/kategori/${grup.slug}`}
                       style={{ fontSize: 13, fontWeight: 600, color: "#E8845A", textDecoration: "none", border: "1.5px solid #E8845A", padding: "7px 16px", borderRadius: 50, whiteSpace: "nowrap" }}
                       onMouseEnter={e => { e.currentTarget.style.background = "#E8845A"; e.currentTarget.style.color = "white"; }}
                       onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#E8845A"; }}>
                       Tümünü Gör →
-                    </a>
+                    </Link>
                   </div>
 
                   <div className="urun-grid">
@@ -582,7 +583,7 @@ export default function AnaSayfaClient() {
                       <div key={i} style={{ background: "white", borderRadius: 20, overflow: "hidden", transition: "transform .2s, box-shadow .2s" }}
                         onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 16px 40px rgba(92,61,46,0.1)"; }}
                         onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
-                        <a href={`/urun/${urun.slug}`} style={{ textDecoration: "none", display: "block" }}>
+                        <Link href={`/urun/${urun.slug}`} style={{ textDecoration: "none", display: "block" }}>
                           <div className="urun-img" style={{ height: 160, background: "#f9f9f9", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                             {urun.resim_url
                               ? <Image src={urun.resim_url} alt={urun.ad} fill sizes="(max-width:768px) 50vw, (max-width:1200px) 25vw, 280px" style={{ objectFit: "contain", padding: 12, mixBlendMode: "multiply" }} />
@@ -601,7 +602,7 @@ export default function AnaSayfaClient() {
                             {urun.markalar && <div style={{ fontSize: 10, fontWeight: 700, color: "#8BAF8E", textTransform: "uppercase", marginBottom: 3 }}>{urun.markalar.ad}</div>}
                             <div style={{ fontFamily: "Georgia,serif", fontSize: 13, fontWeight: 700, color: "#5C3D2E", lineHeight: 1.35 }}>{urun.ad.substring(0, 45)}{urun.ad.length > 45 ? "..." : ""}</div>
                           </div>
-                        </a>
+                        </Link>
                         <div style={{ padding: "0 14px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
                             {indirimVar && (
@@ -708,9 +709,9 @@ export default function AnaSayfaClient() {
               <div key={i}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#FDF6EE", opacity: 0.35, textTransform: "uppercase", letterSpacing: 1, marginBottom: 18 }}>{col.title}</div>
                 {col.links.map((link, j) => (
-                  <a key={j} href={link.href} style={{ display: "block", fontSize: 14, color: "#FDF6EE", opacity: 0.55, marginBottom: 10, textDecoration: "none" }}
+                  <Link key={j} href={link.href} style={{ display: "block", fontSize: 14, color: "#FDF6EE", opacity: 0.55, marginBottom: 10, textDecoration: "none" }}
                     onMouseEnter={e => e.currentTarget.style.opacity = "1"}
-                    onMouseLeave={e => e.currentTarget.style.opacity = "0.55"}>{link.ad}</a>
+                    onMouseLeave={e => e.currentTarget.style.opacity = "0.55"}>{link.ad}</Link>
                 ))}
               </div>
             ))}
@@ -718,14 +719,14 @@ export default function AnaSayfaClient() {
           <div className="footer-bot">
             <div>
                <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.28 }}>⭐ Yıldız Yazılım tarafından hazırlanmıştır — Tüm hakları saklıdır. | Serkan Yıldız: 0534 748 80 01</div>
-               <a 
+               <Link 
                href="https://portal-etbis.ticaret.gov.tr/portal/business/certificate?businessSiteId=902a36a2-e806-43c6-89f6-a6f9be6687a9"
                target="_blank"
               rel="noopener noreferrer"
            style={{ color: "#FDF6EE", opacity: 0.6, fontSize: 12, textDecoration: "none" }}
              >
              🏛️ ETBİS Kayıt No: 5455865771
-             </a>
+             </Link>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               {["📸", "🐦", "📘"].map((s, i) => (
@@ -739,10 +740,10 @@ export default function AnaSayfaClient() {
       </footer>
 
       <nav className="bottom-nav">
-        <a href="/" className="bnav-item"><span className="bnav-icon">🏠</span><span className="bnav-label aktif">Anasayfa</span></a>
-        <a href="/urunler" className="bnav-item"><span className="bnav-icon">🔍</span><span className="bnav-label">Ara</span></a>
-        <a href="/blog" className="bnav-item"><span className="bnav-icon">📝</span><span className="bnav-label">Blog</span></a>
-        <a href="/sepet" className="bnav-item"><span className="bnav-icon">🛒</span><span className="bnav-label">Sepet</span></a>
+        <Link href="/" className="bnav-item"><span className="bnav-icon">🏠</span><span className="bnav-label aktif">Anasayfa</span></Link>
+        <Link href="/urunler" className="bnav-item"><span className="bnav-icon">🔍</span><span className="bnav-label">Ara</span></Link>
+        <Link href="/blog" className="bnav-item"><span className="bnav-icon">📝</span><span className="bnav-label">Blog</span></Link>
+        <Link href="/sepet" className="bnav-item"><span className="bnav-icon">🛒</span><span className="bnav-label">Sepet</span></Link>
       </nav>
 
     </main>

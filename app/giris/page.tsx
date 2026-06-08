@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 
@@ -66,7 +67,7 @@ export default function GirisYap() {
 
         <div style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#5C3D2E", opacity: 0.6 }}>
           Hesabın yok mu?{" "}
-          <a href="/uye-ol" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Üye Ol</a>
+          <Link href="/uye-ol" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Üye Ol</Link>
         </div>
 
       </div>

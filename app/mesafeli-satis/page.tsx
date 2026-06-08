@@ -1,3 +1,4 @@
+import Link from "next/link";
 export const metadata = {
   title: "Mesafeli Satış Sözleşmesi",
   description: "evemama.net üzerinden yapılan alışverişlerde tüketici ile satıcı arasındaki mesafeli satış sözleşmesi koşulları.",
@@ -8,7 +9,7 @@ export default function MesafeliSatis() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
       <header style={{ background: "white", padding: "16px 48px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></a>
+        <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></Link>
       </header>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px" }}>
         <h1 style={{ fontFamily: "Georgia, serif", fontSize: 36, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>Mesafeli Satış Sözleşmesi</h1>

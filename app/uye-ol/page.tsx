@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 
@@ -87,7 +88,7 @@ export default function UyeOl() {
 
         <div style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#5C3D2E", opacity: 0.6 }}>
           Zaten hesabın var mı?{" "}
-          <a href="/giris" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Giriş Yap</a>
+          <Link href="/giris" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Giriş Yap</Link>
         </div>
 
       </div>

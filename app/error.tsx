@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 // Global error boundary — herhangi bir client component'te yakalanmayan
 // hata bu ekrana dusurur. console.error otomatik calisir (Next.js); ayrica
@@ -27,9 +28,9 @@ export default function ErrorBoundary({ error, reset }: { error: Error & { diges
           <button onClick={() => reset()} style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 12, padding: "12px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
             🔄 Yeniden Dene
           </button>
-          <a href="/" style={{ background: "#FDF6EE", color: "#5C3D2E", border: "2px solid #E8D5B7", borderRadius: 12, padding: "10px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", textDecoration: "none", fontFamily: "inherit" }}>
+          <Link href="/" style={{ background: "#FDF6EE", color: "#5C3D2E", border: "2px solid #E8D5B7", borderRadius: 12, padding: "10px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", textDecoration: "none", fontFamily: "inherit" }}>
             🏠 Ana Sayfa
-          </a>
+          </Link>
         </div>
         {process.env.NODE_ENV === "development" && (
           <details style={{ marginTop: 24, textAlign: "left", fontSize: 12, color: "#5C3D2E", opacity: 0.6 }}>

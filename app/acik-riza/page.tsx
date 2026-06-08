@@ -1,3 +1,4 @@
+import Link from "next/link";
 export const metadata = {
   title: "Açık Rıza Metni",
   description: "evemama.net üzerinde kişisel verilerin işlenmesine ilişkin açık rıza metni — KVKK madde 5/1 ve 6/2 kapsamında.",
@@ -8,7 +9,7 @@ export default function AcikRiza() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
       <header style={{ background: "white", padding: "16px 48px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></a>
+        <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></Link>
       </header>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px" }}>
         <h1 style={{ fontFamily: "Georgia, serif", fontSize: 36, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>Açık Rıza Metni</h1>
@@ -16,7 +17,7 @@ export default function AcikRiza() {
         <p style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.5, marginBottom: 40 }}>Son güncelleme tarihi: 01/02/2026</p>
         <div style={{ background: "white", borderRadius: 24, padding: "40px 48px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
           <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8, marginBottom: 24 }}>
-            6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında, <a href="/kvkk" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>KVKK Aydınlatma Metni</a>'ni okuduğumu ve anladığımı,
+            6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında, <Link href="/kvkk" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>KVKK Aydınlatma Metni</Link>'ni okuduğumu ve anladığımı,
           </p>
           <div style={{ background: "#FDF6EE", borderRadius: 16, padding: "24px", marginBottom: 24 }}>
             <p style={{ fontSize: 15, color: "#5C3D2E", fontWeight: 600, marginBottom: 12 }}>Kimlik, iletişim ve işlem güvenliğine ilişkin kişisel verilerimin:</p>

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../../lib/supabase";
 import CsvImport from "./CsvImport";
@@ -802,9 +803,9 @@ export default function Admin() {
           ))}
         </nav>
         <div style={{ padding: "8px", marginTop: 8, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-          <a href="/" target="_blank" style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 14px", background: "rgba(255,255,255,0.04)", borderRadius: 10, color: "#FDF6EE", textDecoration: "none", fontSize: 13, opacity: 0.5 }}>
+          <Link href="/" target="_blank" style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 14px", background: "rgba(255,255,255,0.04)", borderRadius: 10, color: "#FDF6EE", textDecoration: "none", fontSize: 13, opacity: 0.5 }}>
             🏠 Siteye Git
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -1074,9 +1075,9 @@ export default function Admin() {
                             : <div style={{ width: 44, height: 44, background: "#FDF6EE", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🐾</div>}
                         </td>
                         <td style={{ padding: "8px 10px", maxWidth: 220 }}>
-                          <a href={`/urun/${urun.slug}`} target="_blank" style={{ fontWeight: 600, color: "#2C1A0E", lineHeight: 1.3, textDecoration: "none", display: "block" }} title="Ürün sayfasını aç">
+                          <Link href={`/urun/${urun.slug}`} target="_blank" style={{ fontWeight: 600, color: "#2C1A0E", lineHeight: 1.3, textDecoration: "none", display: "block" }} title="Ürün sayfasını aç">
                             {urun.ad?.substring(0, 48)}{urun.ad?.length > 48 ? "…" : ""}
-                          </a>
+                          </Link>
                           <div style={{ fontSize: 10, opacity: 0.35, marginTop: 2 }}>ID:{urun.id}</div>
                         </td>
                         <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>
@@ -1129,7 +1130,7 @@ export default function Admin() {
                         </td>
                         <td style={{ padding: "8px 10px", fontSize: 12, color: "#5C3D2E", opacity: 0.65 }}>
                           {urun.kategoriler?.slug
-                            ? <a href={`/kategori/${urun.kategoriler.slug}`} target="_blank" style={{ color: "#5C3D2E", textDecoration: "none", borderBottom: "1px dashed #ccc" }} title="Kategori sayfasını aç">{urun.kategoriler.ad}</a>
+                            ? <Link href={`/kategori/${urun.kategoriler.slug}`} target="_blank" style={{ color: "#5C3D2E", textDecoration: "none", borderBottom: "1px dashed #ccc" }} title="Kategori sayfasını aç">{urun.kategoriler.ad}</Link>
                             : "—"}
                         </td>
                         <td style={{ padding: "8px 10px", fontSize: 12, color: "#5C3D2E", opacity: 0.65 }}>{urun.markalar?.ad || "—"}</td>

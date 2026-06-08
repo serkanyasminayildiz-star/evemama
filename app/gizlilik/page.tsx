@@ -1,3 +1,4 @@
+import Link from "next/link";
 export const metadata = {
   title: "Gizlilik Politikası",
   description: "evemama.net üzerinde kişisel verilerinizin nasıl işlendiği, korunduğu ve haklarınız hakkında bilgi.",
@@ -8,7 +9,7 @@ export default function Gizlilik() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
       <header style={{ background: "white", padding: "16px 48px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></a>
+        <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></Link>
       </header>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px" }}>
         <h1 style={{ fontFamily: "Georgia, serif", fontSize: 36, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>Gizlilik Politikası</h1>

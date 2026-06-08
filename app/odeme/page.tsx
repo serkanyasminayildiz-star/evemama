@@ -191,7 +191,7 @@ export default function Odeme() {
           evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span>
         </Link>
         <div style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E" }}>💳 Güvenli Ödeme</div>
-        <a href="/sepet" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>← Sepet</a>
+        <Link href="/sepet" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>← Sepet</Link>
       </header>
 
       <div className="odeme-layout">
@@ -259,16 +259,16 @@ export default function Odeme() {
               <input type="checkbox" checked={sozlesme} onChange={e => setSozlesme(e.target.checked)}
                 style={{ width: 18, height: 18, marginTop: 2, accentColor: "#E8845A", flexShrink: 0, cursor: "pointer" }} />
               <span style={{ fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
-                <a href="/mesafeli-satis" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Mesafeli Satış Sözleşmesi</a>&apos;ni ve{" "}
-                <a href="/kullanim-kosullari" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Ön Bilgilendirme Formu</a>&apos;nu okudum, onaylıyorum. <span style={{ color: "red" }}>*</span>
+                <Link href="/mesafeli-satis" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Mesafeli Satış Sözleşmesi</Link>&apos;ni ve{" "}
+                <Link href="/kullanim-kosullari" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Ön Bilgilendirme Formu</Link>&apos;nu okudum, onaylıyorum. <span style={{ color: "red" }}>*</span>
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
               <input type="checkbox" checked={aydinlatma} onChange={e => setAydinlatma(e.target.checked)}
                 style={{ width: 18, height: 18, marginTop: 2, accentColor: "#E8845A", flexShrink: 0, cursor: "pointer" }} />
               <span style={{ fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
-                <a href="/kvkk" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>KVKK Aydınlatma Metni</a>&apos;ni okudum,{" "}
-                <a href="/gizlilik" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Gizlilik Politikası</a>&apos;nı kabul ediyorum. <span style={{ color: "red" }}>*</span>
+                <Link href="/kvkk" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>KVKK Aydınlatma Metni</Link>&apos;ni okudum,{" "}
+                <Link href="/gizlilik" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Gizlilik Politikası</Link>&apos;nı kabul ediyorum. <span style={{ color: "red" }}>*</span>
               </span>
             </div>
             {hata && (
@@ -378,15 +378,15 @@ export default function Odeme() {
         <Link href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
           <span style={{ fontSize: 22 }}>🏠</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Anasayfa</span>
         </Link>
-        <a href="/urunler" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+        <Link href="/urunler" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
           <span style={{ fontSize: 22 }}>🛍️</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Ürünler</span>
-        </a>
-        <a href="/sepet" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+        </Link>
+        <Link href="/sepet" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
           <span style={{ fontSize: 22 }}>🛒</span><span style={{ fontSize: 10, fontWeight: 600, color: "#5C3D2E", opacity: 0.4 }}>Sepet</span>
-        </a>
-        <a href="/sepet" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
+        </Link>
+        <Link href="/sepet" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: 4 }}>
           <span style={{ fontSize: 22 }}>💳</span><span style={{ fontSize: 10, fontWeight: 600, color: "#E8845A", opacity: 1 }}>Ödeme</span>
-        </a>
+        </Link>
       </nav>
 
     </main>

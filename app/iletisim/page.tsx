@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 
 export default function Iletisim() {
@@ -13,7 +14,7 @@ export default function Iletisim() {
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
       <header style={{ background: "white", padding: "16px 48px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <a href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></a>
+        <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></Link>
       </header>
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
@@ -75,13 +76,13 @@ export default function Iletisim() {
               <div style={{ marginBottom: 10, display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <input type="checkbox" checked={form.kvkk} onChange={e => setForm({ ...form, kvkk: e.target.checked })} style={{ marginTop: 3, accentColor: "#E8845A", width: 16, height: 16, flexShrink: 0 }} />
                 <span style={{ fontSize: 12, color: "#5C3D2E", lineHeight: 1.6 }}>
-                  <a href="/kvkk" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>KVKK Aydınlatma Metni</a>'ni okudum, anladım ve kabul ediyorum. <span style={{ color: "red" }}>*</span>
+                  <Link href="/kvkk" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>KVKK Aydınlatma Metni</Link>'ni okudum, anladım ve kabul ediyorum. <span style={{ color: "red" }}>*</span>
                 </span>
               </div>
               <div style={{ marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <input type="checkbox" checked={form.acikRiza} onChange={e => setForm({ ...form, acikRiza: e.target.checked })} style={{ marginTop: 3, accentColor: "#E8845A", width: 16, height: 16, flexShrink: 0 }} />
                 <span style={{ fontSize: 12, color: "#5C3D2E", lineHeight: 1.6 }}>
-                  <a href="/acik-riza" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>Açık Rıza Metni</a>'ni okudum, anladım ve kabul ediyorum.
+                  <Link href="/acik-riza" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>Açık Rıza Metni</Link>'ni okudum, anladım ve kabul ediyorum.
                 </span>
               </div>
               <button onClick={handleGonder} disabled={!form.ad || !form.email || !form.mesaj || !form.kvkk}
