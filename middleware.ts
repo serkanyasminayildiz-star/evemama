@@ -24,7 +24,7 @@ const BAKIM_HTML = `<!DOCTYPE html>
     <div style="font-size:64px;margin-bottom:12px;">🐾</div>
     <h1 style="font-family:Georgia,serif;font-size:26px;margin:0 0 12px;">Kısa bir bakımdayız</h1>
     <p style="font-size:15px;line-height:1.6;opacity:.8;margin:0 0 22px;">evemama.net'i sizin için iyileştiriyoruz. Çok kısa süre sonra yeniden buradayız. Anlayışınız için teşekkürler. 🧡</p>
-    <p style="font-size:14px;margin:0;">Sipariş ve sorularınız için:<br/>
+    <p style="font-size:14px;margin:0;">Sorularınız için:<br/>
       <a href="https://wa.me/905347488001" style="display:inline-block;margin-top:10px;background:#25D366;color:#fff;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:50px;">📱 WhatsApp: 0534 748 80 01</a>
     </p>
   </div>
