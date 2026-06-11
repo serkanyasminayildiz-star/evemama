@@ -107,20 +107,32 @@ function OdemeSonucIcerik() {
     </>
   );
 
+  // Başarısız ödeme = kaybedilmiş satış DEĞİL — müşteriyi kurtarmaya çalışıyoruz.
+  // En sık sebep: taksitli işlemi kartın/bankanın reddetmesi → "tek çekim" öner.
+  // + farklı kart + banka araması + tek tıkla WhatsApp'tan insan desteği.
+  const waMesaj = encodeURIComponent("Merhaba, ödeme sırasında sorun yaşadım. Sipariş vermek için yardımcı olabilir misiniz?");
   return (
-    <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
-      <div style={{ background: "white", borderRadius: 24, padding: "48px 40px", maxWidth: 440, width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(92,61,46,0.1)" }}>
-        <div style={{ fontSize: 72, marginBottom: 16 }}>😢</div>
-        <div style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 700, color: "#5C3D2E", marginBottom: 10 }}>Ödeme Başarısız</div>
-        <div style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.6, marginBottom: 28, lineHeight: 1.6 }}>
-          Ödeme işlemi tamamlanamadı. Lütfen tekrar deneyin veya farklı bir kart kullanın.
+    <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif", padding: 20 }}>
+      <div style={{ background: "white", borderRadius: 24, padding: "40px 32px", maxWidth: 460, width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(92,61,46,0.1)" }}>
+        <div style={{ fontSize: 60, marginBottom: 12 }}>💳</div>
+        <div style={{ fontFamily: "Georgia, serif", fontSize: 23, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>Ödeme tamamlanamadı</div>
+        <div style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.75, marginBottom: 20, lineHeight: 1.6 }}>
+          Merak etmeyin, <strong>kartınızdan para çekilmedi.</strong> Genelde şunlardan biri çözer 👇
         </div>
-        <Link href="/odeme" style={{ background: "#E8845A", color: "white", padding: "14px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "inline-block" }}>
+        <div style={{ background: "#FFF7ED", border: "1.5px solid #F4C09A", borderRadius: 14, padding: "16px 18px", marginBottom: 24, textAlign: "left" }}>
+          <div style={{ fontSize: 13.5, color: "#5C3D2E", lineHeight: 1.95 }}>
+            <div>💳 <strong>Taksitle</strong> denediyseniz → <strong style={{ color: "#E8845A" }}>Tek Çekim</strong> seçip tekrar deneyin <span style={{ opacity: 0.6 }}>(en sık çözüm)</span></div>
+            <div>🔄 Başka bir kartla deneyin</div>
+            <div>📞 Bankanızı arayın — yüksek tutarlı işlemi güvenlik için durdurmuş olabilir</div>
+          </div>
+        </div>
+        <Link href="/odeme" style={{ background: "#E8845A", color: "white", padding: "15px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "block", marginBottom: 12, boxShadow: "0 8px 20px rgba(232,132,90,0.3)" }}>
           Tekrar Dene →
         </Link>
-        <div style={{ marginTop: 16 }}>
-          <Link href="/sepet" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none" }}>← Sepete Dön</Link>
-        </div>
+        <a href={`https://wa.me/905347488001?text=${waMesaj}`} style={{ background: "#25D366", color: "white", padding: "13px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14, display: "block", marginBottom: 14 }}>
+          📱 WhatsApp&apos;tan sipariş ver
+        </a>
+        <Link href="/sepet" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none" }}>← Sepete Dön</Link>
       </div>
     </main>
   );
