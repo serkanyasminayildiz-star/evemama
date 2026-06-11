@@ -65,6 +65,17 @@ export async function GET(req: NextRequest) {
     console.error("[cron/replenishment] kupon hazirlama hatasi:", e);
   }
 
+  // Önizleme modu: ?onizleme=email → sipariş taraması yapmadan verilen adrese
+  // ÖRNEK bir replenishment maili atar (şablon/tasarımı görmek için test).
+  const onizleme = (url.searchParams.get("onizleme") || "").trim();
+  if (onizleme) {
+    if (!onizleme.includes("@")) {
+      return NextResponse.json({ error: "gecersiz email" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+    }
+    const ok = await sendReplenishmentMaili({ email: onizleme, ad: "Değerli Müşterimiz", sonUrun: "Royal Canin Kitten 10 Kg", kod: KUPON_KOD });
+    return NextResponse.json({ ok, onizleme, mesaj: "Örnek mail gönderildi (gelen kutunu/spam'i kontrol et)" }, { headers: { "Cache-Control": "no-store" } });
+  }
+
   // 2) ~28 gün önce (1 günlük bant) ödenmiş siparişler.
   const ustSinir = new Date(Date.now() - HATIRLATMA_GUN * GUN_MS).toISOString();
   const altSinir = new Date(Date.now() - (HATIRLATMA_GUN + 1) * GUN_MS).toISOString();
