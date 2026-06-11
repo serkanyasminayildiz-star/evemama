@@ -6,12 +6,23 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { useCart } from "../../../context/CartContext";
 
+type Yorum = { id: number; ad: string; puan: number; yorum: string; tarih: string };
+type UrunDetay = {
+  id: number; ad: string; slug: string;
+  fiyat: number; indirimli_fiyat?: number | null;
+  stok: number; resim_url?: string | null;
+  kisa_aciklama?: string | null; aciklama?: string | null;
+  kategori_id?: number | null;
+  markalar?: { ad: string } | null;
+  kategoriler?: { ad: string; slug: string } | null;
+};
+
 export default function UrunDetayClient() {
   const { slug } = useParams();
   const { addItem, totalPrice } = useCart();
-  const [urun, setUrun] = useState<any>(null);
-  const [benzerUrunler, setBenzerUrunler] = useState<any[]>([]);
-  const [yorumlar, setYorumlar] = useState<any[]>([]);
+  const [urun, setUrun] = useState<UrunDetay | null>(null);
+  const [benzerUrunler, setBenzerUrunler] = useState<UrunDetay[]>([]);
+  const [yorumlar, setYorumlar] = useState<Yorum[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [eklendi, setEklendi] = useState(false);
   const [adet, setAdet] = useState(1);
@@ -42,7 +53,7 @@ export default function UrunDetayClient() {
   const handleSepet = () => {
     if (!urun) return;
     for (let i = 0; i < adet; i++) {
-      addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url });
+      addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url || undefined });
     }
     setEklendi(true);
     setTimeout(() => setEklendi(false), 2500);
@@ -69,6 +80,7 @@ export default function UrunDetayClient() {
   );
 
   const indirimOrani = urun.indirimli_fiyat ? Math.round(((urun.fiyat - urun.indirimli_fiyat) / urun.fiyat) * 100) : 0;
+  const ortPuan = yorumlar.length ? yorumlar.reduce((s, y) => s + y.puan, 0) / yorumlar.length : 0;
   const kargoUcreti = (totalPrice + (urun.indirimli_fiyat || urun.fiyat) * adet) >= 1000 ? 0 : 29.90;
   const kargoyaKalan = 1000 - totalPrice;
 
@@ -141,12 +153,19 @@ export default function UrunDetayClient() {
 
           <h1 style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 700, color: "#5C3D2E", marginBottom: 12, lineHeight: 1.3 }}>{urun.ad}</h1>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-            <div style={{ display: "flex", gap: 2 }}>
-              {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 16, color: s <= 4 ? "#E8845A" : "#E8D5B7" }}>★</span>)}
+          {yorumlar.length > 0 ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <div style={{ display: "flex", gap: 2 }}>
+                {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 16, color: s <= Math.round(ortPuan) ? "#E8845A" : "#E8D5B7" }}>★</span>)}
+              </div>
+              <button onClick={() => setAktifSekme("yorumlar")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#5C3D2E", opacity: 0.7, fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>{ortPuan.toFixed(1)} · {yorumlar.length} yorum</button>
             </div>
-            <span style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.6 }}>({yorumlar.length} yorum)</span>
-          </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16, flexWrap: "wrap" }}>
+              <span style={{ background: "#E8F5E9", color: "#2E7D32", fontSize: 12, fontWeight: 700, padding: "5px 11px", borderRadius: 50 }}>✅ %100 Orijinal Ürün</span>
+              <span style={{ background: "#FFF7ED", color: "#E8845A", fontSize: 12, fontWeight: 700, padding: "5px 11px", borderRadius: 50 }}>🔒 Güvenli Ödeme</span>
+            </div>
+          )}
 
           {urun.kisa_aciklama && (
             <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.65, lineHeight: 1.7, marginBottom: 20 }}>{urun.kisa_aciklama}</p>
@@ -206,9 +225,11 @@ export default function UrunDetayClient() {
 
           {/* Kargo Bilgisi */}
           <div style={{ marginTop: 20, background: "white", borderRadius: 16, padding: "16px 18px" }}>
-            <div style={{ fontFamily: "Georgia, serif", fontSize: 14, fontWeight: 700, color: "#5C3D2E", marginBottom: 12 }}>🚚 Kargo & Teslimat</div>
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 14, fontWeight: 700, color: "#5C3D2E", marginBottom: 12 }}>🛡️ Güvence & Teslimat</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
+                { icon: "🔒", text: <><strong>Güvenli Ödeme</strong> — iyzico altyapısı, 3D Secure ile korumalı</> },
+                { icon: "✅", text: <><strong>%100 Orijinal Ürün</strong> — Yetkili kaynaktan, faturalı</> },
                 { icon: "⚡", text: <><strong>Aynı Gün Kargo</strong> — Saat 14:00&apos;a kadar verilen siparişler bugün kargoya verilir</> },
                 { icon: "🎁", text: <><strong>1000₺ Üzeri Ücretsiz Kargo</strong> — {kargoUcreti === 0 ? "Siparişiniz kapsam dahilinde!" : `₺${kargoyaKalan.toFixed(2)} daha ekleyin`}</> },
                 { icon: "↩️", text: <><strong>14 Gün İade Garantisi</strong> — Koşulsuz iade hakkı</> },
