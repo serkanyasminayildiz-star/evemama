@@ -38,6 +38,37 @@ async function urunGetir(slug: string): Promise<UrunRow | null> {
   return (data as unknown as UrunRow) || null;
 }
 
+type YorumOzetiSatir = { puan: number; yorum: string; ad: string; created_at: string };
+type YorumOzeti = { adet: number; ortalama: number; sonYorumlar: YorumOzetiSatir[] };
+
+// Onaylı yorumların özeti — JSON-LD AggregateRating (Google'da ⭐ yıldız) için.
+// urun_yorumlari tablosu henüz yoksa (SQL çalıştırılmadıysa) try/catch sessizce
+// boş döner → JSON-LD'ye rating eklenmez, sayfa normal çalışır.
+async function yorumOzetiGetir(urunId: number | string): Promise<YorumOzeti> {
+  try {
+    const { data } = await supabase
+      .from("urun_yorumlari")
+      .select("puan, yorum, ad, created_at")
+      .eq("urun_id", urunId)
+      .eq("onayli", true)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    const rows = (data as YorumOzetiSatir[]) || [];
+    if (rows.length === 0) return { adet: 0, ortalama: 0, sonYorumlar: [] };
+    const toplam = rows.reduce((s, r) => s + (Number(r.puan) || 0), 0);
+    return { adet: rows.length, ortalama: toplam / rows.length, sonYorumlar: rows.slice(0, 5) };
+  } catch {
+    return { adet: 0, ortalama: 0, sonYorumlar: [] };
+  }
+}
+
+// Date.now() server component gövdesinde doğrudan çağrılırsa react-hooks/purity
+// "impure during render" hatası verir; modül seviyesi helper'a alınca temizlenir
+// (davranış aynı: bugünden gunSonra gün ileri, YYYY-MM-DD).
+function gelecekTarihISO(gunSonra: number): string {
+  return new Date(Date.now() + gunSonra * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const urun = await urunGetir(slug);
@@ -82,6 +113,7 @@ export default async function UrunPage({ params }: { params: Promise<{ slug: str
   if (urun) {
     const fiyat = Number(urun.indirimli_fiyat || urun.fiyat || 0);
     const stok = Number(urun.stok ?? 0);
+    const yorumOzeti = await yorumOzetiGetir(urun.id);
     const productLd = {
       "@context": "https://schema.org",
       "@type": "Product",
@@ -97,8 +129,29 @@ export default async function UrunPage({ params }: { params: Promise<{ slug: str
         priceCurrency: "TRY",
         availability: stok > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
         itemCondition: "https://schema.org/NewCondition",
-        priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+        priceValidUntil: gelecekTarihISO(365),
       },
+      // Yıldız rich snippet — YALNIZ gerçek yorum varsa. Boş/sahte rating
+      // Google tarafından cezalandırılır; bu yüzden adet>0 şartı zorunlu.
+      // Sayfada gösterilen yorumlarla AYNI veri (onayli=true) → politika uyumlu.
+      ...(yorumOzeti.adet > 0
+        ? {
+            aggregateRating: {
+              "@type": "AggregateRating",
+              ratingValue: yorumOzeti.ortalama.toFixed(1),
+              reviewCount: yorumOzeti.adet,
+              bestRating: 5,
+              worstRating: 1,
+            },
+            review: yorumOzeti.sonYorumlar.map((r) => ({
+              "@type": "Review",
+              reviewRating: { "@type": "Rating", ratingValue: Math.min(Math.max(Number(r.puan) || 5, 1), 5), bestRating: 5, worstRating: 1 },
+              author: { "@type": "Person", name: r.ad || "evemama müşterisi" },
+              reviewBody: r.yorum || "",
+              datePublished: (r.created_at || "").slice(0, 10),
+            })),
+          }
+        : {}),
     };
     // BreadcrumbList — Google arama sonuclarinda urun karti uzerinde
     // "Ana Sayfa > Kategori > Urun" breadcrumb gosterimi icin.
