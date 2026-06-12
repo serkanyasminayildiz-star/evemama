@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { MetadataRoute } from "next";
+import { blogYazilari } from "./blog/yazilar";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,5 +51,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/cerez-politikasi`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
 
-  return [...statikSayfalar, ...kategoriUrls, ...urunUrls];
+  // Blog makaleleri — gerçek /blog/[slug] sayfaları (artık modal değil).
+  const blogUrls: MetadataRoute.Sitemap = blogYazilari.map(y => ({
+    url: `${BASE}/blog/${y.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  return [...statikSayfalar, ...blogUrls, ...kategoriUrls, ...urunUrls];
 }
