@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { useCart } from "../../../context/CartContext";
 
-type Yorum = { id: number; ad: string; puan: number; yorum: string; tarih: string };
+type Yorum = { id: number; ad: string; puan: number; yorum: string; tarih: string; dogrulanmis?: boolean };
 type UrunDetay = {
   id: number; ad: string; slug: string;
   fiyat: number; indirimli_fiyat?: number | null;
@@ -77,6 +77,19 @@ export default function UrunDetayClient() {
     return () => { iptal = true; };
   }, [urun]);
 
+  // Gerçek yorumları çek (RLS ile onaylı yorumlar herkese açık).
+  useEffect(() => {
+    if (!urun) return;
+    supabase.from("urun_yorumlari").select("id, ad, puan, yorum, dogrulanmis, created_at")
+      .eq("urun_id", urun.id).eq("onayli", true).order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setYorumlar((data || []).map((y: { id: number; ad: string; puan: number; yorum: string; dogrulanmis: boolean; created_at: string }) => ({
+          id: y.id, ad: y.ad, puan: y.puan, yorum: y.yorum, dogrulanmis: y.dogrulanmis,
+          tarih: new Date(y.created_at).toLocaleDateString("tr-TR"),
+        })));
+      });
+  }, [urun]);
+
   const handleSepet = () => {
     if (!urun) return;
     for (let i = 0; i < adet; i++) {
@@ -86,12 +99,22 @@ export default function UrunDetayClient() {
     setTimeout(() => setEklendi(false), 2500);
   };
 
-  const handleYorumGonder = () => {
-    if (!yeniYorum.ad || !yeniYorum.yorum) return;
-    setYorumlar(prev => [...prev, { id: Date.now(), ad: yeniYorum.ad, puan: yeniYorum.puan, yorum: yeniYorum.yorum, tarih: new Date().toLocaleDateString("tr-TR") }]);
-    setYeniYorum({ ad: "", puan: 5, yorum: "" });
-    setYorumGonderildi(true);
-    setTimeout(() => setYorumGonderildi(false), 3000);
+  const handleYorumGonder = async () => {
+    if (!yeniYorum.yorum.trim() || !urun || !aboneToken) return;
+    try {
+      const res = await fetch("/api/yorum", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${aboneToken}` },
+        body: JSON.stringify({ urun_id: urun.id, puan: yeniYorum.puan, yorum: yeniYorum.yorum, ad: yeniYorum.ad }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setYorumlar(prev => [{ id: d.id || Date.now(), ad: yeniYorum.ad.trim() || "Müşteri", puan: yeniYorum.puan, yorum: yeniYorum.yorum, dogrulanmis: d.dogrulanmis, tarih: new Date().toLocaleDateString("tr-TR") }, ...prev]);
+        setYeniYorum({ ad: "", puan: 5, yorum: "" });
+        setYorumGonderildi(true);
+        setTimeout(() => setYorumGonderildi(false), 3000);
+      }
+    } catch { /* sessiz — yorum gönderilemezse sayfa çalışmaya devam eder */ }
   };
 
   const handleAboneOl = async () => {
@@ -347,7 +370,10 @@ export default function UrunDetayClient() {
                 {yorumlar.map(y => (
                   <div key={y.id} style={{ background: "white", borderRadius: 20, padding: "18px 20px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                      <div style={{ fontWeight: 700, color: "#5C3D2E" }}>{y.ad}</div>
+                      <div style={{ fontWeight: 700, color: "#5C3D2E", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        {y.ad}
+                        {y.dogrulanmis && <span style={{ fontSize: 11, fontWeight: 700, color: "#2E7D32", background: "#E8F5E9", padding: "2px 8px", borderRadius: 50 }}>✓ Doğrulanmış müşteri</span>}
+                      </div>
                       <div style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.5 }}>{y.tarih}</div>
                     </div>
                     <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
@@ -367,27 +393,36 @@ export default function UrunDetayClient() {
 
             <div style={{ background: "white", borderRadius: 24, padding: "24px" }}>
               <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 20 }}>✍️ Yorum Yaz</div>
-              {yorumGonderildi && (
-                <div style={{ background: "#E8F5E9", color: "#2E7D32", padding: "12px 16px", borderRadius: 12, marginBottom: 16, fontSize: 14 }}>✅ Yorumunuz için teşekkürler!</div>
-              )}
-              <input value={yeniYorum.ad} onChange={e => setYeniYorum({ ...yeniYorum, ad: e.target.value })}
-                placeholder="Adınız *" style={{ width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const, marginBottom: 12 }} />
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 8 }}>Puanınız:</div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {[1,2,3,4,5].map(s => (
-                    <button key={s} onClick={() => setYeniYorum({ ...yeniYorum, puan: s })}
-                      style={{ fontSize: 28, background: "none", border: "none", cursor: "pointer", color: s <= yeniYorum.puan ? "#E8845A" : "#E8D5B7" }}>★</button>
-                  ))}
+              {!aboneToken ? (
+                <div style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.85, lineHeight: 1.7 }}>
+                  Yorum yapmak için <Link href="/giris" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>giriş yapın →</Link><br />
+                  <span style={{ fontSize: 12.5, opacity: 0.7 }}>Böylece yorumlar gerçek müşterilerden olur; siparişiniz varsa &quot;✓ Doğrulanmış müşteri&quot; rozetiyle güven verir.</span>
                 </div>
-              </div>
-              <textarea value={yeniYorum.yorum} onChange={e => setYeniYorum({ ...yeniYorum, yorum: e.target.value })}
-                placeholder="Yorumunuz *" rows={4}
-                style={{ width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const, marginBottom: 16, resize: "vertical" as const }} />
-              <button onClick={handleYorumGonder}
-                style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 12, padding: "14px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                Yorum Gönder ✨
-              </button>
+              ) : (
+                <>
+                  {yorumGonderildi && (
+                    <div style={{ background: "#E8F5E9", color: "#2E7D32", padding: "12px 16px", borderRadius: 12, marginBottom: 16, fontSize: 14 }}>✅ Yorumunuz için teşekkürler!</div>
+                  )}
+                  <input value={yeniYorum.ad} onChange={e => setYeniYorum({ ...yeniYorum, ad: e.target.value })}
+                    placeholder="Görünecek adınız" style={{ width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const, marginBottom: 12 }} />
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 8 }}>Puanınız:</div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {[1,2,3,4,5].map(s => (
+                        <button key={s} onClick={() => setYeniYorum({ ...yeniYorum, puan: s })}
+                          style={{ fontSize: 28, background: "none", border: "none", cursor: "pointer", color: s <= yeniYorum.puan ? "#E8845A" : "#E8D5B7" }}>★</button>
+                      ))}
+                    </div>
+                  </div>
+                  <textarea value={yeniYorum.yorum} onChange={e => setYeniYorum({ ...yeniYorum, yorum: e.target.value })}
+                    placeholder="Ürünle ilgili düşünceleriniz *" rows={4}
+                    style={{ width: "100%", padding: "12px 16px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const, marginBottom: 16, resize: "vertical" as const }} />
+                  <button onClick={handleYorumGonder} disabled={!yeniYorum.yorum.trim()}
+                    style={{ background: yeniYorum.yorum.trim() ? "#E8845A" : "#C9B79C", color: "white", border: "none", borderRadius: 12, padding: "14px 28px", fontSize: 14, fontWeight: 700, cursor: yeniYorum.yorum.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+                    Yorum Gönder ✨
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
