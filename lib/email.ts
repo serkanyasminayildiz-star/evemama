@@ -478,3 +478,80 @@ export async function sendReplenishmentMaili(p: ReplenishmentMailParams): Promis
     return false;
   }
 }
+
+// ── Abonelik dönem hatırlatma maili ────────────────────────────────────────
+// Cron (api/cron/replenishment) içinden, aboneliğin sonraki_tarih'i gelince
+// gönderir: "aboneliğin hazır, %10 abone indiriminle yenile".
+export type AbonelikMailParams = {
+  email: string;
+  ad?: string;
+  urunAdi?: string;
+  urunSlug?: string;
+  kod: string; // ör. "ABONE10"
+};
+
+function buildAbonelikHTML(p: AbonelikMailParams): string {
+  const urunCumle = p.urunAdi
+    ? `<strong>${p.urunAdi}</strong> aboneliğinizin`
+    : `aboneliğinizin`;
+  const ctaHref = p.urunSlug
+    ? `https://www.evemama.net/urun/${p.urunSlug}`
+    : "https://www.evemama.net/urunler";
+  return `<!DOCTYPE html>
+<html lang="tr"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>Aboneliğiniz hazır</title></head>
+<body style="margin:0;padding:0;background:#f5f7fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;">
+    <div style="background:linear-gradient(135deg,#ff6b35 0%,#f7931e 100%);padding:32px 24px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:28px;font-weight:700;">evemama.net</h1>
+      <p style="margin:8px 0 0 0;color:rgba(255,255,255,0.95);font-size:14px;">Evcil dostunuzun dükkanı</p>
+    </div>
+    <div style="padding:32px 24px 8px;text-align:center;">
+      <div style="font-size:46px;margin-bottom:8px;">🔄</div>
+      <h2 style="margin:0 0 8px 0;color:#1a1a1a;font-size:22px;">Yenileme zamanı geldi!</h2>
+      <p style="margin:0;color:#555;font-size:15px;line-height:1.6;">Merhaba ${p.ad || "değerli müşterimiz"},<br>${urunCumle} dönemi geldi — sevimli dostunuzun maması bitmek üzeredir 🐾. Abone indiriminiz hazır, tek tıkla yenileyin!</p>
+    </div>
+    <div style="padding:16px 24px 8px;">
+      <div style="border:2px dashed #ff6b35;border-radius:16px;padding:22px 16px;text-align:center;background:#fff7ed;">
+        <div style="font-size:22px;font-weight:800;color:#ff6b35;margin-bottom:10px;">Abonelere özel %10 indirim</div>
+        <div style="display:inline-block;background:#1a1a1a;color:#fff;font-family:monospace;font-size:21px;font-weight:700;letter-spacing:2px;padding:11px 20px;border-radius:10px;">${p.kod}</div>
+        <p style="margin:12px 0 0;font-size:13px;color:#6b7280;">Ödeme adımında kuponu girin.</p>
+      </div>
+    </div>
+    <div style="padding:8px 24px 24px;text-align:center;">
+      <a href="${ctaHref}" style="display:inline-block;padding:14px 32px;background:#ff6b35;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;">Hemen Sipariş Ver →</a>
+    </div>
+    <div style="padding:0 24px 28px;text-align:center;">
+      <a href="https://www.evemama.net/aboneliklerim" style="color:#9ca3af;font-size:12px;text-decoration:underline;">Aboneliğimi yönet / iptal et</a>
+    </div>
+    <div style="padding:18px 24px;text-align:center;background:#1a1a1a;color:#9ca3af;font-size:12px;line-height:1.6;">
+      <p style="margin:0 0 6px 0;">evemama.net — Evcil Dostunuzun Dükkanı</p>
+      <p style="margin:0;">© ${new Date().getFullYear()} Tüm hakları saklıdır.</p>
+    </div>
+  </div>
+</body></html>`;
+}
+
+export async function sendAbonelikHatirlatma(p: AbonelikMailParams): Promise<boolean> {
+  const client = getResend();
+  if (!client) {
+    console.warn("[email] RESEND_API_KEY tanimli degil, abonelik maili gonderilmedi:", p.email);
+    return false;
+  }
+  if (!p.email) return false;
+  try {
+    const { data, error } = await client.emails.send({
+      from: FROM_EMAIL,
+      to: p.email,
+      subject: "🔄 Aboneliğiniz hazır — %10 abone indiriminizle yenileyin",
+      html: buildAbonelikHTML(p),
+    });
+    if (error) {
+      console.error("[email] abonelik maili hatasi:", { email: p.email, error });
+      return false;
+    }
+    return Boolean(data?.id);
+  } catch (err) {
+    console.error("[email] abonelik maili exception:", { email: p.email, err: err instanceof Error ? err.message : String(err) });
+    return false;
+  }
+}

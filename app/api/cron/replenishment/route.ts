@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendReplenishmentMaili } from "../../../../lib/email";
+import { sendReplenishmentMaili, sendAbonelikHatirlatma } from "../../../../lib/email";
 
 // "Maman bitiyor" otomatik hatırlatma (replenishment).
 // Vercel cron her gün çağırır (vercel.json). ~28 gün önce ödeme yapıp DAHA
@@ -27,6 +27,7 @@ const supabaseAdmin = createClient(
 
 const HATIRLATMA_GUN = 28;
 const KUPON_KOD = "YENILE10";
+const ABONE_KOD = "ABONE10";
 const GUN_MS = 24 * 60 * 60 * 1000;
 
 type SiparisRow = { siparis_no: string; ad: string | null; email: string | null; urunler: unknown; created_at: string };
@@ -72,8 +73,48 @@ export async function GET(req: NextRequest) {
     if (!onizleme.includes("@")) {
       return NextResponse.json({ error: "gecersiz email" }, { status: 400, headers: { "Cache-Control": "no-store" } });
     }
-    const ok = await sendReplenishmentMaili({ email: onizleme, ad: "Değerli Müşterimiz", sonUrun: "Royal Canin Kitten 10 Kg", kod: KUPON_KOD });
-    return NextResponse.json({ ok, onizleme, mesaj: "Örnek mail gönderildi (gelen kutunu/spam'i kontrol et)" }, { headers: { "Cache-Control": "no-store" } });
+    const tip = url.searchParams.get("tip"); // "abone" → abonelik maili; aksi → replenishment
+    const ok = tip === "abone"
+      ? await sendAbonelikHatirlatma({ email: onizleme, ad: "Değerli Müşterimiz", urunAdi: "Royal Canin Kitten 10 Kg", urunSlug: "", kod: ABONE_KOD })
+      : await sendReplenishmentMaili({ email: onizleme, ad: "Değerli Müşterimiz", sonUrun: "Royal Canin Kitten 10 Kg", kod: KUPON_KOD });
+    return NextResponse.json({ ok, onizleme, tip: tip === "abone" ? "abonelik" : "replenishment", mesaj: "Örnek mail gönderildi (gelen kutunu/spam'i kontrol et)" }, { headers: { "Cache-Control": "no-store" } });
+  }
+
+  // 1b) ABONELİKLER: ABONE10 kuponunu garanti et; dönemi gelen abonelere
+  //     hatırlatma at + sonraki_tarih'i ilerlet. Aktif abone e-postalarını da
+  //     topla → replenishment blanket mailinden hariç tut (çift mail olmasın).
+  //     (abonelikler tablosu yoksa try/catch yutar, replenishment'a devam eder.)
+  let aboneGonderildi = 0;
+  const aktifAboneEmailler = new Set<string>();
+  const aboneGidecekler: string[] = [];
+  try {
+    const bitisA = new Date(Date.now() + 60 * GUN_MS).toISOString();
+    const { data: mevcutA } = await supabaseAdmin.from("kuponlar").select("kod").eq("kod", ABONE_KOD).maybeSingle();
+    if (!mevcutA) await supabaseAdmin.from("kuponlar").insert({ kod: ABONE_KOD, indirim_tipi: "yuzde", indirim_degeri: 10, min_sepet: 0, aktif: true, bitis_tarihi: bitisA });
+    else await supabaseAdmin.from("kuponlar").update({ aktif: true, bitis_tarihi: bitisA }).eq("kod", ABONE_KOD);
+
+    const { data: aktifAboneler } = await supabaseAdmin.from("abonelikler").select("email").eq("aktif", true);
+    for (const a of (aktifAboneler || []) as { email: string | null }[]) {
+      if (a.email) aktifAboneEmailler.add(a.email.trim().toLowerCase());
+    }
+
+    const { data: dueAbone } = await supabaseAdmin
+      .from("abonelikler")
+      .select("id, email, urun_adi, urun_slug, cadence_gun")
+      .eq("aktif", true)
+      .lte("sonraki_tarih", new Date().toISOString())
+      .limit(limit);
+    for (const ab of (dueAbone || []) as { id: number; email: string | null; urun_adi: string | null; urun_slug: string | null; cadence_gun: number }[]) {
+      if (!ab.email) continue;
+      if (dry) { aboneGidecekler.push(`${ab.email} (${ab.urun_adi || "ürün"})`); aboneGonderildi++; continue; }
+      await sendAbonelikHatirlatma({ email: ab.email, urunAdi: ab.urun_adi || undefined, urunSlug: ab.urun_slug || undefined, kod: ABONE_KOD });
+      const yeniSonraki = new Date(Date.now() + (ab.cadence_gun || 28) * GUN_MS).toISOString();
+      await supabaseAdmin.from("abonelikler").update({ sonraki_tarih: yeniSonraki, son_hatirlatma: new Date().toISOString() }).eq("id", ab.id);
+      aboneGonderildi++;
+      await new Promise((r) => setTimeout(r, 600));
+    }
+  } catch (e) {
+    console.error("[cron/replenishment] abonelik islem hatasi (tablo yoksa normal):", e);
   }
 
   // 2) ~28 gün önce (1 günlük bant) ödenmiş siparişler.
@@ -100,7 +141,8 @@ export async function GET(req: NextRequest) {
 
   for (const s of (adaylar || []) as SiparisRow[]) {
     const email = (s.email || "").trim().toLowerCase();
-    if (!email || gorulen.has(email)) { atlandi++; continue; }
+    // Zaten görülmüş veya AKTİF ABONE ise atla (abone, abonelik mailini alır).
+    if (!email || gorulen.has(email) || aktifAboneEmailler.has(email)) { atlandi++; continue; }
     gorulen.add(email);
 
     // Bu siparişten SONRA başka sipariş vermiş mi? Vermişse müşteri zaten
@@ -123,9 +165,15 @@ export async function GET(req: NextRequest) {
     await new Promise((r) => setTimeout(r, 600)); // Resend rate limit (~2/sn)
   }
 
-  console.log("[cron/replenishment] bitti:", { dry, taranan: (adaylar || []).length, gonderildi, atlandi });
+  console.log("[cron/replenishment] bitti:", { dry, taranan: (adaylar || []).length, replenishment: gonderildi, abone: aboneGonderildi, atlandi });
   return NextResponse.json(
-    { ok: true, dry, taranan: (adaylar || []).length, gonderildi, atlandi, ...(dry ? { gidecekler } : {}) },
+    {
+      ok: true, dry,
+      abone_gonderildi: aboneGonderildi,
+      replenishment_gonderildi: gonderildi,
+      taranan: (adaylar || []).length, atlandi,
+      ...(dry ? { abone_gidecekler: aboneGidecekler, replenishment_gidecekler: gidecekler } : {}),
+    },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
