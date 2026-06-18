@@ -51,9 +51,14 @@ export default function TerkEdilen({ kuponlar, goster }: { kuponlar: Kupon[]; go
       .finally(() => setYukleniyor(false));
   }, []);
 
+  // Kuponlar yüklenince ilk aktif kuponu varsayılan seç (kod boşken, bir kez).
+  // Kasıtlı: yalnız kuponlar değişince çalışsın; aktifKuponlar (her render türetilir)
+  // ve kod deps'e eklenmez (sonsuz/gereksiz çalışmayı önler).
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!kod && aktifKuponlar[0]) setKod(aktifKuponlar[0].kod);
   }, [kuponlar]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const filtreli = sepetler.filter((s) => {
     const q = arama.toLowerCase().trim();
