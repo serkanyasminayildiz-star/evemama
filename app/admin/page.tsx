@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../../lib/supabase";
 import CsvImport from "./CsvImport";
@@ -15,6 +16,95 @@ import TerkEdilen from "./components/TerkEdilen";
 const ADMIN_SIFRE = "evemama2025";
 const SAYFA_BOYUTU = 50;
 
+// Supabase satır tipleri (admin geneli). Sayısal alanlar form input'larında
+// string, DB'den number geldiği için `number | string`. Form değerlerinde
+// parseFloat/parseInt çağrıları String(...) ile sarılır.
+type UrunRow = {
+  id: number;
+  ad: string;
+  slug: string;
+  fiyat: number | string;
+  indirimli_fiyat?: number | string | null;
+  stok: number | string;
+  resim_url?: string | null;
+  resimler?: string[] | null;
+  etiket?: string | null;
+  aktif: boolean;
+  oncelikli?: boolean | null;
+  gtin?: string | null;
+  kategori_id?: number | string | null;
+  marka_id?: number | string | null;
+  kisa_aciklama?: string | null;
+  aciklama?: string | null;
+  kategoriler?: { ad: string; id?: number; slug?: string } | null;
+  markalar?: { ad: string; id?: number } | null;
+};
+type Kategori = {
+  id: number;
+  ad: string;
+  slug: string;
+  ust_kategori_id?: number | null;
+  sira?: number | null;
+  aktif: boolean;
+};
+type Marka = { id: number; ad: string; slug: string; aktif: boolean };
+type SiparisKalem = {
+  urunler?: { ad?: string; resim_url?: string | null } | null;
+  urun_adi?: string;
+  ad?: string;
+  name?: string;
+  fiyat?: number | string;
+  birim_fiyat?: number | string;
+  toplam_fiyat?: number | string;
+  price?: number | string;
+  adet?: number;
+  miktar?: number;
+  quantity?: number;
+  resim_url?: string | null;
+};
+type SiparisRow = {
+  id: number;
+  siparis_no: string;
+  created_at: string;
+  ad?: string;
+  soyad?: string;
+  email?: string;
+  telefon?: string;
+  adres?: string;
+  sehir?: string;
+  durum?: string;
+  odeme_yontemi?: string;
+  odeme_durumu?: string;
+  toplam?: number | string;
+  kargo_takip?: string | null;
+  urunler?: string | null;
+};
+type Kupon = {
+  id: number | string;
+  kod: string;
+  indirim_tipi: string;
+  indirim_degeri: number;
+  min_sepet?: number | null;
+  kullanim_sayisi?: number | null;
+  kullanim_limiti?: number | null;
+  bitis_tarihi?: string | null;
+  aktif?: boolean;
+};
+type KargoAyar = {
+  sabit_ucret?: number | string | null;
+  ucretsiz_limit?: number | string | null;
+  "ucretsiz limit"?: number | string | null;
+  [k: string]: unknown;
+};
+type BlogSoru = {
+  id: number | string;
+  ad: string;
+  soru: string;
+  cevap?: string | null;
+  created_at: string;
+  onaylandi: boolean;
+};
+
 export default function Admin() {
   const [giris, setGiris] = useState(false);
   const [sifre, setSifre] = useState("");
@@ -24,13 +114,13 @@ export default function Admin() {
   const [yukleniyor, setYukleniyor] = useState(false);
 
   // Ürünler
-  const [urunler, setUrunler] = useState<any[]>([]);
+  const [urunler, setUrunler] = useState<UrunRow[]>([]);
   const [toplamUrun, setToplamUrun] = useState(0);
   const [sayfaNo, setSayfaNo] = useState(0);
   const [aramaMetni, setAramaMetni] = useState("");
   const aramaRef = useRef<HTMLInputElement>(null);
-  const [filtreler, setFiltreler] = useState({ kategori: "", marka: "", stok: "", durum: "" });
-  const [duzenleUrun, setDuzenleUrun] = useState<any>(null);
+  const [filtreler, setFiltreler] = useState({ kategori: "", marka: "", stok: "", durum: "", oncelikli: "" });
+  const [duzenleUrun, setDuzenleUrun] = useState<UrunRow | null>(null);
   const [inlineEdit, setInlineEdit] = useState<{ id: number; alan: string; deger: string } | null>(null);
   const [yeniUrun, setYeniUrun] = useState<{ ad: string; fiyat: string; indirimli_fiyat: string; stok: string; resim_url: string; resimler: string[]; gtin: string; kategori_id: string; marka_id: string; kisa_aciklama: string; aciklama: string; etiket: string; }>({ ad: "", fiyat: "", indirimli_fiyat: "", stok: "", resim_url: "", resimler: [], gtin: "", kategori_id: "", marka_id: "", kisa_aciklama: "", aciklama: "", etiket: "" });
   const [resimYukleniyor, setResimYukleniyor] = useState(false);
@@ -41,33 +131,33 @@ export default function Admin() {
 
   // Stok Takibi
   const [stokIstatistik, setStokIstatistik] = useState({ stok_yok: 0, kritik: 0, dusuk: 0, toplam_aktif: 0 });
-  const [dusukStokUrunler, setDusukStokUrunler] = useState<any[]>([]);
+  const [dusukStokUrunler, setDusukStokUrunler] = useState<UrunRow[]>([]);
   const [stokFiltreTip, setStokFiltreTip] = useState<"tukendi" | "kritik" | "dusuk">("tukendi");
   const [stokInline, setStokInline] = useState<{ id: number; deger: string } | null>(null);
 
   // Diğer
-  const [kategoriler, setKategoriler] = useState<any[]>([]);
-  const [markalar, setMarkalar] = useState<any[]>([]);
-  const [siparisler, setSiparisler] = useState<any[]>([]);
+  const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
+  const [markalar, setMarkalar] = useState<Marka[]>([]);
+  const [siparisler, setSiparisler] = useState<SiparisRow[]>([]);
   const [siparisDurumFiltre, setSiparisDurumFiltre] = useState("");
   const [acikSiparisId, setAcikSiparisId] = useState<number | null>(null);
-  const [siparisKalemleri, setSiparisKalemleri] = useState<{ [key: number]: any[] }>({});
+  const [siparisKalemleri, setSiparisKalemleri] = useState<{ [key: number]: SiparisKalem[] }>({});
   const [kalemYukleniyor, setKalemYukleniyor] = useState<number | null>(null);
-  const [kuponlar, setKuponlar] = useState<any[]>([]);
-  const [kargoAyar, setKargoAyar] = useState<any>(null);
-  const [siteAyarlari, setSiteAyarlari] = useState<any>({});
-  const [blogSorular, setBlogSorular] = useState<any[]>([]);
+  const [kuponlar, setKuponlar] = useState<Kupon[]>([]);
+  const [kargoAyar, setKargoAyar] = useState<KargoAyar | null>(null);
+  const [siteAyarlari, setSiteAyarlari] = useState<Record<string, string>>({});
+  const [blogSorular, setBlogSorular] = useState<BlogSoru[]>([]);
   const [cevaplar, setCevaplar] = useState<{ [key: number]: string }>({});
   const [istatistikler, setIstatistikler] = useState({ urunler: 0, siparisler: 0, kategoriler: 0, bekleyenSoru: 0, bekleyen_siparis: 0, bugun_siparis: 0 });
   const [yeniKupon, setYeniKupon] = useState({ kod: "", indirim_tipi: "yuzde", indirim_degeri: "", min_sepet: "", kullanim_limiti: "100", bitis_tarihi: "" });
 
   // Kategori CRUD
   const [yeniKategori, setYeniKategori] = useState({ ad: "", slug: "", ust_kategori_id: "", sira: "0" });
-  const [duzenleKategori, setDuzenleKategori] = useState<any>(null);
+  const [duzenleKategori, setDuzenleKategori] = useState<Kategori | null>(null);
 
   // Marka CRUD
   const [yeniMarka, setYeniMarka] = useState({ ad: "", slug: "" });
-  const [duzenleMarka, setDuzenleMarka] = useState<any>(null);
+  const [duzenleMarka, setDuzenleMarka] = useState<Marka | null>(null);
 
   const goster = (mesaj: string) => { setBildirim(mesaj); setTimeout(() => setBildirim(""), 3000); };
 
@@ -88,7 +178,7 @@ export default function Admin() {
   };
 
   // ── VERİ YÜKLEME ────────────────────────────────────────────────────────────
-  const urunleriYukle = useCallback(async (sayfa = 0, arama = "", filtre = { kategori: "", marka: "", stok: "", durum: "" }) => {
+  const urunleriYukle = useCallback(async (sayfa = 0, arama = "", filtre = { kategori: "", marka: "", stok: "", durum: "", oncelikli: "" }) => {
     setYukleniyor(true);
     const from = sayfa * SAYFA_BOYUTU;
     const to = from + SAYFA_BOYUTU - 1;
@@ -101,6 +191,9 @@ export default function Admin() {
     if (filtre.stok === "kritik") q = q.gt("stok", 0).lte("stok", 5);
     if (filtre.durum === "aktif") q = q.eq("aktif", true);
     if (filtre.durum === "pasif") q = q.eq("aktif", false);
+    if (filtre.oncelikli === "evet") q = q.eq("oncelikli", true);
+    // "Öne çıkmayanlar": hiç toggle edilmemiş (null) ürünler de dahil.
+    if (filtre.oncelikli === "hayir") q = q.or("oncelikli.is.null,oncelikli.eq.false");
     q = q.order("id", { ascending: false }).range(from, to);
     const { data, count } = await q;
     setUrunler(data || []);
@@ -141,7 +234,7 @@ export default function Admin() {
 
     // urunler alani siparisler tablosunda JSON string olarak tutuluyor
     const siparis = siparisler.find(s => s.id === siparisId);
-    let kalemler: any[] = [];
+    let kalemler: SiparisKalem[] = [];
 
     if (siparis?.urunler) {
       try {
@@ -182,8 +275,8 @@ export default function Admin() {
   };
   const siteAyarlariYukle = async () => {
     const { data } = await supabase.from("site_ayarlari").select("*");
-    const obj: any = {};
-    data?.forEach((row: any) => { obj[row.anahtar] = row.deger; });
+    const obj: Record<string, string> = {};
+    data?.forEach((row: { anahtar: string; deger: string }) => { obj[row.anahtar] = row.deger; });
     setSiteAyarlari(obj);
   };
 
@@ -207,9 +300,15 @@ export default function Admin() {
     } else setHataMesaji("Hatalı şifre!");
   };
 
+  // Sayfa-init effect'i: giriş veya aktif sekme değişince ilgili sekmenin
+  // verisini yükler + "urunler" sekmesine girişte filtreleri sıfırlar. setState'ler
+  // ve loader çağrıları KASITLIDIR (sekme/login değişimine tepki). Loader'ların çoğu
+  // useCallback değil; deps'e eklemek her render'da yeniden çalıştırırdı. Bu yüzden
+  // iki kural bilinçli kapatıldı (sadece aktifSayfa/giris tetiklemeli).
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!giris) return;
-    if (aktifSayfa === "urunler") { setSayfaNo(0); setAramaMetni(""); setSeciliUrunler([]); setFiltreler({ kategori: "", marka: "", stok: "", durum: "" }); urunleriYukle(0, "", { kategori: "", marka: "", stok: "", durum: "" }); }
+    if (aktifSayfa === "urunler") { setSayfaNo(0); setAramaMetni(""); setSeciliUrunler([]); setFiltreler({ kategori: "", marka: "", stok: "", durum: "", oncelikli: "" }); urunleriYukle(0, "", { kategori: "", marka: "", stok: "", durum: "", oncelikli: "" }); }
     if (aktifSayfa === "stok") { setStokFiltreTip("tukendi"); stokTakibiYukle("tukendi"); }
     if (aktifSayfa === "siparisler") { siparisleriYukle(); setSiparisKalemleri({}); setAcikSiparisId(null); }
     if (aktifSayfa === "kategoriler") kategorileriYukle();
@@ -219,14 +318,15 @@ export default function Admin() {
     if (aktifSayfa === "terk-edilen") kuponlariYukle();
     if (aktifSayfa === "blog") blogSorulariYukle();
   }, [aktifSayfa, giris]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   useEffect(() => {
     const timer = setTimeout(() => { setSayfaNo(0); urunleriYukle(0, aramaMetni, filtreler); }, 350);
     return () => clearTimeout(timer);
-  }, [aramaMetni, filtreler]);
+  }, [aramaMetni, filtreler, urunleriYukle]);
 
   const filtreUygula = (yeniFiltre: typeof filtreler) => { setFiltreler(yeniFiltre); setSayfaNo(0); };
-  const filtreleriTemizle = () => { setAramaMetni(""); setFiltreler({ kategori: "", marka: "", stok: "", durum: "" }); setSayfaNo(0); if (aramaRef.current) aramaRef.current.value = ""; };
+  const filtreleriTemizle = () => { setAramaMetni(""); setFiltreler({ kategori: "", marka: "", stok: "", durum: "", oncelikli: "" }); setSayfaNo(0); if (aramaRef.current) aramaRef.current.value = ""; };
 
   // ── ÜRÜN İŞLEMLERİ ─────────────────────────────────────────────────────────
   const slugUret = (ad: string) => ad.toLowerCase()
@@ -315,9 +415,9 @@ export default function Admin() {
     const ekResimler = tumResimler.slice(1);
     const kisaAck = duzenleUrun.kisa_aciklama?.trim() || (duzenleUrun.aciklama ? kisaOzet(duzenleUrun.aciklama) : null);
     const { error } = await supabase.from("urunler").update({
-      ad: duzenleUrun.ad, fiyat: parseFloat(duzenleUrun.fiyat),
-      indirimli_fiyat: duzenleUrun.indirimli_fiyat ? parseFloat(duzenleUrun.indirimli_fiyat) : null,
-      stok: parseInt(duzenleUrun.stok),
+      ad: duzenleUrun.ad, fiyat: parseFloat(String(duzenleUrun.fiyat)),
+      indirimli_fiyat: duzenleUrun.indirimli_fiyat ? parseFloat(String(duzenleUrun.indirimli_fiyat)) : null,
+      stok: parseInt(String(duzenleUrun.stok)),
       resim_url: anaResim, resimler: ekResimler,
       gtin: duzenleUrun.gtin?.trim() || null,
       kisa_aciklama: kisaAck,
@@ -334,7 +434,7 @@ export default function Admin() {
   const inlineKaydet = async () => {
     if (!inlineEdit) return;
     const edit = inlineEdit;
-    const g: any = {};
+    const g: Partial<{ fiyat: number; indirimli_fiyat: number | null; stok: number }> = {};
     if (edit.alan === "fiyat") g.fiyat = parseFloat(edit.deger);
     if (edit.alan === "indirimli_fiyat") g.indirimli_fiyat = edit.deger ? parseFloat(edit.deger) : null;
     if (edit.alan === "stok") g.stok = parseInt(edit.deger);
@@ -372,13 +472,13 @@ export default function Admin() {
     setYukleniyor(true);
     if (topluIslem.tip === "fiyat_yuzde" && topluIslem.deger) {
       const yuzde = parseFloat(topluIslem.deger) / 100;
-      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await supabase.from("urunler").update({ fiyat: Math.round(u.fiyat * (1 + yuzde) * 100) / 100 }).eq("id", id); }
+      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await supabase.from("urunler").update({ fiyat: Math.round(Number(u.fiyat) * (1 + yuzde) * 100) / 100 }).eq("id", id); }
     } else if (topluIslem.tip === "indirim_yuzde" && topluIslem.deger) {
       const yuzde = parseFloat(topluIslem.deger) / 100;
-      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await supabase.from("urunler").update({ indirimli_fiyat: Math.round(u.fiyat * (1 - yuzde) * 100) / 100 }).eq("id", id); }
+      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await supabase.from("urunler").update({ indirimli_fiyat: Math.round(Number(u.fiyat) * (1 - yuzde) * 100) / 100 }).eq("id", id); }
     } else if (topluIslem.tip === "fiyat_tl" && topluIslem.deger) {
       const miktar = parseFloat(topluIslem.deger);
-      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await supabase.from("urunler").update({ fiyat: Math.max(0, Math.round((u.fiyat + miktar) * 100) / 100) }).eq("id", id); }
+      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await supabase.from("urunler").update({ fiyat: Math.max(0, Math.round((Number(u.fiyat) + miktar) * 100) / 100) }).eq("id", id); }
     } else if (topluIslem.tip === "stok_sifirla") {
       for (const id of seciliUrunler) await supabase.from("urunler").update({ stok: parseInt(topluIslem.deger) || 0 }).eq("id", id);
     } else if (topluIslem.tip === "indirim_kaldir") {
@@ -424,7 +524,7 @@ export default function Admin() {
     const { error } = await supabase.from("kategoriler").update({
       ad: duzenleKategori.ad, slug: duzenleKategori.slug,
       ust_kategori_id: duzenleKategori.ust_kategori_id || null,
-      sira: parseInt(duzenleKategori.sira) || 0,
+      sira: parseInt(String(duzenleKategori.sira)) || 0,
     }).eq("id", duzenleKategori.id);
     if (error) { goster("❌ " + error.message); return; }
     setDuzenleKategori(null);
@@ -483,10 +583,10 @@ export default function Admin() {
   // ── DİĞER İŞLEMLER ─────────────────────────────────────────────────────────
   const kargoGuncelle = async () => {
     if (!kargoAyar) return;
-    const g: any = { sabit_ucret: parseFloat(kargoAyar.sabit_ucret) };
-    if ("ucretsiz_limit" in kargoAyar) g.ucretsiz_limit = parseFloat(kargoAyar.ucretsiz_limit);
-    if ("ucretsiz limit" in kargoAyar) g["ucretsiz limit"] = parseFloat(kargoAyar["ucretsiz limit"]);
-    const { error } = await supabase.from("kargo_ayarlari").update(g).eq("id", kargoAyar.id);
+    const g: Record<string, number> = { sabit_ucret: parseFloat(String(kargoAyar.sabit_ucret)) };
+    if ("ucretsiz_limit" in kargoAyar) g.ucretsiz_limit = parseFloat(String(kargoAyar.ucretsiz_limit));
+    if ("ucretsiz limit" in kargoAyar) g["ucretsiz limit"] = parseFloat(String(kargoAyar["ucretsiz limit"]));
+    const { error } = await supabase.from("kargo_ayarlari").update(g).eq("id", kargoAyar.id as number);
     if (error) { goster("❌ " + error.message); return; }
     goster("✅ Kargo ayarları güncellendi");
   };
@@ -521,7 +621,7 @@ export default function Admin() {
 
   const toplamSayfa = Math.ceil(toplamUrun / SAYFA_BOYUTU);
   const bekleyenSorular = blogSorular.filter(bs => !bs.onaylandi);
-  const filtrelerAktif = aramaMetni || filtreler.kategori || filtreler.marka || filtreler.stok || filtreler.durum;
+  const filtrelerAktif = aramaMetni || filtreler.kategori || filtreler.marka || filtreler.stok || filtreler.durum || filtreler.oncelikli;
 
   // ── GİRİŞ EKRANI ───────────────────────────────────────────────────────────
   if (!giris) return (
@@ -596,14 +696,14 @@ export default function Admin() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 5 }}>Üst Kategori</label>
-                <select value={duzenleKategori.ust_kategori_id || ""} onChange={e => setDuzenleKategori({ ...duzenleKategori, ust_kategori_id: e.target.value })} style={s}>
+                <select value={duzenleKategori.ust_kategori_id || ""} onChange={e => setDuzenleKategori({ ...duzenleKategori, ust_kategori_id: e.target.value ? Number(e.target.value) : null })} style={s}>
                   <option value="">— Ana Kategori —</option>
                   {kategoriler.filter(k => k.id !== duzenleKategori.id && !k.ust_kategori_id).map(k => <option key={k.id} value={k.id}>{k.ad}</option>)}
                 </select>
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 5 }}>Sıra</label>
-                <input type="number" value={duzenleKategori.sira || 0} onChange={e => setDuzenleKategori({ ...duzenleKategori, sira: e.target.value })} style={s} />
+                <input type="number" value={duzenleKategori.sira || 0} onChange={e => setDuzenleKategori({ ...duzenleKategori, sira: Number(e.target.value) })} style={s} />
               </div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
@@ -652,7 +752,7 @@ export default function Admin() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 10 }}>
                 {[...(duzenleUrun.resim_url ? [duzenleUrun.resim_url] : []), ...(duzenleUrun.resimler || [])].map((url: string, i: number) => (
                   <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden", background: "white", border: i === 0 ? "2px solid #E8845A" : "1px solid #E8D5B7" }}>
-                    <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 4 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    <Image src={url} alt="" fill sizes="120px" style={{ objectFit: "contain", padding: 4 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                     {i === 0 && <span style={{ position: "absolute", bottom: 4, left: 4, background: "#E8845A", color: "white", fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 8 }}>ANA</span>}
                     <button onClick={() => {
                       const tum = [...(duzenleUrun.resim_url ? [duzenleUrun.resim_url] : []), ...(duzenleUrun.resimler || [])];
@@ -683,13 +783,13 @@ export default function Admin() {
                   <div style={{ width: 140, background: "white", borderRadius: 14, overflow: "hidden", boxShadow: "0 4px 12px rgba(92,61,46,0.10)", border: "1px solid #F0E8E0" }}>
                     <div style={{ height: 90, background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
                       {duzenleUrun.resim_url
-                        ? <img src={duzenleUrun.resim_url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 8, mixBlendMode: "multiply" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        ? <Image src={duzenleUrun.resim_url} alt="" fill sizes="140px" style={{ objectFit: "contain", padding: 8, mixBlendMode: "multiply" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                         : <span style={{ fontSize: 32, opacity: 0.2 }}>🐾</span>}
-                      {duzenleUrun.stok === 0 || parseInt(duzenleUrun.stok) === 0 ? (
+                      {duzenleUrun.stok === 0 || parseInt(String(duzenleUrun.stok)) === 0 ? (
                         <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.75)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <span style={{ background: "#5C3D2E", color: "white", fontSize: 8, fontWeight: 700, padding: "3px 7px", borderRadius: 50 }}>Stokta Yok</span>
                         </div>
-                      ) : parseInt(duzenleUrun.stok) <= 5 ? (
+                      ) : parseInt(String(duzenleUrun.stok)) <= 5 ? (
                         <span style={{ position: "absolute", top: 5, left: 5, background: "#E8845A", color: "white", fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 50 }}>Son {duzenleUrun.stok}!</span>
                       ) : null}
                     </div>
@@ -699,8 +799,8 @@ export default function Admin() {
                     </div>
                     <div style={{ padding: "0 8px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div>
-                        <span style={{ fontFamily: "Georgia,serif", fontSize: 11, fontWeight: 700, color: "#5C3D2E" }}>₺{parseFloat(duzenleUrun.indirimli_fiyat || duzenleUrun.fiyat || 0).toFixed(2)}</span>
-                        {duzenleUrun.indirimli_fiyat && <span style={{ fontSize: 8, color: "#999", textDecoration: "line-through", marginLeft: 3 }}>₺{parseFloat(duzenleUrun.fiyat || 0).toFixed(2)}</span>}
+                        <span style={{ fontFamily: "Georgia,serif", fontSize: 11, fontWeight: 700, color: "#5C3D2E" }}>₺{parseFloat(String(duzenleUrun.indirimli_fiyat || duzenleUrun.fiyat || 0)).toFixed(2)}</span>
+                        {duzenleUrun.indirimli_fiyat && <span style={{ fontSize: 8, color: "#999", textDecoration: "line-through", marginLeft: 3 }}>₺{parseFloat(String(duzenleUrun.fiyat || 0)).toFixed(2)}</span>}
                       </div>
                       <div style={{ background: "#E8845A", color: "white", borderRadius: 50, padding: "3px 7px", fontSize: 8, fontWeight: 700 }}>+ Sepet</div>
                     </div>
@@ -723,7 +823,7 @@ export default function Admin() {
                   İndirimli Fiyat (₺)
                   {duzenleUrun.fiyat && duzenleUrun.indirimli_fiyat && (
                     <span style={{ marginLeft: 8, background: "#FFEBEE", color: "#C62828", padding: "1px 7px", borderRadius: 50, fontSize: 10, fontWeight: 700 }}>
-                      %{Math.round((1 - parseFloat(duzenleUrun.indirimli_fiyat) / parseFloat(duzenleUrun.fiyat)) * 100)} indirim
+                      %{Math.round((1 - parseFloat(String(duzenleUrun.indirimli_fiyat)) / parseFloat(String(duzenleUrun.fiyat))) * 100)} indirim
                     </span>
                   )}
                 </label>
@@ -908,7 +1008,7 @@ export default function Admin() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 8 }}>
                     {[...(yeniUrun.resim_url ? [yeniUrun.resim_url] : []), ...yeniUrun.resimler].map((url, i) => (
                       <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden", background: "#FDF6EE", border: i === 0 ? "2px solid #E8845A" : "1px solid #E8D5B7" }}>
-                        <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 4 }} />
+                        <Image src={url} alt="" fill sizes="120px" style={{ objectFit: "contain", padding: 4 }} />
                         {i === 0 && <span style={{ position: "absolute", bottom: 4, left: 4, background: "#E8845A", color: "white", fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 8 }}>ANA</span>}
                         <button onClick={() => {
                           const tum = [...(yeniUrun.resim_url ? [yeniUrun.resim_url] : []), ...yeniUrun.resimler];
@@ -988,6 +1088,11 @@ export default function Admin() {
                 <option value="">Tüm Durumlar</option>
                 <option value="aktif">✅ Aktif</option>
                 <option value="pasif">❌ Pasif</option>
+              </select>
+              <select value={filtreler.oncelikli} onChange={e => filtreUygula({ ...filtreler, oncelikli: e.target.value })} style={fltSelect}>
+                <option value="">Tüm Ürünler</option>
+                <option value="evet">⭐ Öne Çıkanlar</option>
+                <option value="hayir">Öne Çıkmayanlar</option>
               </select>
               {filtrelerAktif && <button onClick={filtreleriTemizle} style={{ ...btn("#888"), padding: "9px 14px", fontSize: 12 }}>✕ Temizle</button>}
               {yukleniyor && <span style={{ fontSize: 12, color: "#E8845A", fontWeight: 600 }}>⏳ Yükleniyor...</span>}
@@ -1071,7 +1176,7 @@ export default function Admin() {
                           <input type="checkbox" checked={seciliUrunler.includes(urun.id)} onChange={e => setSeciliUrunler(e.target.checked ? [...seciliUrunler, urun.id] : seciliUrunler.filter(id => id !== urun.id))} />
                         </td>
                         <td style={{ padding: "6px 8px" }}>
-                          {urun.resim_url ? <img src={urun.resim_url} alt="" style={{ width: 44, height: 44, objectFit: "contain", borderRadius: 8, background: "#FDF6EE" }} />
+                          {urun.resim_url ? <Image src={urun.resim_url} alt="" width={44} height={44} style={{ objectFit: "contain", borderRadius: 8, background: "#FDF6EE" }} />
                             : <div style={{ width: 44, height: 44, background: "#FDF6EE", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🐾</div>}
                         </td>
                         <td style={{ padding: "8px 10px", maxWidth: 220 }}>
@@ -1089,7 +1194,7 @@ export default function Admin() {
                             </div>
                           ) : (
                             <span onClick={() => setInlineEdit({ id: urun.id, alan: "fiyat", deger: String(urun.fiyat) })} style={{ fontWeight: 700, color: "#5C3D2E", cursor: "pointer", borderBottom: "1px dashed #ccc" }} title="Hızlı düzenle">
-                              ₺{parseFloat(urun.fiyat).toFixed(2)}
+                              ₺{parseFloat(String(urun.fiyat)).toFixed(2)}
                             </span>
                           )}
                         </td>
@@ -1104,9 +1209,9 @@ export default function Admin() {
                             <div onClick={() => setInlineEdit({ id: urun.id, alan: "indirimli_fiyat", deger: String(urun.indirimli_fiyat || "") })} style={{ cursor: "pointer" }} title="Hızlı düzenle">
                               {urun.indirimli_fiyat ? (
                                 <div>
-                                  <span style={{ fontWeight: 700, color: "#E8845A", borderBottom: "1px dashed #ccc" }}>₺{parseFloat(urun.indirimli_fiyat).toFixed(2)}</span>
+                                  <span style={{ fontWeight: 700, color: "#E8845A", borderBottom: "1px dashed #ccc" }}>₺{parseFloat(String(urun.indirimli_fiyat)).toFixed(2)}</span>
                                   <span style={{ background: "#FFEBEE", color: "#C62828", fontSize: 9, fontWeight: 700, borderRadius: 4, padding: "1px 4px", marginLeft: 4 }}>
-                                    %{Math.round((1 - parseFloat(urun.indirimli_fiyat) / parseFloat(urun.fiyat)) * 100)}
+                                    %{Math.round((1 - parseFloat(String(urun.indirimli_fiyat)) / parseFloat(String(urun.fiyat))) * 100)}
                                   </span>
                                 </div>
                               ) : <span style={{ color: "#ccc", borderBottom: "1px dashed #eee" }}>—</span>}
@@ -1122,7 +1227,7 @@ export default function Admin() {
                             </div>
                           ) : (
                             <span onClick={() => setInlineEdit({ id: urun.id, alan: "stok", deger: String(urun.stok) })}
-                              style={{ background: urun.stok > 10 ? "#E8F5E9" : urun.stok > 0 ? "#FFF8E1" : "#FFEBEE", color: urun.stok > 10 ? "#2E7D32" : urun.stok > 0 ? "#E65100" : "#C62828", padding: "3px 9px", borderRadius: 50, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                              style={{ background: Number(urun.stok) > 10 ? "#E8F5E9" : Number(urun.stok) > 0 ? "#FFF8E1" : "#FFEBEE", color: Number(urun.stok) > 10 ? "#2E7D32" : Number(urun.stok) > 0 ? "#E65100" : "#C62828", padding: "3px 9px", borderRadius: 50, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                               title="Hızlı düzenle">
                               {urun.stok}
                             </span>
@@ -1145,7 +1250,7 @@ export default function Admin() {
                           </button>
                         </td>
                         <td style={{ padding: "8px 10px" }}>
-                          <button onClick={() => oncelikliToggle(urun.id, urun.oncelikli)} title={urun.oncelikli ? "Öncelikli — Google Ads'te yüksek bidle gösteriliyor" : "Öncelikli yap"}
+                          <button onClick={() => oncelikliToggle(urun.id, !!urun.oncelikli)} title={urun.oncelikli ? "Öncelikli — Google Ads'te yüksek bidle gösteriliyor" : "Öncelikli yap"}
                             style={{ background: urun.oncelikli ? "#FFF3E0" : "#F5F5F5", color: urun.oncelikli ? "#E65100" : "#999", border: "none", padding: "3px 10px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                             {urun.oncelikli ? "⭐" : "☆"}
                           </button>
@@ -1260,7 +1365,7 @@ export default function Admin() {
                     {dusukStokUrunler.map(urun => (
                       <tr key={urun.id} style={{ borderBottom: "1px solid #F5EFE8" }}>
                         <td style={{ padding: "8px 12px" }}>
-                          {urun.resim_url ? <img src={urun.resim_url} alt="" style={{ width: 44, height: 44, objectFit: "contain", borderRadius: 8, background: "#FDF6EE" }} />
+                          {urun.resim_url ? <Image src={urun.resim_url} alt="" width={44} height={44} style={{ objectFit: "contain", borderRadius: 8, background: "#FDF6EE" }} />
                             : <div style={{ width: 44, height: 44, background: "#FDF6EE", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🐾</div>}
                         </td>
                         <td style={{ padding: "8px 12px" }}>
@@ -1270,7 +1375,7 @@ export default function Admin() {
                         <td style={{ padding: "8px 12px", fontSize: 12, opacity: 0.6 }}>{urun.kategoriler?.ad || "—"}</td>
                         <td style={{ padding: "8px 12px", fontSize: 12, opacity: 0.6 }}>{urun.markalar?.ad || "—"}</td>
                         <td style={{ padding: "8px 12px" }}>
-                          <span style={{ background: urun.stok === 0 ? "#FFEBEE" : urun.stok <= 5 ? "#FFF3E0" : "#FFF9C4", color: urun.stok === 0 ? "#C62828" : urun.stok <= 5 ? "#E65100" : "#F57F17", padding: "4px 12px", borderRadius: 50, fontSize: 14, fontWeight: 700 }}>
+                          <span style={{ background: urun.stok === 0 ? "#FFEBEE" : Number(urun.stok) <= 5 ? "#FFF3E0" : "#FFF9C4", color: urun.stok === 0 ? "#C62828" : Number(urun.stok) <= 5 ? "#E65100" : "#F57F17", padding: "4px 12px", borderRadius: 50, fontSize: 14, fontWeight: 700 }}>
                             {urun.stok}
                           </span>
                         </td>
@@ -1336,12 +1441,12 @@ export default function Admin() {
                       <span style={{ background: sp.odeme_yontemi === "kredi_karti" ? "#E3F2FD" : "#E8F5E9", color: sp.odeme_yontemi === "kredi_karti" ? "#1565C0" : "#2E7D32", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
                         {sp.odeme_yontemi === "kredi_karti" ? "💳 Kart" : "🏦 Havale"}
                       </span>
-                      <span style={{ background: (({ beklemede: "#FFF3E0", hazirlaniyor: "#E3F2FD", kargoda: "#E8F5E9", tamamlandi: "#F3E5F5", iptal: "#FFEBEE" }) as Record<string, string>)[sp.durum] || "#F5F5F5", color: (({ beklemede: "#E65100", hazirlaniyor: "#1565C0", kargoda: "#2E7D32", tamamlandi: "#6A1B9A", iptal: "#C62828" }) as Record<string, string>)[sp.durum] || "#666", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
+                      <span style={{ background: (({ beklemede: "#FFF3E0", hazirlaniyor: "#E3F2FD", kargoda: "#E8F5E9", tamamlandi: "#F3E5F5", iptal: "#FFEBEE" }) as Record<string, string>)[sp.durum ?? ""] || "#F5F5F5", color: (({ beklemede: "#E65100", hazirlaniyor: "#1565C0", kargoda: "#2E7D32", tamamlandi: "#6A1B9A", iptal: "#C62828" }) as Record<string, string>)[sp.durum ?? ""] || "#666", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
                         {sp.durum || "beklemede"}
                       </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ fontFamily: "Georgia,serif", fontSize: 20, fontWeight: 700, color: "#E8845A" }}>₺{parseFloat(sp.toplam || 0).toFixed(2)}</span>
+                      <span style={{ fontFamily: "Georgia,serif", fontSize: 20, fontWeight: 700, color: "#E8845A" }}>₺{parseFloat(String(sp.toplam || 0)).toFixed(2)}</span>
                       {/* ── DÜZELTİLMİŞ DETAY BUTONU ── */}
                       <button
                         onClick={async () => {
@@ -1419,7 +1524,7 @@ export default function Admin() {
                             {siparisKalemleri[sp.id].map((kalem, ki) => {
                               // Düzeltilmiş ürün bilgisi alma
                               const urunAdi = kalem.urunler?.ad || kalem.urun_adi || kalem.ad || kalem.name || "Ürün";
-                              const fiyat = parseFloat(kalem.fiyat || kalem.birim_fiyat || kalem.toplam_fiyat || kalem.price || 0);
+                              const fiyat = parseFloat(String(kalem.fiyat || kalem.birim_fiyat || kalem.toplam_fiyat || kalem.price || 0));
                               const adet = kalem.adet || kalem.miktar || kalem.quantity || 1;
                               const resim = kalem.urunler?.resim_url || kalem.resim_url || null;
                               
@@ -1428,7 +1533,7 @@ export default function Admin() {
                                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                                     <div style={{ width: 44, height: 44, background: "white", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid #F0E8E0" }}>
                                       {resim
-                                        ? <img src={resim} alt="" style={{ width: 38, height: 38, objectFit: "contain", borderRadius: 6 }}
+                                        ? <Image src={resim} alt="" width={38} height={38} style={{ objectFit: "contain", borderRadius: 6 }}
                                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                                         : <span style={{ fontSize: 20 }}>🐾</span>}
                                     </div>
@@ -1446,7 +1551,7 @@ export default function Admin() {
                             })}
                             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12, paddingTop: 10, borderTop: "2px solid #E8D5B7" }}>
                               <div style={{ fontFamily: "Georgia,serif", fontSize: 18, fontWeight: 700, color: "#E8845A" }}>
-                                Toplam: ₺{parseFloat(sp.toplam || 0).toFixed(2)}
+                                Toplam: ₺{parseFloat(String(sp.toplam || 0)).toFixed(2)}
                               </div>
                             </div>
                           </>
@@ -1475,12 +1580,12 @@ export default function Admin() {
                           // olarak indirilebilir.
                           const kalemleriHtml = (siparisKalemleri[sp.id] || []).map(k => {
                             const ad = k.urunler?.ad || k.urun_adi || k.ad || k.name || "Ürün";
-                            const fiyat = parseFloat(k.fiyat || k.birim_fiyat || k.toplam_fiyat || k.price || 0);
+                            const fiyat = parseFloat(String(k.fiyat || k.birim_fiyat || k.toplam_fiyat || k.price || 0));
                             const adet = k.adet || k.miktar || k.quantity || 1;
                             return `<div class="row"><span>${ad} x${adet}</span><span>₺${fiyat.toFixed(2)}</span></div>`;
                           }).join("") || "<div class='row'><span>Kalem yok</span><span>—</span></div>";
                           const odemeYazi = sp.odeme_yontemi === "kredi_karti" ? "Kredi Kartı" : (sp.odeme_yontemi || "Havale/EFT");
-                          const tutar = parseFloat(sp.toplam || 0).toFixed(2);
+                          const tutar = parseFloat(String(sp.toplam || 0)).toFixed(2);
                           const fishHtml = `<html><head><meta charset="utf-8"><title>Paketleme Fişi #${sp.siparis_no}</title><style>body{font-family:Arial;padding:20px;max-width:420px}h2{border-bottom:2px solid #333;padding-bottom:8px}.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:13px}.total{font-size:18px;font-weight:bold;color:#E8845A;margin-top:12px}@media print{.no-print{display:none}}</style></head><body><h2>🐾 evemama.net — Paketleme Fişi</h2><div class="row"><b>Sipariş No</b><span>#${sp.siparis_no}</span></div><div class="row"><b>Tarih</b><span>${new Date(sp.created_at).toLocaleDateString("tr-TR")}</span></div><div class="row"><b>Müşteri</b><span>${sp.ad} ${sp.soyad}</span></div><div class="row"><b>E-posta</b><span>${sp.email || "-"}</span></div><div class="row"><b>Telefon</b><span>${sp.telefon || "-"}</span></div><div class="row"><b>Adres</b><span>${sp.adres || "-"}, ${sp.sehir || ""}</span></div><div class="row"><b>Ödeme</b><span>${odemeYazi}</span></div><hr/>${kalemleriHtml}<div class="total">Toplam: ₺${tutar}</div><br/><div class="no-print" style="display:flex;gap:8px"><button onclick="window.print()" style="padding:8px 14px;border:none;background:#5C3D2E;color:white;border-radius:8px;cursor:pointer;font-size:13px">🖨️ Yazdır / PDF</button></div></body></html>`;
                           const w = window.open("", "_blank");
                           if (!w) return;
@@ -1492,12 +1597,12 @@ export default function Admin() {
                           // tarayicida acip Yazdir > PDF olarak kaydet diyebilir.
                           const kalemleriHtml = (siparisKalemleri[sp.id] || []).map(k => {
                             const ad = k.urunler?.ad || k.urun_adi || k.ad || k.name || "Ürün";
-                            const fiyat = parseFloat(k.fiyat || k.birim_fiyat || k.toplam_fiyat || k.price || 0);
+                            const fiyat = parseFloat(String(k.fiyat || k.birim_fiyat || k.toplam_fiyat || k.price || 0));
                             const adet = k.adet || k.miktar || k.quantity || 1;
                             return `<div class="row"><span>${ad} x${adet}</span><span>₺${fiyat.toFixed(2)}</span></div>`;
                           }).join("") || "<div class='row'><span>Kalem yok</span><span>—</span></div>";
                           const odemeYazi = sp.odeme_yontemi === "kredi_karti" ? "Kredi Kartı" : (sp.odeme_yontemi || "Havale/EFT");
-                          const tutar = parseFloat(sp.toplam || 0).toFixed(2);
+                          const tutar = parseFloat(String(sp.toplam || 0)).toFixed(2);
                           const fishHtml = `<!doctype html><html><head><meta charset="utf-8"><title>Paketleme Fişi #${sp.siparis_no}</title><style>body{font-family:Arial;padding:20px;max-width:420px}h2{border-bottom:2px solid #333;padding-bottom:8px}.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:13px}.total{font-size:18px;font-weight:bold;color:#E8845A;margin-top:12px}</style></head><body><h2>🐾 evemama.net — Paketleme Fişi</h2><div class="row"><b>Sipariş No</b><span>#${sp.siparis_no}</span></div><div class="row"><b>Tarih</b><span>${new Date(sp.created_at).toLocaleDateString("tr-TR")}</span></div><div class="row"><b>Müşteri</b><span>${sp.ad} ${sp.soyad}</span></div><div class="row"><b>E-posta</b><span>${sp.email || "-"}</span></div><div class="row"><b>Telefon</b><span>${sp.telefon || "-"}</span></div><div class="row"><b>Adres</b><span>${sp.adres || "-"}, ${sp.sehir || ""}</span></div><div class="row"><b>Ödeme</b><span>${odemeYazi}</span></div><hr/>${kalemleriHtml}<div class="total">Toplam: ₺${tutar}</div></body></html>`;
                           const blob = new Blob([fishHtml], { type: "text/html;charset=utf-8" });
                           const url = URL.createObjectURL(blob);
