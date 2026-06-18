@@ -10,7 +10,7 @@ type Yorum = { id: number; ad: string; puan: number; yorum: string; tarih: strin
 type UrunDetay = {
   id: number; ad: string; slug: string;
   fiyat: number; indirimli_fiyat?: number | null;
-  stok: number; resim_url?: string | null;
+  stok: number; resim_url?: string | null; resimler?: string[] | null;
   kisa_aciklama?: string | null; aciklama?: string | null;
   kategori_id?: number | null;
   markalar?: { ad: string } | null;
@@ -26,6 +26,7 @@ export default function UrunDetayClient() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [eklendi, setEklendi] = useState(false);
   const [adet, setAdet] = useState(1);
+  const [seciliResim, setSeciliResim] = useState<string | null>(null); // galeri: tıklanan küçük resim
   const [aktifSekme, setAktifSekme] = useState<"aciklama" | "yorumlar">("aciklama");
   const [yeniYorum, setYeniYorum] = useState({ ad: "", puan: 5, yorum: "" });
   const [yorumGonderildi, setYorumGonderildi] = useState(false);
@@ -44,6 +45,7 @@ export default function UrunDetayClient() {
           // urun null kalir, asagidaki "Urun bulunamadi" ekranina dusulur.
         }
         setUrun(data);
+        setSeciliResim(null); // yeni ürün yüklendi → galeri seçimini sıfırla
         setYukleniyor(false);
         if (data?.kategori_id) {
           supabase.from("urunler").select("id, ad, slug, fiyat, indirimli_fiyat, resim_url, stok").eq("kategori_id", data.kategori_id).neq("slug", slug).neq("aktif", false).limit(4)
@@ -147,6 +149,9 @@ export default function UrunDetayClient() {
   const ortPuan = yorumlar.length ? yorumlar.reduce((s, y) => s + y.puan, 0) / yorumlar.length : 0;
   const kargoUcreti = (totalPrice + (urun.indirimli_fiyat || urun.fiyat) * adet) >= 1000 ? 0 : 29.90;
   const kargoyaKalan = 1000 - totalPrice;
+  // Galeri: ana görsel + ek görseller (resimler). Tekilleştir, boşları at.
+  const tumResimler = Array.from(new Set([urun.resim_url, ...(Array.isArray(urun.resimler) ? urun.resimler : [])].filter((u): u is string => !!u)));
+  const anaGorsel = seciliResim || urun.resim_url || null;
 
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
@@ -198,15 +203,25 @@ export default function UrunDetayClient() {
       {/* Ana İçerik */}
       <div className="urun-layout">
 
-        {/* Sol: Görsel */}
+        {/* Sol: Görsel + galeri */}
         <div>
           <div style={{ background: "white", borderRadius: 24, overflow: "hidden", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 32px rgba(92,61,46,0.08)", marginBottom: 16, position: "relative" }}>
-            {urun.resim_url ? (
-              <Image src={urun.resim_url} alt={urun.ad} fill priority sizes="(max-width:768px) 100vw, 550px" style={{ objectFit: "contain", padding: 24 }} />
+            {anaGorsel ? (
+              <Image src={anaGorsel} alt={urun.ad} fill priority sizes="(max-width:768px) 100vw, 550px" style={{ objectFit: "contain", padding: 24 }} />
             ) : (
               <div style={{ fontSize: 120, opacity: 0.2 }}>🐾</div>
             )}
           </div>
+          {tumResimler.length > 1 && (
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {tumResimler.map((src, i) => (
+                <button key={i} onClick={() => setSeciliResim(src)} aria-label={`Görsel ${i + 1}`}
+                  style={{ width: 72, height: 72, borderRadius: 12, overflow: "hidden", position: "relative", background: "white", cursor: "pointer", padding: 0, border: `2px solid ${anaGorsel === src ? "#E8845A" : "#E8D5B7"}`, flexShrink: 0 }}>
+                  <Image src={src} alt={`${urun.ad} görsel ${i + 1}`} fill sizes="72px" style={{ objectFit: "contain", padding: 6 }} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Sağ: Bilgiler */}

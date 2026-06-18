@@ -7,8 +7,12 @@ const nextConfig: NextConfig = {
     // riskine karsi guvenlik. Urun resimleri Supabase Storage'tan geliyor.
     remotePatterns: [
       {
+        // *.supabase.co — Supabase proje ref'i degisse bile (orn. eski
+        // jjdzeowqxhghzyhjyqwe → guncel curbhyfhyanwqtduegng) gorseller
+        // kirilmasin diye wildcard. Yol public storage ile sinirli, bu yuzden
+        // next/image yalnizca herkese acik urun gorsellerini optimize eder.
         protocol: "https",
-        hostname: "jjdzeowqxhghzyhjyqwe.supabase.co",
+        hostname: "*.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
     ],
