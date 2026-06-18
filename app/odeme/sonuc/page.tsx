@@ -41,7 +41,11 @@ function OdemeSonucIcerik() {
     // icin de attribution dogru tutulur, Ads dashboard'undaki "Gelismis
     // donusumler - mudahale edilmesi gerekiyor" uyarisi kapanir.
     window.gtag("set", "user_data", {
-      email_address: email || undefined,
+      // Google Ads enhanced conversions alan adi "email" — GA4'teki
+      // "email_address" DEGIL. Yanlis anahtar gtag tarafindan sessizce yok
+      // sayilir → Teshis'te %0 kapsam (sorunun nedeni buydu). Google
+      // client-side SHA256'lar; trim+lowercase eslesme oranini artirir.
+      email: email ? email.trim().toLowerCase() : undefined,
     });
     window.gtag("event", "conversion", {
       send_to: `${GOOGLE_ADS_TAG}/${PURCHASE_LABEL}`,
