@@ -115,6 +115,31 @@ export async function POST(req: NextRequest) {
         // Geçici kaydı sil
         await supabase.from("odeme_gecici").delete().eq("token", token);
 
+        // STOK DÜŞ — satılan her ürünün stoğunu adedi kadar azalt. Bu ana kadar
+        // HİÇ yapılmıyordu (satışta stok düşmüyordu). gecici DB'den silindiği için
+        // olası çift callback'te 2. çağrıda gecici null olur → stok çift düşmez
+        // (idempotent). urunler.stok RLS korumalı → service_role (supabaseAdmin) şart.
+        // Best-effort: stok hatası siparişi/ödemeyi bozmasın.
+        try {
+          let kalemler: { id?: number | string; quantity?: number; adet?: number; miktar?: number }[] = [];
+          const ham = gecici?.urunler;
+          if (typeof ham === "string") { try { kalemler = JSON.parse(ham); } catch { kalemler = []; } }
+          else if (Array.isArray(ham)) kalemler = ham;
+          for (const k of kalemler) {
+            const urunId = Number(k.id);
+            const adet = Number(k.quantity ?? k.adet ?? k.miktar ?? 1) || 1;
+            if (!urunId || adet <= 0) continue;
+            const { data: u } = await supabaseAdmin.from("urunler").select("stok").eq("id", urunId).maybeSingle();
+            if (u) {
+              const yeniStok = Math.max(0, (Number(u.stok) || 0) - adet);
+              await supabaseAdmin.from("urunler").update({ stok: yeniStok }).eq("id", urunId);
+            }
+          }
+          console.log("[odeme/sonuc] stok dusuruldu:", siparisNo, (kalemler || []).length, "kalem");
+        } catch (e) {
+          console.error("[odeme/sonuc] stok dusurme hatasi:", e);
+        }
+
         // Sipariş onay maili — best-effort, hata olsa bile akışı bozma.
         // RESEND_API_KEY yoksa fonksiyon zaten sessizce false döner.
         //
