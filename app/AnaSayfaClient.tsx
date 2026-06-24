@@ -155,6 +155,8 @@ export default function AnaSayfaClient() {
     // Mamalari" grubunda goruntulenir).
     type Grup = { ad: string; slug: string; urunler: Urun[]; sortKey: number };
     const gruplar: Record<string, Grup> = {
+      "acik-kedi":     { ad: "Açık Kedi Mamaları",  slug: "acik-kedi-mamalari",  sortKey: -2, urunler: [] },
+      "acik-kopek":    { ad: "Açık Köpek Mamaları", slug: "acik-kopek-mamalari", sortKey: -1, urunler: [] },
       "kedi-mama":     { ad: "Kedi Maması",         slug: findKatSlug(k => k.slug === "kedi") || "kedi",                            sortKey: 0, urunler: [] },
       "kedi-yavru":    { ad: "Yavru Kedi Mamaları", slug: findKatSlug(k => /yavru/.test(k.slug) && /kedi/.test(k.slug)) || "urunler", sortKey: 1, urunler: [] },
       "kedi-konserve": { ad: "Yaş Kedi Mamaları",   slug: findKatSlug(k => /konserve/.test(k.slug) && /kedi/.test(k.slug)) || "urunler", sortKey: 2, urunler: [] },
@@ -168,6 +170,15 @@ export default function AnaSayfaClient() {
       const ad = (u.ad || "").toLowerCase();
       const txt = slug + " " + ad;
 
+      const ekle = (key: string) => {
+        if (gruplar[key].urunler.length < 15) gruplar[key].urunler.push(u);
+      };
+
+      // Açık mamalar: KATEGORİYE göre ayrı bölüm (kat 85/86). Metin eşleştirmesine
+      // girmez ki normal Kedi/Köpek Maması gruplarında TEKRAR görünmesin.
+      if (slug === "acik-kedi-mamalari") { ekle("acik-kedi"); return; }
+      if (slug === "acik-kopek-mamalari") { ekle("acik-kopek"); return; }
+
       const isKedi = /\bkedi\b|kitten/.test(txt) && !/kopek|köpek/.test(txt);
       const isKopek = /\bkopek\b|köpek|puppy/.test(txt) && !/\bkedi\b/.test(txt);
       const isMama = /mama|food|biskuvi|odul|treat|konserve/.test(txt);
@@ -176,10 +187,6 @@ export default function AnaSayfaClient() {
       const isKonserve = /konserve|wet|pate|patê|sos|jelly|gravy|sıvı|pouch/.test(txt);
 
       if (!isMama) return; // Sadece mama urunleri (aksesuar, kum vb. degil)
-
-      const ekle = (key: string) => {
-        if (gruplar[key].urunler.length < 15) gruplar[key].urunler.push(u);
-      };
 
       if (isKedi) {
         ekle("kedi-mama");
