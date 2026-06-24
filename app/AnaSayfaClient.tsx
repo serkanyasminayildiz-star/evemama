@@ -708,7 +708,7 @@ export default function AnaSayfaClient() {
               <div style={{ fontFamily: "Georgia,serif", fontSize: 22, fontWeight: 700, color: "#FDF6EE", marginBottom: 12 }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></div>
               <p style={{ fontSize: 12, color: "#FDF6EE", opacity: 0.4, lineHeight: 1.8, maxWidth: 260 }}>
                 Evcil dostlarınız için en kaliteli ürünleri en uygun fiyatlarla sunuyoruz.<br /><br />
-                <strong style={{ opacity: 0.7, fontSize: 11 }}>TNB Pet Mamaları ve Aksesuarları İthalat İhracat San. ve Tic. Ltd. Şti.</strong><br />
+                <strong style={{ opacity: 0.7, fontSize: 11 }}>Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi</strong><br />
                 Vergi No: 9381208717 — Kadifekale V.D.<br />
                 Atilla Mah. 349 Sok. No:55/A Konak / İzmir<br />
                 📞 0552 090 80 01<br />

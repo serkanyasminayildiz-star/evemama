@@ -17,7 +17,7 @@ export default function CerezPolitikasi() {
         <p style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.5, marginBottom: 40 }}>Son güncelleme tarihi: 01/02/2026</p>
         <div style={{ background: "white", borderRadius: 24, padding: "40px 48px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
           <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8, marginBottom: 32 }}>
-            Bu çerez politikası, TNB Pet Mamaları ve Aksesuarları İthalat İhracat Sanayi ve Ticaret Limited Şirketi web sitesi tarafından kullanılan çerezlerle ilgili bilgileri açıklamaktadır.
+            Bu çerez politikası, Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi web sitesi tarafından kullanılan çerezlerle ilgili bilgileri açıklamaktadır.
           </p>
           {[
             { baslik: "Çerez Nedir?", icerik: "Çerezler, bir web sitesini ziyaret ettiğinizde tarayıcınıza kaydedilen küçük metin dosyalarıdır. Bu dosyalar, web sitesinin sizinle etkileşimde bulunmasını ve size özel bir deneyim sunmasını sağlamak için kullanılır." },
