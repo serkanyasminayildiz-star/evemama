@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
 import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim } from "../../lib/indirim";
+import { HAVALE_HESAP } from "../../lib/havale";
 
 export default function Odeme() {
-  const { items, totalPrice } = useCart();
+  const { items, totalPrice, clearCart } = useCart();
   const [yukleniyor, setYukleniyor] = useState(false);
   const [odemeYontemi, setOdemeYontemi] = useState<"kart" | "havale">("kart");
   const [sozlesme, setSozlesme] = useState(false);
@@ -131,7 +132,6 @@ export default function Odeme() {
     if (!form.name || !form.surname || !form.email || !form.address || !form.city) { setHata("Lütfen tüm zorunlu alanları doldurun."); return; }
     setHata("");
     setYukleniyor(true);
-    if (odemeYontemi === "havale") { window.location.href = "/odeme/havale"; return; }
     try {
       // Üyelik doğrulaması SUNUCUDA yapılır (ilk sipariş indirimi için).
       // Oturum token'ını gönderiyoruz; sunucu indirimi/tutarı kendisi
@@ -143,18 +143,31 @@ export default function Odeme() {
           "Content-Type": "application/json",
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.address, city: form.city }, kuponKodu: uygulananKupon?.kod || "" }),
+        body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.address, city: form.city }, kuponKodu: uygulananKupon?.kod || "", yontem: odemeYontemi }),
       });
       const data = await res.json();
+      // Havale: sipariş "ödeme bekliyor" olarak oluştu → sepeti temizle, onay sayfasına git.
+      if (odemeYontemi === "havale") {
+        if (data.havale && data.siparisNo) {
+          clearCart();
+          window.location.href = `/odeme/havale?siparis=${encodeURIComponent(data.siparisNo)}&tutar=${encodeURIComponent(data.toplam || genelToplam.toFixed(2))}`;
+        } else {
+          setHata("Sipariş oluşturulamadı: " + (data.error || "Bilinmeyen hata"));
+          setYukleniyor(false);
+        }
+        return;
+      }
+      // Kart: iyzico güvenli ödeme sayfasına yönlendir.
       if (data.status === "success" && data.paymentPageUrl) {
         window.location.href = data.paymentPageUrl;
       } else {
         setHata("Ödeme başlatılamadı: " + (data.errorMessage || "Bilinmeyen hata"));
+        setYukleniyor(false);
       }
     } catch {
       setHata("Bir hata oluştu, lütfen tekrar deneyin.");
+      setYukleniyor(false);
     }
-    setYukleniyor(false);
   };
 
   const inputStyle = {
@@ -214,7 +227,7 @@ export default function Odeme() {
             <div className="odeme-yontem-grid">
               {([
                 { id: "kart", icon: "💳", title: "Kredi / Banka Kartı", sub: "Taksit seçeneği mevcut" },
-                { id: "havale", icon: "🏦", title: "Banka Havalesi / EFT", sub: "Havale ile %3 indirim" },
+                { id: "havale", icon: "🏦", title: "Banka Havalesi / EFT", sub: "Banka hesabına havale/EFT" },
               ] as const).map(o => (
                 <div key={o.id} onClick={() => setOdemeYontemi(o.id)}
                   style={{ border: `2px solid ${odemeYontemi === o.id ? "#E8845A" : "#E8D5B7"}`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", background: odemeYontemi === o.id ? "#FFF5F0" : "white", transition: "all .2s", display: "flex", alignItems: "center", gap: 10 }}>
@@ -238,17 +251,12 @@ export default function Odeme() {
             {odemeYontemi === "havale" && (
               <div style={{ marginTop: 14, background: "#FDF6EE", borderRadius: 14, padding: "18px" }}>
                 <div style={{ fontWeight: 700, color: "#5C3D2E", marginBottom: 12, fontSize: 14 }}>🏦 Banka Hesap Bilgileri</div>
-                {[
-                  { banka: "Ziraat Bankası", iban: "TR00 0000 0000 0000 0000 0000 00" },
-                  { banka: "İş Bankası", iban: "TR00 0000 0000 0000 0000 0000 00" },
-                ].map((b, i) => (
-                  <div key={i} style={{ background: "white", borderRadius: 12, padding: "12px 14px", marginBottom: 10 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: "#5C3D2E" }}>{b.banka}</div>
-                    <div style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.6 }}>IBAN: {b.iban}</div>
-                    <div style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.6 }}>Hesap: evemama.net</div>
-                  </div>
-                ))}
-                <div style={{ fontSize: 12, color: "#E8845A", fontWeight: 600 }}>⚠️ Açıklamaya sipariş numaranızı yazmayı unutmayın!</div>
+                <div style={{ background: "white", borderRadius: 12, padding: "12px 14px", marginBottom: 10 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#5C3D2E" }}>{HAVALE_HESAP.banka}</div>
+                  <div style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.6 }}>IBAN: {HAVALE_HESAP.iban}</div>
+                  <div style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.6 }}>Alıcı: {HAVALE_HESAP.unvan}</div>
+                </div>
+                <div style={{ fontSize: 12, color: "#E8845A", fontWeight: 600, lineHeight: 1.5 }}>⚠️ &quot;Siparişi Tamamla&quot;ya basın; sipariş numaranızı açıklamaya yazıp havale yapın. (IBAN + sipariş no onay sayfasında ve e-postanızda da olacak.)</div>
               </div>
             )}
           </div>

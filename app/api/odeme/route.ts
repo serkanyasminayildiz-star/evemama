@@ -4,6 +4,7 @@ import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
 import { ILK_SIPARIS, SADAKAT, hesaplaIndirim } from "../../../lib/indirim";
+import { sendHavaleTalimatMaili } from "../../../lib/email";
 
 // Sepet ürünü — client'tan gelen JSON şekli (explicit any yerine).
 type SepetUrun = { id: string | number; name: string; price: number; quantity: number };
@@ -157,6 +158,54 @@ export async function POST(req: NextRequest) {
 
   const priceStr = basketTotal.toFixed(2);
   const paidPriceStr = hesap.genelToplam.toFixed(2);
+
+  // ── HAVALE/EFT ──────────────────────────────────────────────────────────────
+  // Havale seçildiyse iyzico'ya GİTME. Siparişi "ödeme bekliyor (havale)" olarak
+  // oluştur, IBAN + sipariş no döndür, talimat maili at. STOK DÜŞÜŞÜ + onay maili
+  // admin ödemeyi "ödendi" işaretleyince olur (Faz 2). Bonus/kupon harcaması burada
+  // işaretlenir (kart akışındaki gibi). Tutar SUNUCUDA hesaplandı (hesap.genelToplam).
+  if (body.yontem === "havale") {
+    const siparisNo = "EVE" + Date.now().toString().slice(-8);
+    const { error: havaleErr } = await supabase.from("siparisler").insert({
+      siparis_no: siparisNo,
+      durum: "beklemede",
+      odeme_yontemi: "havale",
+      odeme_durumu: "bekliyor",
+      toplam: hesap.genelToplam,
+      ara_toplam: basketTotal,
+      ad: buyer.name,
+      soyad: buyer.surname,
+      email: buyer.email,
+      telefon: buyer.phone || "",
+      adres: buyer.address,
+      sehir: buyer.city,
+      urunler: JSON.stringify(items),
+      created_at: new Date().toISOString(),
+    });
+    if (havaleErr) {
+      console.error("[odeme] havale siparis kayit hatasi:", havaleErr);
+      return NextResponse.json({ error: "Sipariş oluşturulamadı, lütfen tekrar deneyin." }, { status: 500 });
+    }
+    // Kullanılan sadakat bonusu / kupon harcanır (kart akışı odeme/sonuc ile aynı mantık).
+    if (nihaiBonusId) {
+      try {
+        await supabaseAdmin.from("sadakat_bonuslari")
+          .update({ kullanildi: true, kullanildi_siparis_no: siparisNo })
+          .eq("id", nihaiBonusId).eq("kullanildi", false);
+      } catch (e) { console.error("[odeme] havale bonus isaretleme:", e); }
+    }
+    if (kullanilanKuponKod) {
+      try {
+        const { data: k } = await supabaseAdmin.from("kuponlar").select("kullanim_sayisi").eq("kod", kullanilanKuponKod).maybeSingle();
+        await supabaseAdmin.from("kuponlar").update({ kullanim_sayisi: (Number(k?.kullanim_sayisi) || 0) + 1 }).eq("kod", kullanilanKuponKod);
+      } catch (e) { console.error("[odeme] havale kupon sayaci:", e); }
+    }
+    try {
+      await sendHavaleTalimatMaili({ siparisNo, ad: buyer.name, email: buyer.email, toplam: hesap.genelToplam });
+    } catch (e) { console.error("[odeme] havale mail:", e); }
+    console.log("[odeme] havale siparis olusturuldu:", siparisNo);
+    return NextResponse.json({ havale: true, siparisNo, toplam: paidPriceStr });
+  }
 
   const requestBody = {
     locale: "tr",

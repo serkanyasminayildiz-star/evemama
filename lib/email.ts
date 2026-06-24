@@ -8,6 +8,7 @@
 //
 // FROM adresi: evemama.net Resend'de Verified, siparis@evemama.net ile gonderilir.
 import { Resend } from "resend";
+import { HAVALE_HESAP } from "./havale";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 // FROM adresi hardcoded — Vercel UI'da env var'i set ederken yapistirma
@@ -552,6 +553,64 @@ export async function sendAbonelikHatirlatma(p: AbonelikMailParams): Promise<boo
     return Boolean(data?.id);
   } catch (err) {
     console.error("[email] abonelik maili exception:", { email: p.email, err: err instanceof Error ? err.message : String(err) });
+    return false;
+  }
+}
+
+// Havale/EFT talimat maili — sipariş "ödeme bekliyor (havale)" olarak oluşunca
+// müşteriye IBAN + sipariş no + tutar gönderir. Açıklamaya sipariş no yazması
+// vurgulanır (ödeme eşleştirmesi için). Best-effort: hata akışı bozmaz.
+export async function sendHavaleTalimatMaili(p: { siparisNo: string; ad?: string; email: string; toplam: number | string }): Promise<boolean> {
+  const client = getResend();
+  if (!client) {
+    console.warn("[email] RESEND_API_KEY tanimli degil, havale maili gonderilmedi:", p.email);
+    return false;
+  }
+  if (!p.email) return false;
+  const tutar = Number(p.toplam || 0).toFixed(2);
+  const html = `<!doctype html><html><body style="margin:0;background:#f4f4f5;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;">
+    <div style="background:linear-gradient(135deg,#5C3D2E,#8B5E42);padding:28px 24px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:26px;font-weight:700;">evemama.net</h1>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,0.95);font-size:14px;">Siparişiniz alındı 🏦</p>
+    </div>
+    <div style="padding:28px 24px 8px;text-align:center;">
+      <div style="font-size:44px;margin-bottom:8px;">🏦</div>
+      <h2 style="margin:0 0 8px;color:#1a1a1a;font-size:21px;">Havale/EFT bekleniyor</h2>
+      <p style="margin:0;color:#555;font-size:15px;line-height:1.6;">Merhaba ${p.ad || "değerli müşterimiz"},<br>Siparişiniz oluşturuldu. Aşağıdaki hesaba ödemenizi yaptığınızda onaylayıp kargoya vereceğiz.</p>
+    </div>
+    <div style="padding:16px 24px;">
+      <div style="border:2px solid #E8D5B7;border-radius:14px;padding:18px;background:#FDF6EE;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span style="color:#6b7280;font-size:13px;">Sipariş No</span><strong style="color:#5C3D2E;font-size:14px;">${p.siparisNo}</strong></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:14px;"><span style="color:#6b7280;font-size:13px;">Tutar</span><strong style="color:#E8845A;font-size:18px;">₺${tutar}</strong></div>
+        <div style="border-top:1px dashed #E8D5B7;padding-top:12px;font-size:14px;color:#5C3D2E;line-height:1.9;">
+          <div><strong>Banka:</strong> ${HAVALE_HESAP.banka}</div>
+          <div><strong>IBAN:</strong> ${HAVALE_HESAP.iban}</div>
+          <div><strong>Alıcı:</strong> ${HAVALE_HESAP.unvan}</div>
+        </div>
+      </div>
+      <div style="background:#FFF3E0;border-radius:12px;padding:12px 14px;margin-top:14px;font-size:13px;color:#E65100;font-weight:600;">⚠️ Açıklamaya mutlaka sipariş numaranızı (${p.siparisNo}) yazın — ödemenizi eşleştirebilmemiz için gereklidir.</div>
+    </div>
+    <div style="padding:18px 24px;text-align:center;background:#1a1a1a;color:#9ca3af;font-size:12px;line-height:1.6;">
+      <p style="margin:0 0 6px;">evemama.net — Evcil Dostunuzun Dükkanı</p>
+      <p style="margin:0;">© ${new Date().getFullYear()} Tüm hakları saklıdır.</p>
+    </div>
+  </div>
+</body></html>`;
+  try {
+    const { data, error } = await client.emails.send({
+      from: FROM_EMAIL,
+      to: p.email,
+      subject: `🏦 Sipariş ${p.siparisNo} — Havale/EFT bilgileri`,
+      html,
+    });
+    if (error) {
+      console.error("[email] havale maili hatasi:", { email: p.email, error });
+      return false;
+    }
+    return Boolean(data?.id);
+  } catch (err) {
+    console.error("[email] havale maili exception:", { email: p.email, err: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }

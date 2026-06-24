@@ -1568,7 +1568,17 @@ export default function Admin() {
                           <option value="iptal">❌ İptal</option>
                           <option value="iade">↩️ İade</option>
                         </select>
-                        <select value={sp.odeme_durumu || "beklemede"} onChange={async e => { await supabase.from("siparisler").update({ odeme_durumu: e.target.value }).eq("id", sp.id); siparisleriYukle(siparisDurumFiltre); goster("✅ Ödeme durumu güncellendi"); }} style={fltSelect}>
+                        <select value={sp.odeme_durumu || "beklemede"} onChange={async e => {
+                          const yeni = e.target.value;
+                          // Havale siparişi "ödendi"ye geçince: server'da stok düş + onay maili (idempotent).
+                          if (sp.odeme_yontemi === "havale" && yeni === "odendi" && sp.odeme_durumu !== "odendi") {
+                            const r = await fetch("/api/admin/havale-onayla", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` }, body: JSON.stringify({ siparis_no: sp.siparis_no }) });
+                            if (r.ok) { siparisleriYukle(siparisDurumFiltre); goster("✅ Havale onaylandı — stok düşüldü, onay maili gönderildi"); }
+                            else { goster("❌ Havale onaylanamadı"); }
+                            return;
+                          }
+                          await supabase.from("siparisler").update({ odeme_durumu: yeni }).eq("id", sp.id); siparisleriYukle(siparisDurumFiltre); goster("✅ Ödeme durumu güncellendi");
+                        }} style={fltSelect}>
                           <option value="beklemede">⏳ Ödeme Bekliyor</option>
                           <option value="odendi">💳 Ödendi</option>
                           <option value="iptal">❌ İptal</option>
