@@ -4,15 +4,38 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { supabase } from "../lib/supabase";
 import { useCart } from "../context/CartContext";
+import type { User } from "@supabase/supabase-js";
+
+// Supabase satır tipleri (ana sayfa). numeric kolonlar (fiyat/indirimli_fiyat) string döner.
+type Urun = {
+  id: number;
+  ad: string;
+  slug: string;
+  fiyat: string;
+  indirimli_fiyat?: string | null;
+  resim_url?: string | null;
+  stok?: number | null;
+  kategori_id?: number | null;
+  markalar?: { ad: string } | null;
+  kategoriler?: { id?: number; ad?: string; slug?: string } | null;
+};
+type Kategori = {
+  id: number;
+  ad: string;
+  slug: string;
+  ust_kategori_id?: number | null;
+  sira?: number | null;
+  aktif?: boolean;
+};
 
 export default function AnaSayfaClient() {
-  const [kullanici, setKullanici] = useState<any>(null);
-  const [oneCikanlar, setOneCikanlar] = useState<any[]>([]);
-  const [kategoriler, setKategoriler] = useState<any[]>([]);
-  const [altKategoriler, setAltKategoriler] = useState<{ [key: string]: any[] }>({});
+  const [kullanici, setKullanici] = useState<User | null>(null);
+  const [oneCikanlar, setOneCikanlar] = useState<Urun[]>([]);
+  const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
+  const [altKategoriler, setAltKategoriler] = useState<{ [key: string]: Kategori[] }>({});
   // Tum kategoriler (root + alt seviyelerin hepsi) — urun gruplama icin
   // her urunun kategori_id'sini root kategoriye kadar takip etmek gerekiyor.
-  const [tumKategoriler, setTumKategoriler] = useState<any[]>([]);
+  const [tumKategoriler, setTumKategoriler] = useState<Kategori[]>([]);
   const [acikMenu, setAcikMenu] = useState<string | null>(null);
   const [mobMenuAcik, setMobMenuAcik] = useState(false);
   const [aktifSlide, setAktifSlide] = useState(0);
@@ -22,7 +45,7 @@ export default function AnaSayfaClient() {
   const { addItem, totalItems } = useCart();
   const [eklendi, setEklendi] = useState<number | null>(null);
   const [hata, setHata] = useState<string | null>(null);
-  const slideInterval = useRef<any>(null);
+  const slideInterval = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const slides = [
     { badge: "🔥 Haftanın Fırsatı", baslik: "Kedi mamaları", italik: "%30 indirimde", alt: "Royal Canin, Acana ve daha fazlası sizi bekliyor", kod: "🏷️ Kod: KEDI30", emoji: "🐱", bg: "linear-gradient(135deg,#F8E2C8,#F4C09A,#E8845A)", link: "/kategori/kedi" },
@@ -112,11 +135,12 @@ export default function AnaSayfaClient() {
   useEffect(() => {
     slideInterval.current = setInterval(() => setAktifSlide(s => (s + 1) % slides.length), 4500);
     return () => clearInterval(slideInterval.current);
-  }, []);
+    // slides sabit (3 eleman); slides.length stabil primitif → effect bir kez kurulur.
+  }, [slides.length]);
 
   // Verilen filtre fonksiyonuna uyan ilk kategorinin slug'ini doner.
   // "Tümünü Gör" linkleri icin kullanilir; eslesme yoksa /urunler'e duser.
-  const findKatSlug = (filterFn: (k: any) => boolean): string => {
+  const findKatSlug = (filterFn: (k: Kategori) => boolean): string => {
     const match = tumKategoriler.find(filterFn);
     return match ? match.slug : "";
   };
@@ -129,7 +153,7 @@ export default function AnaSayfaClient() {
     // gruplara eklenir. Bir urun birden fazla gruba girebilir (ornegin
     // "Yavru Kedi Mamasi" hem ana "Kedi Mamasi"nda hem ozel "Yavru Kedi
     // Mamalari" grubunda goruntulenir).
-    type Grup = { ad: string; slug: string; urunler: any[]; sortKey: number };
+    type Grup = { ad: string; slug: string; urunler: Urun[]; sortKey: number };
     const gruplar: Record<string, Grup> = {
       "kedi-mama":     { ad: "Kedi Maması",         slug: findKatSlug(k => k.slug === "kedi") || "kedi",                            sortKey: 0, urunler: [] },
       "kedi-yavru":    { ad: "Yavru Kedi Mamaları", slug: findKatSlug(k => /yavru/.test(k.slug) && /kedi/.test(k.slug)) || "urunler", sortKey: 1, urunler: [] },
@@ -173,8 +197,8 @@ export default function AnaSayfaClient() {
       .sort((a, b) => a.sortKey - b.sortKey);
   })();
 
-  const handleEkle = (urun: any) => {
-    addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url });
+  const handleEkle = (urun: Urun) => {
+    addItem({ id: urun.id, name: urun.ad, price: parseFloat(urun.indirimli_fiyat || urun.fiyat) || 0, emoji: "🐾", resim_url: urun.resim_url || undefined });
     setEklendi(urun.id);
     setTimeout(() => setEklendi(null), 1500);
   };
@@ -591,7 +615,7 @@ export default function AnaSayfaClient() {
                     {grup.urunler.map((urun, i) => {
                       // Indirim hesaplama — indirimli_fiyat dolu ve normalden kucukse indirim var.
                       const normalFiyat = parseFloat(urun.fiyat) || 0;
-                      const indirimliFiyat = parseFloat(urun.indirimli_fiyat) || 0;
+                      const indirimliFiyat = parseFloat(urun.indirimli_fiyat ?? "") || 0;
                       const indirimVar = indirimliFiyat > 0 && indirimliFiyat < normalFiyat;
                       const indirimOrani = indirimVar ? Math.round((1 - indirimliFiyat / normalFiyat) * 100) : 0;
                       const gosterFiyat = indirimVar ? indirimliFiyat : normalFiyat;
@@ -610,7 +634,7 @@ export default function AnaSayfaClient() {
                                 %{indirimOrani}
                               </span>
                             )}
-                            {urun.stok <= 5 && urun.stok > 0 && (
+                            {urun.stok != null && urun.stok <= 5 && urun.stok > 0 && (
                               <span style={{ position: "absolute", top: 8, left: 8, background: "#E8845A", color: "white", fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 50 }}>Son {urun.stok}!</span>
                             )}
                           </div>
