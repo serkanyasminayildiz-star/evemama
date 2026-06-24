@@ -22,7 +22,7 @@ export default function KVKK() {
           </p>
 
           {[
-            { baslik: "Veri Sorumlusu", icerik: "Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi\nAtilla Mahallesi 349. Sokak No: 55/A İç Kapı No: A KONAK/İZMİR\nVergi No: 9381208717" },
+            { baslik: "Veri Sorumlusu", icerik: "Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi\nAkın Simav Mahallesi Mithatpaşa Caddesi No: 446 KONAK/İZMİR\nVergi No: 9381208717" },
             { baslik: "Kişisel Verilerin İşlenme Amaçları", icerik: "Kişisel verileriniz; hizmetlerimizin sunulabilmesi, iletişim faaliyetlerinin yürütülmesi, talep ve şikayetlerin değerlendirilmesi, yasal yükümlülüklerin yerine getirilmesi, hukuki ve ticari güvenliğin sağlanması, iş süreçlerinin yürütülmesi ve denetimi amacıyla işlenmektedir." },
             { baslik: "Toplanan Kişisel Veriler", icerik: "Kimlik bilgileri (ad, soyad, T.C. kimlik numarası), iletişim bilgileri (telefon, e-posta, adres), işlem güvenliği verileri ve diğer işlenen kişisel veriler." },
             { baslik: "Veri Toplama Yöntemi ve Hukuki Sebebi", icerik: "Kişisel verileriniz, sözlü, yazılı veya elektronik ortamda; telefon, e-posta, web sitesi formları, sözleşmeler ve diğer kanallar aracılığıyla, KVKK'nın 5. ve 6. maddelerine dayanılarak toplanmaktadır." },

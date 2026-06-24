@@ -88,7 +88,7 @@ export default function Hakkimizda() {
               { label: "Vergi Dairesi / No", value: "Kemeraltı / 9381208717" },
               { label: "Mersis No", value: "0938120871700001" },
               { label: "Ticaret Sicil No", value: "233886" },
-              { label: "Adres", value: "Atilla Mahallesi 349. Sokak No: 55/A İç Kapı No: A KONAK/İZMİR" },
+              { label: "Adres", value: "Akın Simav Mahallesi Mithatpaşa Caddesi No: 446 KONAK/İZMİR" },
               { label: "Telefon", value: "+90 552 090 80 01" },
               { label: "E-Posta", value: "info@evemama.net" },
             ].map((item, i) => (

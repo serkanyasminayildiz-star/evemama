@@ -34,7 +34,7 @@ export default function Iade() {
               maddeler: [
                 { harf: "a", baslik: "İade Süresi", icerik: "Ürünü teslim aldıktan sonraki 14 gün içinde iade talebinizi bizimle iletebilirsiniz." },
                 { harf: "b", baslik: "İade Durumu", icerik: "İade edilecek ürünlerin kullanılmamış, ambalajı hasar görmemiş ve satılabilir durumda olması gerekmektedir." },
-                { harf: "c", baslik: "İade İşlemi", icerik: "İade talebinizi oluşturduktan sonra ürünlerinizi Atilla Mah. 349. Sok. No:55/A Konak/İzmir adresine gönderebilirsiniz. İade işlemi onaylandığında ödemeniz iade edilecektir." },
+                { harf: "c", baslik: "İade İşlemi", icerik: "İade talebinizi oluşturduktan sonra ürünlerinizi Akın Simav Mah. Mithatpaşa Cad. No:446 Konak/İzmir adresine gönderebilirsiniz. İade işlemi onaylandığında ödemeniz iade edilecektir." },
                 { harf: "d", baslik: "Kargo Ücreti", icerik: "Ayıplı veya hatalı ürünlerde iade ve değişim kargo ücreti firmamıza aittir. Diğer iade ve değişim durumlarında kargo ücreti müşteriye aittir." },
               ]
             },
@@ -43,7 +43,7 @@ export default function Iade() {
               maddeler: [
                 { harf: "a", baslik: "Değişim Süresi", icerik: "Ürünü teslim aldıktan sonraki 14 gün içinde değişim talebinizi bizimle iletebilirsiniz." },
                 { harf: "b", baslik: "Değişim Durumu", icerik: "Değiştirmek istediğiniz ürün, kullanılmamış, ambalajı hasar görmemiş ve satılabilir durumda olmalıdır." },
-                { harf: "c", baslik: "Değişim İşlemi", icerik: "Değişim talebinizi oluşturduktan sonra ürünlerinizi Atilla Mah. 349. Sok. No:55/A Konak/İzmir adresine göndermelisiniz." },
+                { harf: "c", baslik: "Değişim İşlemi", icerik: "Değişim talebinizi oluşturduktan sonra ürünlerinizi Akın Simav Mah. Mithatpaşa Cad. No:446 Konak/İzmir adresine göndermelisiniz." },
               ]
             },
           ].map((bolum) => (

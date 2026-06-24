@@ -710,7 +710,7 @@ export default function AnaSayfaClient() {
                 Evcil dostlarınız için en kaliteli ürünleri en uygun fiyatlarla sunuyoruz.<br /><br />
                 <strong style={{ opacity: 0.7, fontSize: 11 }}>Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi</strong><br />
                 Vergi No: 9381208717 — Kadifekale V.D.<br />
-                Atilla Mah. 349 Sok. No:55/A Konak / İzmir<br />
+                Akın Simav Mah. Mithatpaşa Cad. No:446 Konak / İzmir<br />
                 📞 0552 090 80 01<br />
                 <span style={{ fontSize: 11, opacity: 0.7, display: "inline-block", margin: "2px 0" }}>Pazartesi–Cuma 09:00–17:00 arası arayabilirsiniz; harici saatlerde telefona cevap verilememektedir.</span><br />
                 ✉️ info@evemama.net
