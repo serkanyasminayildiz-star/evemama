@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { supabase } from "../lib/supabase";
 import { useCart } from "../context/CartContext";
@@ -38,20 +38,12 @@ export default function AnaSayfaClient() {
   const [tumKategoriler, setTumKategoriler] = useState<Kategori[]>([]);
   const [acikMenu, setAcikMenu] = useState<string | null>(null);
   const [mobMenuAcik, setMobMenuAcik] = useState(false);
-  const [aktifSlide, setAktifSlide] = useState(0);
   const [araInput, setAraInput] = useState("");
   const [newsletter, setNewsletter] = useState("");
   const [newsletterOk, setNewsletterOk] = useState(false);
   const { addItem, totalItems } = useCart();
   const [eklendi, setEklendi] = useState<number | null>(null);
   const [hata, setHata] = useState<string | null>(null);
-  const slideInterval = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-
-  const slides = [
-    { badge: "🔥 Haftanın Fırsatı", baslik: "Kedi mamaları", italik: "%30 indirimde", alt: "Royal Canin, Acana ve daha fazlası sizi bekliyor", kod: "🏷️ Kod: KEDI30", emoji: "🐱", bg: "linear-gradient(135deg,#F8E2C8,#F4C09A,#E8845A)", link: "/kategori/kedi" },
-    { badge: "💥 Kaçmaz Fırsatlar", baslik: "Köpek mamaları", italik: "büyük kampanya!", alt: "Seçili ürünlerde %25'e varan indirim — sadece bu hafta", kod: "🏷️ Kod: KOPEK25", emoji: "🐶", bg: "linear-gradient(135deg,#C8DEC9,#8BAF8E,#5C9E6A)", link: "/kategori/kopek" },
-    { badge: "🚀 Ücretsiz Kargo", baslik: "1000₺ üzeri", italik: "aynı gün kargo", alt: "Saat 14:00'a kadar verilen siparişlerde geçerli", kod: "📦 Hemen sipariş ver", emoji: "📦", bg: "linear-gradient(135deg,#DDD4F4,#A89AE0,#7B6EC8)", link: "/urunler" },
-  ];
 
   const getKatGorsel = (slug: string): { bg: string; emoji: string } => {
     const s = slug.toLowerCase();
@@ -132,12 +124,6 @@ export default function AnaSayfaClient() {
     });
   }, [kategoriler]);
 
-  useEffect(() => {
-    slideInterval.current = setInterval(() => setAktifSlide(s => (s + 1) % slides.length), 4500);
-    return () => clearInterval(slideInterval.current);
-    // slides sabit (3 eleman); slides.length stabil primitif → effect bir kez kurulur.
-  }, [slides.length]);
-
   // Verilen filtre fonksiyonuna uyan ilk kategorinin slug'ini doner.
   // "Tümünü Gör" linkleri icin kullanilir; eslesme yoksa /urunler'e duser.
   const findKatSlug = (filterFn: (k: Kategori) => boolean): string => {
@@ -217,8 +203,6 @@ export default function AnaSayfaClient() {
   const handleNewsletter = () => {
     if (newsletter.includes("@")) { setNewsletterOk(true); setNewsletter(""); }
   };
-
-  const slide = slides[aktifSlide];
 
   const kaydiCubukMetinler = [
     "🚀 1000₺ üzeri ücretsiz kargo",
@@ -506,32 +490,21 @@ export default function AnaSayfaClient() {
         </Link>
       </div>
 
-      {/* HERO SLIDER */}
+      {/* HERO — Açık Mamalar banner (sol) + hızlı erişim kartları (sağ, "şimdilik") */}
       <div className="hero-grid">
-        <div>
-          <div className="hero-banner" style={{ background: slide.bg }}>
-            <div className="banner-pad" style={{ padding: 48, flex: 1, zIndex: 2, position: "relative" }}>
-              <div className="banner-inner" key={aktifSlide}>
-                <div style={{ background: "rgba(255,255,255,.3)", color: "#5C3D2E", fontSize: 11, fontWeight: 700, textTransform: "uppercase", padding: "5px 14px", borderRadius: 50, display: "inline-block", marginBottom: 16 }}>{slide.badge}</div>
-                <h1 className="banner-title">{slide.baslik}<br /><em style={{ color: "white" }}>{slide.italik}</em></h1>
-                <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.7, marginBottom: 24 }}>{slide.alt}</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                  <div style={{ background: "rgba(255,255,255,.3)", color: "#5C3D2E", fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 50 }}>{slide.kod}</div>
-                  <Link href={slide.link} style={{ background: "#5C3D2E", color: "white", fontSize: 13, fontWeight: 700, padding: "10px 20px", borderRadius: 50, textDecoration: "none" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#2C1A0E"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#5C3D2E"}>Keşfet →</Link>
-                </div>
-              </div>
-            </div>
-            <div className="banner-emoji-el" key={`e${aktifSlide}`}>{slide.emoji}</div>
-          </div>
-          <div style={{ display: "flex", gap: 6, justifyContent: "center", margin: "12px 0" }}>
-            {slides.map((_, i) => (
-              <div key={i} onClick={() => { setAktifSlide(i); clearInterval(slideInterval.current); }}
-                style={{ width: i === aktifSlide ? 20 : 6, height: 6, borderRadius: 3, background: i === aktifSlide ? "#E8845A" : "#E8D5B7", cursor: "pointer", transition: "all .3s" }} />
-            ))}
-          </div>
-        </div>
+        {/* Eski gradient carousel kaldırıldı; yerine açık mama banner'ı. Tıklanınca açık mamalar kategorisi. */}
+        <Link href="/kategori/acik-mamalar" aria-label="Açık Mamalar kategorisi — %100 orijinal, minimum 2027 SKT, 14 gün şartsız iade"
+          style={{ display: "block", borderRadius: 28, overflow: "hidden", boxShadow: "0 12px 40px rgba(232,132,90,.22)" }}>
+          <Image
+            src="/acik-mama-banner.png"
+            alt="Açık mama alırken en büyük korku son buluyor — evemama.net'te tüm açık mamalar %100 orijinal ve minimum 2027 SKT'li, 14 gün şartsız iade"
+            width={1536}
+            height={1024}
+            priority
+            sizes="(max-width: 768px) 100vw, 900px"
+            style={{ width: "100%", height: "auto", display: "block" }}
+          />
+        </Link>
         <div className="hero-right">
           <Link href="/urunler" style={{ background: "#E8845A", color: "white", borderRadius: 18, padding: "20px 28px", fontSize: 17, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, boxShadow: "0 10px 28px rgba(232,132,90,.32)", textDecoration: "none" }}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; }}
