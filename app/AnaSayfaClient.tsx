@@ -709,7 +709,7 @@ export default function AnaSayfaClient() {
               <p style={{ fontSize: 12, color: "#FDF6EE", opacity: 0.4, lineHeight: 1.8, maxWidth: 260 }}>
                 Evcil dostlarınız için en kaliteli ürünleri en uygun fiyatlarla sunuyoruz.<br /><br />
                 <strong style={{ opacity: 0.7, fontSize: 11 }}>Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi</strong><br />
-                Vergi No: 9381208717 — Kadifekale V.D.<br />
+                Vergi No: 9381208717 — Konak V.D.<br />
                 Akın Simav Mah. Mithatpaşa Cad. No:446 Konak / İzmir<br />
                 📞 0552 090 80 01<br />
                 <span style={{ fontSize: 11, opacity: 0.7, display: "inline-block", margin: "2px 0" }}>Pazartesi–Cuma 09:00–17:00 arası arayabilirsiniz; harici saatlerde telefona cevap verilememektedir.</span><br />

@@ -85,7 +85,7 @@ export default function Hakkimizda() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
             {[
               { label: "Ticaret Ünvanı", value: "Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi" },
-              { label: "Vergi Dairesi / No", value: "Kemeraltı / 9381208717" },
+              { label: "Vergi Dairesi / No", value: "Konak / 9381208717" },
               { label: "Mersis No", value: "0938120871700001" },
               { label: "Ticaret Sicil No", value: "233886" },
               { label: "Adres", value: "Akın Simav Mahallesi Mithatpaşa Caddesi No: 446 KONAK/İZMİR" },
