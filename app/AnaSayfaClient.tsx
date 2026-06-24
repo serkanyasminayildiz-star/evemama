@@ -44,6 +44,9 @@ export default function AnaSayfaClient() {
   const { addItem, totalItems } = useCart();
   const [eklendi, setEklendi] = useState<number | null>(null);
   const [hata, setHata] = useState<string | null>(null);
+  const [aktifSlide, setAktifSlide] = useState(0);
+  // Açık mama ürün slaytı görselleri (public/, dikey ~1054×1492).
+  const acikSlaytlar = ["/acik-mama1.png", "/acik-mama2.png", "/acik-mama3.png", "/acik-mama4.png", "/acik-mama5.png", "/acik-mama6.png", "/acik-mama7.png", "/acik-mama8.png"];
 
   const getKatGorsel = (slug: string): { bg: string; emoji: string } => {
     const s = slug.toLowerCase();
@@ -123,6 +126,12 @@ export default function AnaSayfaClient() {
         });
     });
   }, [kategoriler]);
+
+  // Açık mama ürün slaytı — otomatik döner (4 sn).
+  useEffect(() => {
+    const id = setInterval(() => setAktifSlide(s => (s + 1) % acikSlaytlar.length), 4000);
+    return () => clearInterval(id);
+  }, [acikSlaytlar.length]);
 
   // Verilen filtre fonksiyonuna uyan ilk kategorinin slug'ini doner.
   // "Tümünü Gör" linkleri icin kullanilir; eslesme yoksa /urunler'e duser.
@@ -505,26 +514,21 @@ export default function AnaSayfaClient() {
             style={{ width: "100%", height: "auto", display: "block" }}
           />
         </Link>
+        {/* Açık mama ürün slaytı (8 dikey görsel, otomatik döner) — eski hızlı erişim kartlarının yerine */}
         <div className="hero-right">
-          <Link href="/urunler" style={{ background: "#E8845A", color: "white", borderRadius: 18, padding: "20px 28px", fontSize: 17, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, boxShadow: "0 10px 28px rgba(232,132,90,.32)", textDecoration: "none" }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}>
-            Alışverişe Başla
-            <span style={{ background: "rgba(255,255,255,.22)", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center" }}>→</span>
-          </Link>
-          <Link href="/kategori/kopek" style={{ borderRadius: 20, padding: "24px 26px", background: "linear-gradient(135deg,#C8DEC9,rgba(139,175,142,.33))", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none" }}>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, textTransform: "uppercase", marginBottom: 4 }}>🐶 Köpek Ürünleri</div>
-              <div style={{ fontFamily: "Georgia,serif", fontSize: 19, fontWeight: 700, color: "#5C3D2E" }}>Yeni sezon<br />köpek mamaları</div>
-            </div>
-            <div style={{ fontSize: 52, animation: "floatAnim 4s ease-in-out infinite" }}>🦴</div>
-          </Link>
-          <div style={{ borderRadius: 20, padding: "18px 20px", background: "#5C3D2E", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#F4C09A", textTransform: "uppercase", marginBottom: 3 }}>🚀 Ücretsiz Kargo</div>
-              <div style={{ fontFamily: "Georgia,serif", fontSize: 17, fontWeight: 700, color: "white" }}>1000₺ üzeri<br /><em style={{ color: "#F4C09A" }}>aynı gün teslimat</em></div>
-            </div>
-            <div style={{ fontSize: 40, animation: "floatAnim 5s ease-in-out infinite" }}>📦</div>
+          <div style={{ position: "relative", width: "100%", aspectRatio: "1054 / 1492", borderRadius: 20, overflow: "hidden", boxShadow: "0 10px 28px rgba(92,61,46,.18)", background: "#fff" }}>
+            {acikSlaytlar.map((src, i) => (
+              <Link key={src} href="/kategori/acik-mamalar" aria-label={`Açık mama ürünü ${i + 1} — açık mamalar kategorisine git`}
+                style={{ position: "absolute", inset: 0, opacity: i === aktifSlide ? 1 : 0, transition: "opacity .6s ease", pointerEvents: i === aktifSlide ? "auto" : "none" }}>
+                <Image src={src} alt={`Royal Canin açık mama ürün görseli ${i + 1}`} fill sizes="(max-width: 768px) 100vw, 380px" style={{ objectFit: "cover" }} priority={i === 0} />
+              </Link>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 12, flexWrap: "wrap" }}>
+            {acikSlaytlar.map((_, i) => (
+              <button key={i} onClick={() => setAktifSlide(i)} aria-label={`${i + 1}. slayta git`}
+                style={{ width: i === aktifSlide ? 22 : 7, height: 7, borderRadius: 4, border: "none", padding: 0, background: i === aktifSlide ? "#E8845A" : "#E8D5B7", cursor: "pointer", transition: "all .3s" }} />
+            ))}
           </div>
         </div>
       </div>
