@@ -5,15 +5,37 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { useCart } from "../../../context/CartContext";
+import { kategoriSeo } from "./seoIcerik";
+
+type Urun = {
+  id: number;
+  ad: string;
+  slug: string;
+  fiyat: number;
+  indirimli_fiyat?: number | null;
+  resim_url?: string | null;
+  stok?: number | null;
+  markalar?: { ad: string } | null;
+  kategoriler?: { ad?: string; slug?: string } | null;
+};
+type Kategori = {
+  id: number;
+  ad: string;
+  slug: string;
+  ust_kategori_id?: number | null;
+  sira?: number | null;
+  aktif?: boolean;
+};
 
 export default function KategoriClient() {
   const { slug } = useParams();
-  const [kategori, setKategori] = useState<any>(null);
-  const [altKategoriler, setAltKategoriler] = useState<any[]>([]);
-  const [tumKategoriler, setTumKategoriler] = useState<any[]>([]);
-  const [urunler, setUrunler] = useState<any[]>([]);
-  const [filtrelenmis, setFiltrelenmis] = useState<any[]>([]);
-  const [markalar, setMarkalar] = useState<any[]>([]);
+  const seo = typeof slug === "string" ? kategoriSeo[slug] : undefined;
+  const [kategori, setKategori] = useState<Kategori | null>(null);
+  const [altKategoriler, setAltKategoriler] = useState<Kategori[]>([]);
+  const [tumKategoriler, setTumKategoriler] = useState<Kategori[]>([]);
+  const [urunler, setUrunler] = useState<Urun[]>([]);
+  const [filtrelenmis, setFiltrelenmis] = useState<Urun[]>([]);
+  const [markalar, setMarkalar] = useState<string[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [seciliMarka, setSeciliMarka] = useState("");
   const [seciliAltKat, setSeciliAltKat] = useState("");
@@ -79,7 +101,7 @@ export default function KategoriClient() {
 
         setUrunler(urunData || []);
         setFiltrelenmis(urunData || []);
-        const markaSet = new Set(urunData?.map((u: any) => u.markalar?.ad).filter(Boolean));
+        const markaSet = new Set(urunData?.map((u: Urun) => u.markalar?.ad).filter(Boolean));
         setMarkalar(Array.from(markaSet) as string[]);
       } catch (err) {
         console.error("[kategori] veri yukleme hatasi:", err);
@@ -103,7 +125,7 @@ export default function KategoriClient() {
         return [s, ...altlar.flatMap(a => altSluglar(a.slug))];
       };
       const sluglar = altSluglar(seciliAltKat);
-      sonuc = sonuc.filter(u => sluglar.includes(u.kategoriler?.slug));
+      sonuc = sonuc.filter(u => sluglar.includes(u.kategoriler?.slug ?? ""));
     }
     if (siralama === "ucuz") sonuc.sort((a, b) => (a.indirimli_fiyat || a.fiyat) - (b.indirimli_fiyat || b.fiyat));
     if (siralama === "pahali") sonuc.sort((a, b) => (b.indirimli_fiyat || b.fiyat) - (a.indirimli_fiyat || a.fiyat));
@@ -112,8 +134,8 @@ export default function KategoriClient() {
     setSayfa(1);
   }, [seciliMarka, seciliAltKat, siralama, urunler, tumKategoriler]);
 
-  const handleEkle = (urun: any) => {
-    addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url });
+  const handleEkle = (urun: Urun) => {
+    addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url || undefined });
     setEklendi(urun.id);
     setTimeout(() => setEklendi(null), 1500);
   };
@@ -137,7 +159,7 @@ export default function KategoriClient() {
               const altlar = tumKategoriler.filter(a => a.ust_kategori_id === k.id);
               return [s, ...altlar.flatMap(a => altSluglar(a.slug))];
             };
-            const sayi = urunler.filter(u => altSluglar(alt.slug).includes(u.kategoriler?.slug)).length;
+            const sayi = urunler.filter(u => altSluglar(alt.slug).includes(u.kategoriler?.slug ?? "")).length;
             return (
               <div key={i} onClick={() => { setSeciliAltKat(alt.slug); setFiltrePanelAcik(false); }}
                 style={{ padding: "8px 12px", borderRadius: 10, cursor: "pointer", background: seciliAltKat === alt.slug ? "#FFF5F0" : "none", color: seciliAltKat === alt.slug ? "#E8845A" : "#5C3D2E", fontWeight: seciliAltKat === alt.slug ? 700 : 400, fontSize: 14, marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
@@ -297,7 +319,7 @@ export default function KategoriClient() {
                           <span style={{ background: "#5C3D2E", color: "white", fontSize: 10, fontWeight: 700, padding: "5px 10px", borderRadius: 50 }}>Stokta Yok</span>
                         </div>
                       )}
-                      {urun.stok > 0 && urun.stok <= 5 && (
+                      {urun.stok != null && urun.stok > 0 && urun.stok <= 5 && (
                         <span style={{ position: "absolute", top: 8, left: 8, background: "#E8845A", color: "white", fontSize: 9, fontWeight: 700, padding: "3px 7px", borderRadius: 50 }}>Son {urun.stok}!</span>
                       )}
                     </div>
@@ -341,6 +363,28 @@ export default function KategoriClient() {
           )}
         </div>
       </div>
+
+      {seo && (
+        <section style={{ maxWidth: 1400, margin: "0 auto", padding: "8px 24px 56px" }}>
+          <div style={{ background: "white", borderRadius: 20, padding: "32px 36px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
+            <h2 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#5C3D2E", marginBottom: 16 }}>{seo.h1} Hakkında</h2>
+            {seo.intro.map((p, i) => (
+              <p key={i} style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.82, lineHeight: 1.85, marginBottom: 14 }}>{p}</p>
+            ))}
+            {seo.faq.length > 0 && (
+              <>
+                <h3 style={{ fontFamily: "Georgia,serif", fontSize: 19, fontWeight: 700, color: "#5C3D2E", margin: "26px 0 14px" }}>Sıkça Sorulan Sorular</h3>
+                {seo.faq.map((f, i) => (
+                  <div key={i} style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#5C3D2E", marginBottom: 5 }}>{f.soru}</div>
+                    <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.78, lineHeight: 1.7, margin: 0 }}>{f.cevap}</p>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       <nav style={{ display: "none" }} className="mob-bottom">
         <style>{`.mob-bottom { display: none; } @media(max-width:768px){ .mob-bottom { display: grid !important; grid-template-columns: repeat(4,1fr); position: fixed; bottom: 0; left: 0; right: 0; z-index: 300; background: rgba(253,246,238,0.97); backdrop-filter: blur(14px); border-top: 1px solid rgba(92,61,46,.08); padding: 8px 0 20px; } }`}</style>

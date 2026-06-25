@@ -9,6 +9,7 @@
 
 import { supabase } from "../../../lib/supabase";
 import KategoriClient from "./KategoriClient";
+import { kategoriSeo } from "./seoIcerik";
 
 export const dynamic = "force-dynamic";
 
@@ -36,15 +37,15 @@ async function kategoriGetir(slug: string): Promise<Kategori | null> {
 async function altKategorilerVeUrunler(katId: Kategori["id"]): Promise<Urun[]> {
   const { data: seviye1 } = await supabase.from("kategoriler").select("id")
     .or(`id.eq.${katId},ust_kategori_id.eq.${katId}`);
-  const idler1: any[] = seviye1?.map((k: any) => k.id) || [katId];
+  const idler1: (number | string)[] = seviye1?.map((k: { id: number | string }) => k.id) || [katId];
 
   const { data: seviye2 } = await supabase.from("kategoriler").select("id")
     .in("ust_kategori_id", idler1);
-  const idler2: any[] = seviye2?.map((k: any) => k.id) || [];
+  const idler2: (number | string)[] = seviye2?.map((k: { id: number | string }) => k.id) || [];
 
   const { data: seviye3 } = await supabase.from("kategoriler").select("id")
     .in("ust_kategori_id", [...idler1, ...idler2]);
-  const idler3: any[] = seviye3?.map((k: any) => k.id) || [];
+  const idler3: (number | string)[] = seviye3?.map((k: { id: number | string }) => k.id) || [];
 
   const tumIdler = Array.from(new Set([...idler1, ...idler2, ...idler3]));
 
@@ -64,13 +65,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!kat) {
     return { title: "Kategori bulunamadı", robots: { index: false, follow: false } };
   }
-  const desc = `${kat.ad} kategorisindeki tüm ürünler — kedi, köpek, evcil hayvan ürünleri. evemama.net'te uygun fiyat ve hızlı kargo.`;
+  const seo = kategoriSeo[slug];
+  const desc = seo?.description ?? `${kat.ad} kategorisindeki tüm ürünler — kedi, köpek, evcil hayvan ürünleri. evemama.net'te uygun fiyat ve hızlı kargo.`;
   return {
-    title: `${kat.ad}`,
+    title: seo?.title ?? `${kat.ad}`,
     description: desc,
     alternates: { canonical: `/kategori/${kat.slug}` },
     openGraph: {
-      title: `${kat.ad} — evemama.net`,
+      title: seo?.title ?? `${kat.ad} — evemama.net`,
       description: desc,
       url: `/kategori/${kat.slug}`,
       type: "website",
@@ -130,10 +132,22 @@ export default async function KategoriPage({ params }: { params: Promise<{ slug:
     }),
   };
 
+  const seoIcerigi = kategoriSeo[slug];
+  const faqJsonLd = seoIcerigi?.faq?.length ? {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: seoIcerigi.faq.map(f => ({
+      "@type": "Question",
+      name: f.soru,
+      acceptedAnswer: { "@type": "Answer", text: f.cevap },
+    })),
+  } : null;
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
+      {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
       <KategoriClient />
     </>
   );
