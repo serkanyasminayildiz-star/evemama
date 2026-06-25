@@ -165,7 +165,7 @@ export async function GET() {
     <g:condition>new</g:condition>
     <g:image_link>${xmlEscape(duzeltResim(u.resim_url || ""))}</g:image_link>
     ${ekResimler}
-    <link>https://evemama.net/urun/${xmlEscape(u.slug)}</link>
+    <link>https://www.evemama.net/urun/${xmlEscape(u.slug)}</link>
     <g:product_type>${xmlEscape(u.kategoriler?.ad || "Evcil Hayvan")}</g:product_type>
     <g:brand>${xmlEscape(u.markalar?.ad || "evemama")}</g:brand>
     ${gtinEtiket}
@@ -177,7 +177,7 @@ export async function GET() {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:g="http://base.google.com/ns/1.0">
   <title>evemama.net Ürün Kataloğu</title>
-  <link>https://evemama.net</link>
+  <link>https://www.evemama.net</link>
   <updated>${new Date().toISOString()}</updated>
 ${entries}
 </feed>`;

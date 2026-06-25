@@ -135,7 +135,7 @@ export async function GET() {
     return `    <item>
       <g:id>${u.id}</g:id>
       <title>${title}</title>
-      <link>https://evemama.net/urun/${slug}</link>
+      <link>https://www.evemama.net/urun/${slug}</link>
       <description>${description}</description>
       <g:price>${normalFiyat.toFixed(2)} TRY</g:price>
       ${hasDiscount ? `<g:sale_price>${indirimli.toFixed(2)} TRY</g:sale_price>` : ""}
@@ -154,7 +154,7 @@ export async function GET() {
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
     <title>Evemama Ürün Kataloğu</title>
-    <link>https://evemama.net</link>
+    <link>https://www.evemama.net</link>
     <description>Evemama ürün feed - Cimri</description>
 ${items}
   </channel>
