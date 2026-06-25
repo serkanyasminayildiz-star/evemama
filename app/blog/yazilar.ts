@@ -254,6 +254,28 @@ export const blogYazilari: BlogYazi[] = [
       { etiket: "Kedi Özel Beslenme", href: "/kategori/kedi-ozel-beslenme" },
     ],
   },
+  {
+    id: 12,
+    slug: "acik-mama-guvenli-mi-rehberi",
+    kategori: "Beslenme",
+    emoji: "🥩",
+    renk: "linear-gradient(135deg,#FFE8D0,#E8845A)",
+    baslik: "Açık Mama Güvenli mi? Açık Mama Alırken Dikkat Edilmesi Gerekenler",
+    ozet: "Açık mama alırken 'sahte mi, bayat mı, SKT'si geçmiş mi?' diye tereddüt mü ediyorsunuz? Açık mama nedir, güvenli mi, orijinal nasıl anlaşılır ve alırken nelere dikkat etmeli — hepsi bu rehberde.",
+    icerik: [
+      { baslik: "Açık Mama Nedir?", metin: "Açık mama, büyük orijinal çuvallardan tartılarak istediğiniz kiloda (örneğin 1 kg) satın alabileceğiniz mamadır. Hazır poşet paketler yerine mamayı ihtiyacınız kadar almanızı sağlar. Özellikle Royal Canin gibi premium markaları küçük miktarda denemek ya da bütçeyi yormadan düzenli almak isteyenler için idealdir." },
+      { baslik: "Açık Mama Güvenli mi?", metin: "Açık mamanın kendisi güvensiz değildir; güvenliği tamamen satıcıya bağlıdır. Orijinal ürünün bölünmesiyle, hijyenik koşullarda ve taze şekilde hazırlanan açık mama tamamen güvenlidir. Risk; mamanın nereden geldiğinin ve ne zaman paketlendiğinin bilinmemesinden doğar. Bu yüzden açık mamayı orijinallik ve SKT garantisi veren, iade hakkı sunan satıcılardan almak şarttır." },
+      { baslik: "Orijinal Açık Mama Nasıl Anlaşılır?", metin: "Orijinal açık mamada tanenin rengi, kokusu ve boyutu markanın standardına uyar. Küflü, yağlanmış, tozlu veya kötü kokulu görünüm taklit ya da bayat ürüne işarettir. Satıcının hangi orijinal üründen böldüğünü açıkça belirtmesi, fatura kesmesi ve garanti/iade sunması en önemli güven işaretleridir." },
+      { baslik: "Son Kullanma Tarihi (SKT) Neden Önemli?", metin: "Mama zamanla yağlarını okside eder; SKT'si yakın veya geçmiş mama hem besin değerini kaybeder hem de sindirim sorunlarına yol açabilir. Açık mama alırken mutlaka son kullanma tarihini sorun. evemama.net'te gönderdiğimiz tüm açık mamalar minimum 2027 SKT'lidir; bayat ürün göndermeyiz." },
+      { baslik: "Açık Mama Alırken Dikkat Edilmesi Gerekenler", metin: "1) Satıcının orijinallik ve SKT garantisi verip vermediğini sorun. 2) Mamanın hangi markanın hangi ürünü olduğunu öğrenin (örn. Royal Canin Maxi Adult). 3) Taze ve hijyenik paketlendiğinden emin olun. 4) İade hakkı olup olmadığını kontrol edin. 5) Gerçekçi olmayan ucuz fiyatlara şüpheyle yaklaşın — orijinal ürünün belli bir maliyeti vardır." },
+      { baslik: "Açık Mama Kimler İçin Mantıklı?", metin: "Yeni bir markayı küçük miktarla denemek isteyenler, tek kedisi veya köpeği olup büyük çuvalı bitiremeyenler ve premium mamayı bütçe dostu şekilde almak isteyenler için açık mama idealdir. evemama.net'te Royal Canin açık kedi maması ve açık köpek maması çeşitlerini istediğiniz kiloda, %100 orijinal ve 14 gün şartsız iade güvencesiyle bulabilirsiniz." },
+    ],
+    urunLinkleri: [
+      { etiket: "Açık Mamalar", href: "/kategori/acik-mamalar" },
+      { etiket: "Açık Kedi Mamaları", href: "/kategori/acik-kedi-mamalari" },
+      { etiket: "Açık Köpek Mamaları", href: "/kategori/acik-kopek-mamalari" },
+    ],
+  },
 ];
 
 export function yaziBul(slug: string): BlogYazi | undefined {
