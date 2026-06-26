@@ -6,9 +6,9 @@ import "./globals.css";
 // Bu tek bir yerde tanimli — odeme/sonuc sayfasinda da gtag('event', 'conversion', ...) icin kullanilir.
 export const GOOGLE_ADS_ID = "AW-18167277898";
 // GA4 (analytics — huni + trafik kalitesi) + Microsoft Clarity (oturum kayıtları
-// + heatmap — ziyaretçinin ne yaptığını İZLE). Env set edilmezse YÜKLENMEZ.
-const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID;          // "G-XXXXXXXXXX"
-const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID;  // Clarity proje kimliği
+// + heatmap — ziyaretçinin ne yaptığını İZLE). Kimlik yoksa YÜKLENMEZ.
+const GA4_ID = "G-79X4BTDVC2";                          // GA4 ölçüm kimliği
+const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID;  // Clarity (gelince eklenecek)
 
 export const metadata = {
   title: { default: "evemama.net — Evcil Dostunuzun Dükkânı", template: "%s | evemama.net" },
