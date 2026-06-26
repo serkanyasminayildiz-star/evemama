@@ -224,6 +224,27 @@ export async function POST(req: NextRequest) {
       const emailEnc = encodeURIComponent(gecici?.email || "");
       return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarili&siparis=${siparisNo}&tutar=${data.paidPrice}&email=${emailEnc}`, { status: 303 });
     } else {
+      // BAŞARISIZ/YARIM ÖDEME — neden + tutar logla (gelir kaybı ölçümü).
+      // Best-effort: log hatası ödeme akışını/redirect'i ASLA bozmasın.
+      try {
+        const { data: gecici } = await supabase.from("odeme_gecici").select("*").eq("token", token).maybeSingle();
+        await supabaseAdmin.from("basarisiz_odemeler").insert({
+          token,
+          email: gecici?.email || null,
+          ad: gecici?.ad || null,
+          soyad: gecici?.soyad || null,
+          telefon: gecici?.telefon || null,
+          toplam: gecici?.toplam ?? data.price ?? null,
+          iyzico_status: data.status || null,
+          payment_status: data.paymentStatus || null,
+          error_code: data.errorCode != null ? String(data.errorCode) : null,
+          error_message: data.errorMessage || null,
+          urunler: gecici?.urunler ?? null,
+        });
+        console.log("[odeme/sonuc] basarisiz odeme loglandi:", { paymentStatus: data.paymentStatus, errorMessage: data.errorMessage, toplam: gecici?.toplam });
+      } catch (e) {
+        console.error("[odeme/sonuc] basarisiz odeme log hatasi:", e);
+      }
       return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz`, { status: 303 });
     }
   } catch (err) {

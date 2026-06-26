@@ -12,6 +12,7 @@ import Kategoriler from "./components/Kategoriler";
 import Blog from "./components/Blog";
 import Uyeler from "./components/Uyeler";
 import TerkEdilen from "./components/TerkEdilen";
+import BasarisizOdemeler from "./components/BasarisizOdemeler";
 
 const ADMIN_SIFRE = "evemama2025";
 const SAYFA_BOYUTU = 50;
@@ -646,6 +647,7 @@ export default function Admin() {
     { id: "stok", icon: "📉", ad: "Stok Takibi", badge: stokIstatistik.stok_yok + stokIstatistik.kritik },
     { id: "siparisler", icon: "🛒", ad: "Siparişler", badge: istatistikler.bekleyen_siparis },
     { id: "terk-edilen", icon: "🛍️", ad: "Terk Edilen Sepetler" },
+    { id: "basarisiz-odemeler", icon: "❌", ad: "Başarısız Ödemeler" },
     { id: "uyeler", icon: "👤", ad: "Üyeler" },
     { id: "kategoriler", icon: "📁", ad: "Kategoriler" },
     { id: "markalar", icon: "🏷️", ad: "Markalar" },
@@ -1652,6 +1654,10 @@ export default function Admin() {
 
         {aktifSayfa === "terk-edilen" && (
           <TerkEdilen kuponlar={kuponlar} goster={goster} />
+        )}
+
+        {aktifSayfa === "basarisiz-odemeler" && (
+          <BasarisizOdemeler />
         )}
 
         {/* ── BLOG SORULARI ────────────────────────────────────────────────── */}
