@@ -19,7 +19,7 @@ type UrunDetay = {
 
 export default function UrunDetayClient() {
   const { slug } = useParams();
-  const { addItem, totalPrice } = useCart();
+  const { addItem, totalPrice, totalItems } = useCart();
   const [urun, setUrun] = useState<UrunDetay | null>(null);
   const [benzerUrunler, setBenzerUrunler] = useState<UrunDetay[]>([]);
   const [yorumlar, setYorumlar] = useState<Yorum[]>([]);
@@ -174,7 +174,7 @@ export default function UrunDetayClient() {
         <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>
           evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span>
         </Link>
-        <Link href="/sepet" style={{ background: "#5C3D2E", color: "white", padding: "9px 18px", borderRadius: 50, textDecoration: "none", fontSize: 13, fontWeight: 700 }}>🛒 Sepet</Link>
+        <Link href="/sepet" style={{ background: "#5C3D2E", color: "white", padding: "9px 18px", borderRadius: 50, textDecoration: "none", fontSize: 13, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}>🛒 Sepet{totalItems > 0 && <span style={{ background: "#E8845A", borderRadius: 50, padding: "1px 7px", fontSize: 11 }}>{totalItems}</span>}</Link>
       </header>
 
       {/* Kargo Bildirimi */}
