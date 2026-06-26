@@ -5,6 +5,10 @@ import "./globals.css";
 // Google Ads conversion tracking Tag ID (AW-...).
 // Bu tek bir yerde tanimli — odeme/sonuc sayfasinda da gtag('event', 'conversion', ...) icin kullanilir.
 export const GOOGLE_ADS_ID = "AW-18167277898";
+// GA4 (analytics — huni + trafik kalitesi) + Microsoft Clarity (oturum kayıtları
+// + heatmap — ziyaretçinin ne yaptığını İZLE). Env set edilmezse YÜKLENMEZ.
+const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID;          // "G-XXXXXXXXXX"
+const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID;  // Clarity proje kimliği
 
 export const metadata = {
   title: { default: "evemama.net — Evcil Dostunuzun Dükkânı", template: "%s | evemama.net" },
@@ -40,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', '${GOOGLE_ADS_ID}');
+            ${GA4_ID ? `gtag('config', '${GA4_ID}');` : ""}
           `}
         </Script>
         {/* iyzico Alıcı Koruma rozeti — sayfanin sol altinda "Alici Koruma"
@@ -54,6 +59,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           src="https://static.iyzipay.com/buyer-protection/buyer-protection.js"
           strategy="afterInteractive"
         />
+        {/* Microsoft Clarity — oturum kayıtları + heatmap (ziyaretçi davranışı). */}
+        {CLARITY_ID && (
+          <Script id="ms-clarity" strategy="afterInteractive">
+            {`(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "${CLARITY_ID}");`}
+          </Script>
+        )}
         <CartProvider>{children}</CartProvider>
       </body>
     </html>
