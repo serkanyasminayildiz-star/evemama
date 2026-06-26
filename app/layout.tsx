@@ -8,7 +8,7 @@ export const GOOGLE_ADS_ID = "AW-18167277898";
 // GA4 (analytics — huni + trafik kalitesi) + Microsoft Clarity (oturum kayıtları
 // + heatmap — ziyaretçinin ne yaptığını İZLE). Kimlik yoksa YÜKLENMEZ.
 const GA4_ID = "G-79X4BTDVC2";                          // GA4 ölçüm kimliği
-const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID;  // Clarity (gelince eklenecek)
+const CLARITY_ID = "xd9ukngcay";                        // Clarity proje kimliği
 
 export const metadata = {
   title: { default: "evemama.net — Evcil Dostunuzun Dükkânı", template: "%s | evemama.net" },
