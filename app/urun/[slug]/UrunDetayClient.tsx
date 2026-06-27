@@ -324,7 +324,7 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
             <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "#3A5A3C", lineHeight: 1.5 }}>
               <div>✓ Resmi ithalatçı/distribütör — <strong>bandrollü ve faturalı</strong></div>
               <div>✓ {(urun.markalar?.ad || "").toLowerCase().includes("royal canin") ? "Royal Canin Up" : "Markanın resmi"} hologram + QR ile <strong>telefonunuzdan SİZ doğrularsınız</strong></div>
-              <div style={{ background: "white", border: "1.5px dashed #2E7D32", borderRadius: 10, padding: "10px 12px", fontWeight: 700, color: "#2E7D32" }}>🔒 Orijinal değilse ürün bedelinin <span style={{ fontSize: 15 }}>2 KATINI</span> iade ederiz</div>
+              <div style={{ background: "white", border: "1.5px dashed #2E7D32", borderRadius: 10, padding: "10px 12px", fontWeight: 700, color: "#2E7D32" }}>🔒 Teslimatta hologram + QR ile doğrulayın — sahte çıkarsa bedelin <span style={{ fontSize: 15 }}>2 KATINI</span> iade ederiz</div>
             </div>
             <Link href="/orijinallik-garantisi" style={{ display: "inline-block", marginTop: 10, color: "#2E7D32", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Sahteyi nasıl ayırt ederim — garanti detayı →</Link>
           </div>
