@@ -1,15 +1,63 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { supabase } from "../../lib/supabase";
 import { useCart } from "../../context/CartContext";
 
+// ---- Tipler (Supabase satır şekilleri; fiyat/stok runtime'da number — canlıda doğrulandı) ----
+type Urun = {
+  id: number;
+  ad: string;
+  slug: string;
+  fiyat: number;
+  indirimli_fiyat: number | null;
+  stok: number;
+  resim_url: string | null;
+  markalar: { ad: string } | null;
+  kategoriler: { ad: string; slug: string } | null;
+};
+type Kategori = { id: number; ad: string; slug: string; ust_kategori_id: number | null; sira: number | null };
+type Marka = { id: number; ad: string; slug: string };
+type FilterSelectOption = string | { value: string; label: string };
+
+// Ürün adındaki kg/gr bilgisinden paket boyutu filtresi (saf yardımcı — render dışına alındı).
+function kiloAralik(urunAd: string, secili: string) {
+  const kgMatch = urunAd.match(/(\d+[.,]?\d*)\s*[Kk][Gg]/);
+  const grMatch = urunAd.match(/(\d+[.,]?\d*)\s*[Gg][Rr]/);
+  let gram = 0;
+  if (kgMatch) gram = parseFloat(kgMatch[1].replace(',', '.')) * 1000;
+  else if (grMatch) gram = parseFloat(grMatch[1].replace(',', '.'));
+  if (gram === 0) return true;
+  if (secili === "500g altı") return gram < 500;
+  if (secili === "500g-1kg") return gram >= 500 && gram < 1000;
+  if (secili === "1kg-3kg") return gram >= 1000 && gram < 3000;
+  if (secili === "3kg-7kg") return gram >= 3000 && gram < 7000;
+  if (secili === "7kg-15kg") return gram >= 7000 && gram < 15000;
+  if (secili === "15kg üzeri") return gram >= 15000;
+  return true;
+}
+
+// Filtre dropdown'u (saf props — render dışı modül bileşeni; her render'da yeniden yaratılmaz).
+function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: FilterSelectOption[] }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 6 }}>{label}</div>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        style={{ width: "100%", padding: "9px 12px", border: `2px solid ${value ? "#E8845A" : "#E8D5B7"}`, borderRadius: 10, fontSize: 13, outline: "none", fontFamily: "inherit", background: "white", color: "#5C3D2E", cursor: "pointer" }}>
+        <option value="">Tümü</option>
+        {options.map((o, i) => (
+          <option key={i} value={typeof o === "string" ? o : o.value}>{typeof o === "string" ? o : o.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 export default function Urunler() {
-  const [urunler, setUrunler] = useState<any[]>([]);
-  const [filtrelenmis, setFiltrelenmis] = useState<any[]>([]);
-  const [kategoriler, setKategoriler] = useState<any[]>([]);
-  const [markalar, setMarkalar] = useState<any[]>([]);
+  const [urunler, setUrunler] = useState<Urun[]>([]);
+  const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
+  const [markalar, setMarkalar] = useState<Marka[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [seciliKategori, setSeciliKategori] = useState("");
   const [seciliMarka, setSeciliMarka] = useState("");
@@ -44,7 +92,6 @@ export default function Urunler() {
           setHata("Ürünler yüklenemedi. Sayfayı yenileyin.");
         }
         setUrunler(uResp.data || []);
-        setFiltrelenmis(uResp.data || []);
         setKategoriler(kResp.data || []);
         setMarkalar(mResp.data || []);
       })
@@ -55,23 +102,7 @@ export default function Urunler() {
       .finally(() => setYukleniyor(false));
   }, []);
 
-  const kiloAralik = (urunAd: string, secili: string) => {
-    const kgMatch = urunAd.match(/(\d+[.,]?\d*)\s*[Kk][Gg]/);
-    const grMatch = urunAd.match(/(\d+[.,]?\d*)\s*[Gg][Rr]/);
-    let gram = 0;
-    if (kgMatch) gram = parseFloat(kgMatch[1].replace(',', '.')) * 1000;
-    else if (grMatch) gram = parseFloat(grMatch[1].replace(',', '.'));
-    if (gram === 0) return true;
-    if (secili === "500g altı") return gram < 500;
-    if (secili === "500g-1kg") return gram >= 500 && gram < 1000;
-    if (secili === "1kg-3kg") return gram >= 1000 && gram < 3000;
-    if (secili === "3kg-7kg") return gram >= 3000 && gram < 7000;
-    if (secili === "7kg-15kg") return gram >= 7000 && gram < 15000;
-    if (secili === "15kg üzeri") return gram >= 15000;
-    return true;
-  };
-
-  useEffect(() => {
+  const filtrelenmis = useMemo(() => {
     let sonuc = [...urunler];
     if (aramaMetni) sonuc = sonuc.filter(u => u.ad.toLowerCase().includes(aramaMetni.toLowerCase()));
     if (seciliKategori) sonuc = sonuc.filter(u => u.kategoriler?.slug === seciliKategori);
@@ -86,12 +117,15 @@ export default function Urunler() {
     if (siralama === "pahali") sonuc.sort((a, b) => (b.indirimli_fiyat || b.fiyat) - (a.indirimli_fiyat || a.fiyat));
     if (siralama === "az") sonuc.sort((a, b) => a.ad.localeCompare(b.ad));
     if (siralama === "stok") sonuc.sort((a, b) => b.stok - a.stok);
-    setFiltrelenmis(sonuc);
-    setSayfa(1);
+    return sonuc;
   }, [aramaMetni, seciliKategori, seciliMarka, seciliYas, seciliOzellik, seciliKilo, minFiyat, maxFiyat, sadeceStoktaki, siralama, urunler]);
 
-  const handleEkle = (urun: any) => {
-    addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url });
+  // Filtre/sıralama değişince ilk sayfaya dön (UI senkronu — türetilmiş veri değil, useMemo'ya taşınamaz).
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setSayfa(1); }, [aramaMetni, seciliKategori, seciliMarka, seciliYas, seciliOzellik, seciliKilo, minFiyat, maxFiyat, sadeceStoktaki, siralama]);
+
+  const handleEkle = (urun: Urun) => {
+    addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url || undefined, slug: urun.slug });
     setEklendi(urun.id);
     setTimeout(() => setEklendi(null), 1500);
   };
@@ -107,26 +141,18 @@ export default function Urunler() {
   const sayfadakiUrunler = filtrelenmis.slice((sayfa - 1) * sayfaBasina, sayfa * sayfaBasina);
   const toplamSayfa = Math.ceil(filtrelenmis.length / sayfaBasina);
   const anaKategoriler = kategoriler.filter(k => !k.ust_kategori_id);
-  const altKategoriMap: { [key: number]: any[] } = {};
-  kategoriler.filter(k => k.ust_kategori_id).forEach(k => {
-    if (!altKategoriMap[k.ust_kategori_id]) altKategoriMap[k.ust_kategori_id] = [];
-    altKategoriMap[k.ust_kategori_id].push(k);
+  const altKategoriMap: { [key: number]: Kategori[] } = {};
+  kategoriler.forEach(k => {
+    const pid = k.ust_kategori_id;
+    if (!pid) return;                          // üst kategori (ust_kategori_id null/0) → atla
+    if (!altKategoriMap[pid]) altKategoriMap[pid] = [];
+    altKategoriMap[pid].push(k);
   });
 
-  const FilterSelect = ({ label, value, onChange, options }: any) => (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 6 }}>{label}</div>
-      <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ width: "100%", padding: "9px 12px", border: `2px solid ${value ? "#E8845A" : "#E8D5B7"}`, borderRadius: 10, fontSize: 13, outline: "none", fontFamily: "inherit", background: "white", color: "#5C3D2E", cursor: "pointer" }}>
-        <option value="">Tümü</option>
-        {options.map((o: any, i: number) => (
-          <option key={i} value={typeof o === "string" ? o : o.value}>{typeof o === "string" ? o : o.label}</option>
-        ))}
-      </select>
-    </div>
-  );
-
-  const FiltrePaneli = () => (
+  // Filtre paneli render YARDIMCISI (bileşen değil) — {renderFiltrePaneli()} ile çağrılır.
+  // <FiltrePaneli/> olsaydı her render'da yeni bileşen tipi olur, panel remount olur ve
+  // arama input'unun focus'u her tuş vuruşunda kaçardı. Fonksiyon çağrısı JSX'i inline eder.
+  const renderFiltrePaneli = () => (
     <div style={{ background: "white", borderRadius: 20, padding: "20px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E" }}>
@@ -220,7 +246,7 @@ export default function Urunler() {
               <div style={{ fontFamily: "Georgia,serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E" }}>Filtrele & Sırala</div>
               <button onClick={() => setFiltrePanelAcik(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#5C3D2E" }}>✕</button>
             </div>
-            <FiltrePaneli />
+            {renderFiltrePaneli()}
             <button onClick={() => setFiltrePanelAcik(false)}
               style={{ width: "100%", marginTop: 16, background: "#E8845A", color: "white", border: "none", borderRadius: 50, padding: "14px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
               Filtreleri Uygula ({filtrelenmis.length} ürün)
@@ -248,7 +274,7 @@ export default function Urunler() {
 
         {/* Sol: Filtreler — sadece desktop */}
         <div className="filtre-desktop">
-          <FiltrePaneli />
+          {renderFiltrePaneli()}
         </div>
 
         {/* Sağ: Ürünler */}
