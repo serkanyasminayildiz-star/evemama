@@ -105,6 +105,7 @@ export async function POST(req: NextRequest) {
         adres: gecici?.adres || "",
         sehir: gecici?.sehir || "",
         urunler: gecici?.urunler || null,
+        kumbara_tesekkur: gecici?.kumbara_tesekkur ?? false,
         created_at: new Date().toISOString(),
       });
 

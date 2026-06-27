@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim } from "../../lib/indirim";
 import { HAVALE_HESAP } from "../../lib/havale";
 import { TR_ILLER, IL_LISTESI } from "../../lib/tr-iller";
+import { tesekkurAdi } from "../../lib/kumbara";
 
 export default function Odeme() {
   const { items, totalPrice, clearCart } = useCart();
@@ -14,6 +15,7 @@ export default function Odeme() {
   const [sozlesme, setSozlesme] = useState(false);
   const [aydinlatma, setAydinlatma] = useState(false);
   const [hata, setHata] = useState("");
+  const [kumbaraTesekkur, setKumbaraTesekkur] = useState(false); // Pati Kumbarası teşekkür duvarı opt-in (KVKK: varsayılan kapalı)
   const [ilkSiparisIndirimi, setIlkSiparisIndirimi] = useState(false);
   const [uye, setUye] = useState(false);
   const [bonus, setBonus] = useState<{ tutar: number; min_sepet: number } | null>(null);
@@ -144,7 +146,7 @@ export default function Odeme() {
           "Content-Type": "application/json",
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.ilce ? `${form.address}, ${form.ilce}` : form.address, city: form.city }, kuponKodu: uygulananKupon?.kod || "", yontem: odemeYontemi }),
+        body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.ilce ? `${form.address}, ${form.ilce}` : form.address, city: form.city }, kuponKodu: uygulananKupon?.kod || "", yontem: odemeYontemi, kumbaraTesekkur }),
       });
       const data = await res.json();
       // Havale: sipariş "ödeme bekliyor" olarak oluştu → sepeti temizle, onay sayfasına git.
@@ -345,6 +347,19 @@ export default function Odeme() {
                 <span style={{ fontFamily: "Georgia, serif", fontSize: 17, fontWeight: 700, color: "#5C3D2E" }}>Toplam</span>
                 <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#E8845A" }}>₺{genelToplam.toFixed(2)}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Pati Kumbarası — teşekkür duvarı opt-in (KVKK: varsayılan KAPALI). %5 bağış
+              HER HALÜKARDA yapılır; bu kutu yalnız İSMİN duvarda görünmesi içindir. */}
+          <div onClick={() => setKumbaraTesekkur(v => !v)} style={{ display: "flex", alignItems: "flex-start", gap: 11, background: "#EFF9F0", border: "1.5px solid #BFE0C2", borderRadius: 16, padding: "14px 16px", marginBottom: 14, cursor: "pointer" }}>
+            <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${kumbaraTesekkur ? "#2E7D32" : "#A5C8A7"}`, background: kumbaraTesekkur ? "#2E7D32" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+              {kumbaraTesekkur && <span style={{ color: "white", fontSize: 13 }}>✓</span>}
+            </div>
+            <div style={{ fontSize: 13, color: "#2E7D32", lineHeight: 1.55 }}>
+              {"🐾 Bu alışverişin %5'i sokak ve barınak köpeklerine mama oluyor. İsmim "}
+              <strong>{tesekkurAdi(form.name, form.surname) || "(Ad S.)"}</strong>
+              {" Pati Kumbarası teşekkür duvarında görünsün."}
             </div>
           </div>
 
