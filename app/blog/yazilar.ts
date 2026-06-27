@@ -276,6 +276,29 @@ export const blogYazilari: BlogYazi[] = [
       { etiket: "Açık Köpek Mamaları", href: "/kategori/acik-kopek-mamalari" },
     ],
   },
+  {
+    id: 13,
+    slug: "sahte-royal-canin-nasil-anlasilir",
+    kategori: "Güvenli Alışveriş",
+    emoji: "🛡️",
+    renk: "linear-gradient(135deg,#E1F3E4,#8BAF8E)",
+    baslik: "Sahte Royal Canin Nasıl Anlaşılır? Orijinal Mamayı Ayırt Etmenin 6 Yolu",
+    ozet: "Piyasada orijinalin biraz altına satılan sahte/taklit mamalar dostunuzun sağlığını riske atar. Sahte Royal Canin nasıl anlaşılır, orijinal mamayı nasıl ayırt edersiniz ve neden 'en ucuz' her zaman en iyi değildir — bu rehberde.",
+    icerik: [
+      { baslik: "Neden Sahte Mama Tehlikeli?", metin: "Sahte ya da taklit mamalar ucuz görünür ama içeriği denetimsizdir: yanlış besin değerleri, bozuk veya son kullanma tarihi geçmiş hammadde, hatalı saklama. Bu da dostunuzda kusma, ishal, kilo kaybı, tüy dökülmesi, hatta uzun vadede böbrek ve karaciğer sorunlarına yol açabilir. Birkaç yüz lira 'tasarruf', veteriner faturası ve en kötüsü dostunuzun sağlığı olarak geri döner. İşte sahteyi orijinalden ayırmanın 6 somut yolu." },
+      { baslik: "1) Resmi İthalatçı Bandrolü Var mı?", metin: "Orijinal ürünlerde, resmi ithalatçının/distribütörün işletme kayıt numarasını içeren bandrol/etiket bulunur. Bu, ürünün yasal yollarla ithal edildiğini gösterir — kaçak ya da merdiven altı değil. Bandrolü olmayan, kaynağı belirsiz ürünlerden uzak durun." },
+      { baslik: "2) Hologram ve QR Doğrulaması (En Güçlü Kanıt)", metin: "Royal Canin ürünlerinde üreticinin kendi hologram + QR doğrulama etiketi vardır. Royal Canin Up uygulamasını indirip hologramı kaldırır ve QR kodu okutursanız, ürünün orijinal olup olmadığını saniyeler içinde üreticinin kendi sisteminden teyit edebilirsiniz. Bu, satıcının sözüne değil doğrudan markanın kendisine dayanan en güçlü kanıttır." },
+      { baslik: "3) Ambalaj ve Baskı Kalitesi", metin: "Orijinal ambalajda baskı nettir, renkler canlıdır, yazılar düzgündür. Silik, bulanık veya yamuk yazılar; yazım hataları; farklı yazı tipleri ve özensiz dikiş/yapıştırma taklit ürüne işarettir. Ambalajın sağlamlığına ve baskı kalitesine dikkat edin." },
+      { baslik: "4) Fiyat Çok mu Düşük?", metin: "Orijinal ürünün belli bir maliyeti vardır. Bir ürün piyasanın çok altındaysa bu bir 'fırsat' değil, uyarı işareti olabilir. Sahteciler tam da bu yüzden fiyatı düşük tutar. 'Neden bu kadar ucuz?' sorusunu mutlaka sorun — birkaç yüz liralık fark, dostunuzun sağlığına mal olmasın." },
+      { baslik: "5) Satıcı Fatura Veriyor mu?", metin: "Faturalı satış; ürünün kaynağının belli, izlenebilir ve garantili olduğunu gösterir. Fatura vermeyen satıcı, bir sorun çıktığında muhatap bulamayacağınız anlamına gelir. Her zaman faturalı satış yapan satıcıları tercih edin." },
+      { baslik: "6) Orijinallik Garantisi Var mı?", metin: "Güvenilir satıcı, orijinallik konusunda yazılı garanti verir. evemama.net'te tüm ürünler %100 orijinal, bandrollü ve faturalıdır; ürünü teslim alırken hologram + QR ile orijinalliğini kendiniz doğrulayabilirsiniz. Orijinal değilse ürün bedelinin 2 katını iade ediyoruz — çünkü ürünlerimizin gerçek olduğundan eminiz. Sahte satan hiçbir mağaza bu sözü veremez." },
+    ],
+    urunLinkleri: [
+      { etiket: "Orijinallik Garantisi", href: "/orijinallik-garantisi" },
+      { etiket: "Tüm Ürünler", href: "/urunler" },
+      { etiket: "Royal Canin Açık Mama", href: "/kategori/acik-mamalar" },
+    ],
+  },
 ];
 
 export function yaziBul(slug: string): BlogYazi | undefined {

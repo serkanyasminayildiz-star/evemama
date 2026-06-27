@@ -517,6 +517,24 @@ export default function AnaSayfaClient() {
         </div>
       </div>
 
+      {/* GÜVEN ŞERİDİ — orijinallik anasayfada erken; fiyat-karşılaştıran kitleye ilk mesaj */}
+      <Link href="/orijinallik-garantisi" style={{ display: "block", textDecoration: "none" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 14px 8px" }}>
+          <div style={{ background: "linear-gradient(135deg,#F0FAF1,#E1F3E4)", border: "1.5px solid #8BAF8E", borderRadius: 18, padding: "15px 18px", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "14px 26px" }}>
+            {[
+              ["🛡️", "%100 Orijinal & Bandrollü"],
+              ["🔐", "Telefonunuzdan Doğrulayın"],
+              ["💰", "Sahteyse 2 Katı İade"],
+              ["🚚", "Aynı Gün Kargo"],
+            ].map(([icon, t], i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: "#2E7D32" }}>
+                <span style={{ fontSize: 18 }}>{icon}</span><span>{t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Link>
+
       {/* KATEGORİLER */}
       <div className="kat-section" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px 52px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
@@ -709,7 +727,7 @@ export default function AnaSayfaClient() {
               </p>
             </div>
             {[
-              { title: "Hızlı Linkler", links: [{ ad: "Hakkımızda", href: "/hakkimizda" }, { ad: "Tüm Ürünler", href: "/urunler" }, { ad: "Açık Mama", href: "/kategori/acik-mamalar" }, { ad: "Kampanyalar", href: "/kampanyalar" }, { ad: "Blog", href: "/blog" }, { ad: "İletişim", href: "/iletisim" }] },
+              { title: "Hızlı Linkler", links: [{ ad: "Hakkımızda", href: "/hakkimizda" }, { ad: "Tüm Ürünler", href: "/urunler" }, { ad: "Açık Mama", href: "/kategori/acik-mamalar" }, { ad: "Orijinallik Garantisi", href: "/orijinallik-garantisi" }, { ad: "Kampanyalar", href: "/kampanyalar" }, { ad: "Blog", href: "/blog" }, { ad: "İletişim", href: "/iletisim" }] },
               { title: "Kategoriler", links: kategoriler.slice(0, 4).map(k => ({ ad: k.ad, href: `/kategori/${k.slug}` })) },
               { title: "Yardım & Destek", links: [{ ad: "Sıkça Sorulan Sorular", href: "/sikca-sorulan-sorular" }, { ad: "İade & Değişim", href: "/iade" }, { ad: "Kargo & Teslimat", href: "/kargo" }, { ad: "İletişim", href: "/iletisim" }] },
               { title: "Yasal", links: [{ ad: "Kullanım Koşulları", href: "/kullanim-kosullari" }, { ad: "Gizlilik Politikası", href: "/gizlilik" }, { ad: "KVKK Aydınlatma", href: "/kvkk" }, { ad: "Çerez Politikası", href: "/cerez-politikasi" }, { ad: "Mesafeli Satış", href: "/mesafeli-satis" }] },
