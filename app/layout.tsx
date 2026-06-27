@@ -48,13 +48,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             ${GA4_ID ? `gtag('config', '${GA4_ID}');` : ""}
           `}
         </Script>
-        {/* iyzico Alıcı Koruma rozeti — sayfanin sol altinda "Alici Koruma"
-            badge'i gosterir. Iyzico ile guvenli odeme yapildigini belirten
-            guven sinyali; cevirim oranina pozitif etkisi olur.
-            iyz config script'inin buyer-protection.js'ten ONCE yuklenmesi
-            gerekiyor — beforeInteractive bunu garanti eder. */}
+        {/* iyzico Alıcı Koruma rozeti — sol altta "Alici Koruma" guven seali.
+            pwi:false => "iyzico ile Ode" (Pay With Iyzico) CTA'si KAPALI:
+            tek odeme yontemi zaten iyzico (gereksiz), mobilde alt navigasyonu
+            kapatiyordu ve tiklanabilir gorunup tiklanmiyordu. Bu rozet gercek
+            odeme akisini ETKILEMEZ (odeme CheckoutForm/api ile yapilir).
+            iyz config buyer-protection.js'ten ONCE yuklenmeli — beforeInteractive. */}
         <Script id="iyzico-config" strategy="beforeInteractive">
-          {`window.iyz = { token: '94870e88-8639-4167-8044-2defb3b45ded', position: 'bottomLeft', ideaSoft: false, pwi: true };`}
+          {`window.iyz = { token: '94870e88-8639-4167-8044-2defb3b45ded', position: 'bottomLeft', ideaSoft: false, pwi: false };`}
         </Script>
         <Script
           src="https://static.iyzipay.com/buyer-protection/buyer-protection.js"
