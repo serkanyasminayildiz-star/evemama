@@ -526,7 +526,7 @@ export default function AnaSayfaClient() {
               ["🛡️", "%100 Orijinal & Bandrollü"],
               ["🔐", "Telefonunuzdan Doğrulayın"],
               ["💰", "Sahteyse 2 Katı İade"],
-              ["🚚", "Aynı Gün Kargo"],
+              ["🚚", "12:00'a kadar Aynı Gün Kargo"],
             ].map(([icon, t], i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: "#2E7D32" }}>
                 <span style={{ fontSize: 18 }}>{icon}</span><span>{t}</span>
@@ -668,7 +668,7 @@ export default function AnaSayfaClient() {
       <div className="trust-section" style={{ background: "#5C3D2E", padding: "36px 48px" }}>
         <div className="trust-grid">
           {[
-            { icon: "🚀", title: "Aynı Gün Kargo", sub: "Saat 14:00'a kadar siparişlerde" },
+            { icon: "🚀", title: "Aynı Gün Kargo", sub: "Saat 12:00'a kadar siparişlerde" },
             { icon: "✅", title: "%100 Orijinal Ürün", sub: "Yetkili distribütörden temin" },
             { icon: "🔒", title: "Güvenli Ödeme", sub: "SSL & 3D Secure korumalı" },
             { icon: "💬", title: "7/24 Destek", sub: "WhatsApp & e-posta" },

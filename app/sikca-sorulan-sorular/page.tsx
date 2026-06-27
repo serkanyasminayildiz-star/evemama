@@ -25,7 +25,7 @@ const sorular = [
     { soru: "Kargo ücreti ne kadar?", cevap: "1000₺ ve üzeri siparişlerde kargo ücretsizdir. 1000₺ altındaki siparişlerde kargo ücreti sepet sayfasında gösterilir." },
     { soru: "Teslimat adresimi nasıl değiştiririm?", cevap: "Sipariş henüz kargoya verilmemişse, müşteri hizmetlerimizi arayarak adres değişikliği talep edebilirsiniz." },
     { soru: "Siparişim henüz gelmedi. Ne yapmalıyım?", cevap: "Tahmini teslimat süresi geçmişse MNG Kargo takip numaranızla durumu sorgulayabilir veya müşteri hizmetlerimizle iletişime geçebilirsiniz." },
-    { soru: "Kargom kaç günde gelir?", cevap: "Saat 14:00'a kadar verilen siparişler aynı gün kargoya verilir. Teslimat süresi genellikle 1-3 iş günüdür." },
+    { soru: "Kargom kaç günde gelir?", cevap: "Saat 12:00'a kadar verilen siparişler aynı gün kargoya verilir. Teslimat süresi genellikle 1-3 iş günüdür." },
   ]},
   { kategori: "Ücretler & Faturalandırma", items: [
     { soru: "Satın aldığım ürünün faturası ne zaman kesilir?", cevap: "Fatura, siparişiniz kargoya verildiğinde e-posta adresinize gönderilir ve ürünle birlikte paket içinde de yer alır." },
