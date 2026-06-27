@@ -128,7 +128,7 @@ export default function Odeme() {
   const kazanilacakBonus = genelToplam >= SADAKAT.KAZAN_ESIK_2 ? SADAKAT.KAZAN_2 : genelToplam >= SADAKAT.KAZAN_ESIK_1 ? SADAKAT.KAZAN_1 : 0;
 
   const handleOde = async () => {
-    if (!sozlesme || !aydinlatma) { setHata("Lütfen sözleşmeleri kabul edin."); return; }
+    if (!sozlesme || !aydinlatma) { setHata("Lütfen yukarıdaki sözleşme onay kutularını işaretleyin."); return; }
     if (!form.name || !form.surname || !form.email || !form.address || !form.city) { setHata("Lütfen tüm zorunlu alanları doldurun."); return; }
     setHata("");
     setYukleniyor(true);
@@ -261,30 +261,6 @@ export default function Odeme() {
             )}
           </div>
 
-          <div style={{ background: "white", borderRadius: 20, padding: "24px", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
-            <div style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E", marginBottom: 16 }}>📋 Sözleşmeler</div>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
-              <input type="checkbox" checked={sozlesme} onChange={e => setSozlesme(e.target.checked)}
-                style={{ width: 18, height: 18, marginTop: 2, accentColor: "#E8845A", flexShrink: 0, cursor: "pointer" }} />
-              <span style={{ fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
-                <Link href="/mesafeli-satis" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Mesafeli Satış Sözleşmesi</Link>&apos;ni ve{" "}
-                <Link href="/kullanim-kosullari" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Ön Bilgilendirme Formu</Link>&apos;nu okudum, onaylıyorum. <span style={{ color: "red" }}>*</span>
-              </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-              <input type="checkbox" checked={aydinlatma} onChange={e => setAydinlatma(e.target.checked)}
-                style={{ width: 18, height: 18, marginTop: 2, accentColor: "#E8845A", flexShrink: 0, cursor: "pointer" }} />
-              <span style={{ fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
-                <Link href="/kvkk" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>KVKK Aydınlatma Metni</Link>&apos;ni okudum,{" "}
-                <Link href="/gizlilik" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Gizlilik Politikası</Link>&apos;nı kabul ediyorum. <span style={{ color: "red" }}>*</span>
-              </span>
-            </div>
-            {hata && (
-              <div style={{ background: "#FFEBEE", color: "#C62828", padding: "10px 14px", borderRadius: 10, marginTop: 14, fontSize: 13 }}>
-                ❌ {hata}
-              </div>
-            )}
-          </div>
         </div>
 
         <div className="ozet-sticky">
@@ -364,8 +340,35 @@ export default function Odeme() {
             </div>
           </div>
 
-          <button onClick={handleOde} disabled={yukleniyor || !sozlesme || !aydinlatma}
-            style={{ width: "100%", background: (!sozlesme || !aydinlatma) ? "#ccc" : "#E8845A", color: "white", border: "none", borderRadius: 16, padding: "16px", fontSize: 16, fontWeight: 700, cursor: (!sozlesme || !aydinlatma) ? "not-allowed" : "pointer", fontFamily: "inherit", boxShadow: "0 8px 20px rgba(232,132,90,0.3)", transition: "all .2s" }}>
+          {/* Sözleşmeler — butonun HEMEN ÜSTÜNDE (müşteri görmeden basıp takılmasın) */}
+          <div style={{ background: "white", borderRadius: 20, padding: "20px 24px", marginBottom: 14, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E", marginBottom: 16 }}>📋 Sözleşmeler</div>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+              <input type="checkbox" checked={sozlesme} onChange={e => setSozlesme(e.target.checked)}
+                style={{ width: 18, height: 18, marginTop: 2, accentColor: "#E8845A", flexShrink: 0, cursor: "pointer" }} />
+              <span style={{ fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
+                <Link href="/mesafeli-satis" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Mesafeli Satış Sözleşmesi</Link>&apos;ni ve{" "}
+                <Link href="/kullanim-kosullari" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Ön Bilgilendirme Formu</Link>&apos;nu okudum, onaylıyorum. <span style={{ color: "red" }}>*</span>
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <input type="checkbox" checked={aydinlatma} onChange={e => setAydinlatma(e.target.checked)}
+                style={{ width: 18, height: 18, marginTop: 2, accentColor: "#E8845A", flexShrink: 0, cursor: "pointer" }} />
+              <span style={{ fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
+                <Link href="/kvkk" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>KVKK Aydınlatma Metni</Link>&apos;ni okudum,{" "}
+                <Link href="/gizlilik" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Gizlilik Politikası</Link>&apos;nı kabul ediyorum. <span style={{ color: "red" }}>*</span>
+              </span>
+            </div>
+            {hata && (
+              <div style={{ background: "#FFEBEE", color: "#C62828", padding: "10px 14px", borderRadius: 10, marginTop: 14, fontSize: 13, fontWeight: 600 }}>
+                ❌ {hata}
+              </div>
+            )}
+          </div>
+
+          {/* Buton artık DEVRE DIŞI değil — kutular işaretsizse tıklayınca handleOde uyarı verir */}
+          <button onClick={handleOde} disabled={yukleniyor}
+            style={{ width: "100%", background: "#E8845A", color: "white", border: "none", borderRadius: 16, padding: "16px", fontSize: 16, fontWeight: 700, cursor: yukleniyor ? "not-allowed" : "pointer", fontFamily: "inherit", boxShadow: "0 8px 20px rgba(232,132,90,0.3)", transition: "all .2s", opacity: yukleniyor ? 0.7 : 1 }}>
             {yukleniyor ? "Yükleniyor..." : odemeYontemi === "havale" ? "Siparişi Tamamla 🏦" : "Ödemeye Geç 🔒"}
           </button>
 
