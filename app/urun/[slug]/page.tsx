@@ -11,7 +11,7 @@
 
 import { notFound } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
-import UrunDetayClient from "./UrunDetayClient";
+import UrunDetayClient, { type UrunDetay } from "./UrunDetayClient";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +32,7 @@ type UrunRow = {
 async function urunGetir(slug: string): Promise<UrunRow | null> {
   const { data } = await supabase
     .from("urunler")
-    .select("id, ad, slug, aktif, fiyat, indirimli_fiyat, stok, kisa_aciklama, resim_url, markalar(ad), kategoriler(ad, slug)")
+    .select("*, markalar(ad), kategoriler(ad, slug)")
     .eq("slug", slug)
     .single();
   return (data as unknown as UrunRow) || null;
@@ -179,7 +179,10 @@ export default async function UrunPage({ params }: { params: Promise<{ slug: str
   return (
     <>
       {jsonLdScript}
-      <UrunDetayClient />
+      {/* Server'da çekilen ürünü client'a ver → ürün ANINDA HTML'de gelir (hızlı
+          LCP, mobil reklam-bounce'u düşürür). Şekil UrunRow≈UrunDetay (runtime'da
+          tüm alanlar `*` ile geldi); sınır cast'i güvenli. */}
+      <UrunDetayClient key={urun.slug} initialUrun={urun as unknown as UrunDetay} />
     </>
   );
 }

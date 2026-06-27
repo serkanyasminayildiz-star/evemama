@@ -7,7 +7,7 @@ import { supabase } from "../../../lib/supabase";
 import { useCart } from "../../../context/CartContext";
 
 type Yorum = { id: number; ad: string; puan: number; yorum: string; tarih: string; dogrulanmis?: boolean };
-type UrunDetay = {
+export type UrunDetay = {
   id: number; ad: string; slug: string;
   fiyat: number; indirimli_fiyat?: number | null;
   stok: number; resim_url?: string | null; resimler?: string[] | null;
@@ -17,13 +17,15 @@ type UrunDetay = {
   kategoriler?: { ad: string; slug: string } | null;
 };
 
-export default function UrunDetayClient() {
+export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: UrunDetay | null }) {
   const { slug } = useParams();
   const { addItem, totalPrice, totalItems } = useCart();
-  const [urun, setUrun] = useState<UrunDetay | null>(null);
+  // initialUrun: server'da çekilip prop ile gelen ürün → anında render (hızlı LCP).
+  // Yoksa (client-side gezinme) null başlar, aşağıdaki effect client'tan çeker.
+  const [urun, setUrun] = useState<UrunDetay | null>(initialUrun);
   const [benzerUrunler, setBenzerUrunler] = useState<UrunDetay[]>([]);
   const [yorumlar, setYorumlar] = useState<Yorum[]>([]);
-  const [yukleniyor, setYukleniyor] = useState(true);
+  const [yukleniyor, setYukleniyor] = useState(!initialUrun);
   const [eklendi, setEklendi] = useState(false);
   const [adet, setAdet] = useState(1);
   const [seciliResim, setSeciliResim] = useState<string | null>(null); // galeri: tıklanan küçük resim
@@ -38,26 +40,34 @@ export default function UrunDetayClient() {
 
   useEffect(() => {
     if (!slug) return;
-    supabase.from("urunler").select("*, kategoriler(ad, slug), markalar(ad)").eq("slug", slug).single()
+    const slugStr = Array.isArray(slug) ? slug[0] : slug;
+    // "Benzer Ürünler" yerine ÖNE ÇIKAN (oncelikli) ürünler — ana ürün hangi
+    // yoldan gelirse gelsin (server prop / client fetch) bunlar lazım.
+    const cekOneCikanlar = () => {
+      supabase.from("urunler").select("id, ad, slug, fiyat, indirimli_fiyat, resim_url, stok").eq("oncelikli", true).neq("slug", slugStr).neq("aktif", false).gt("stok", 0).limit(4)
+        .then(({ data: benzer, error: bErr }) => {
+          if (bErr) console.error("[urun-detay] one cikan urunler:", bErr);
+          setBenzerUrunler(benzer || []);
+        });
+    };
+    // Server initialUrun'u verdiyse (bu slug'a ait) → ana ürün ZATEN render
+    // edildi (hızlı LCP, reklam-bounce'u düşürür). Tekrar çekme; sadece öne
+    // çıkanları çek. YEDEK: initialUrun yoksa eski client-fetch akışı çalışır.
+    if (initialUrun && initialUrun.slug === slugStr) {
+      cekOneCikanlar();
+      return;
+    }
+    // Fallback (initialUrun yok): yukleniyor zaten useState(!initialUrun)=true ile
+    // başladı + key={slug} her üründe remount ettiği için ayrıca set'e gerek yok.
+    supabase.from("urunler").select("*, kategoriler(ad, slug), markalar(ad)").eq("slug", slugStr).single()
       .then(({ data, error }) => {
-        if (error) {
-          console.error("[urun-detay] fetch:", error);
-          // urun null kalir, asagidaki "Urun bulunamadi" ekranina dusulur.
-        }
+        if (error) console.error("[urun-detay] fetch:", error); // urun null kalir → "Urun bulunamadi"
         setUrun(data);
         setSeciliResim(null); // yeni ürün yüklendi → galeri seçimini sıfırla
         setYukleniyor(false);
-        if (data) {
-          // "Benzer Ürünler" yerine ÖNE ÇIKAN (oncelikli) ürünler gösterilir —
-          // her ürün sayfasında küratörlü öne çıkan ürünler (kategori bağımsız).
-          supabase.from("urunler").select("id, ad, slug, fiyat, indirimli_fiyat, resim_url, stok").eq("oncelikli", true).neq("slug", slug).neq("aktif", false).gt("stok", 0).limit(4)
-            .then(({ data: benzer, error: bErr }) => {
-              if (bErr) console.error("[urun-detay] one cikan urunler:", bErr);
-              setBenzerUrunler(benzer || []);
-            });
-        }
+        if (data) cekOneCikanlar();
       });
-  }, [slug]);
+  }, [slug, initialUrun]);
 
   // Üye mi + bu ürüne abone mi? (Abone Ol arayüzü için)
   useEffect(() => {
