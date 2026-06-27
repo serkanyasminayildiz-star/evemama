@@ -5,6 +5,7 @@ import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
 import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim } from "../../lib/indirim";
 import { HAVALE_HESAP } from "../../lib/havale";
+import { TR_ILLER, IL_LISTESI } from "../../lib/tr-iller";
 
 export default function Odeme() {
   const { items, totalPrice, clearCart } = useCart();
@@ -22,7 +23,7 @@ export default function Odeme() {
   const [kuponYukleniyor, setKuponYukleniyor] = useState(false);
   const [form, setForm] = useState({
     name: "", surname: "", email: "",
-    phone: "", address: "", city: ""
+    phone: "", address: "", city: "", ilce: ""
   });
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -129,7 +130,7 @@ export default function Odeme() {
 
   const handleOde = async () => {
     if (!sozlesme || !aydinlatma) { setHata("Lütfen yukarıdaki sözleşme onay kutularını işaretleyin."); return; }
-    if (!form.name || !form.surname || !form.email || !form.address || !form.city) { setHata("Lütfen tüm zorunlu alanları doldurun."); return; }
+    if (!form.name || !form.surname || !form.email || !form.address || !form.city || !form.ilce) { setHata("Lütfen tüm zorunlu alanları doldurun (il ve ilçe dahil)."); return; }
     setHata("");
     setYukleniyor(true);
     try {
@@ -143,7 +144,7 @@ export default function Odeme() {
           "Content-Type": "application/json",
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.address, city: form.city }, kuponKodu: uygulananKupon?.kod || "", yontem: odemeYontemi }),
+        body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.ilce ? `${form.address}, ${form.ilce}` : form.address, city: form.city }, kuponKodu: uygulananKupon?.kod || "", yontem: odemeYontemi }),
       });
       const data = await res.json();
       // Havale: sipariş "ödeme bekliyor" olarak oluştu → sepeti temizle, onay sayfasına git.
@@ -219,7 +220,14 @@ export default function Odeme() {
             <input name="email" type="email" placeholder="E-posta *" value={form.email} onChange={handleChange} style={inputStyle} />
             <input name="phone" placeholder="Telefon" value={form.phone} onChange={handleChange} style={inputStyle} />
             <input name="address" placeholder="Adres *" value={form.address} onChange={handleChange} style={inputStyle} />
-            <input name="city" placeholder="Şehir *" value={form.city} onChange={handleChange} style={{ ...inputStyle, marginBottom: 0 }} />
+            <select name="city" value={form.city} onChange={e => setForm({ ...form, city: e.target.value, ilce: "" })} style={{ ...inputStyle, cursor: "pointer" }}>
+              <option value="">İl seçin *</option>
+              {IL_LISTESI.map(il => <option key={il} value={il}>{il}</option>)}
+            </select>
+            <select name="ilce" value={form.ilce} onChange={handleChange} disabled={!form.city} style={{ ...inputStyle, marginBottom: 0, cursor: form.city ? "pointer" : "not-allowed", opacity: form.city ? 1 : 0.55 }}>
+              <option value="">{form.city ? "İlçe seçin *" : "Önce il seçin"}</option>
+              {(form.city ? TR_ILLER[form.city] || [] : []).map(ilce => <option key={ilce} value={ilce}>{ilce}</option>)}
+            </select>
           </div>
 
           <div style={{ background: "white", borderRadius: 20, padding: "24px", marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
