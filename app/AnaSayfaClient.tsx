@@ -5,6 +5,7 @@ import Image from "next/image";
 import { supabase } from "../lib/supabase";
 import { useCart } from "../context/CartContext";
 import type { User } from "@supabase/supabase-js";
+import KumbaraWidget from "./components/KumbaraWidget";
 
 // Supabase satır tipleri (ana sayfa). numeric kolonlar (fiyat/indirimli_fiyat) string döner.
 type Urun = {
@@ -534,6 +535,9 @@ export default function AnaSayfaClient() {
           </div>
         </div>
       </Link>
+
+      {/* PATİ KUMBARASI — sosyal proje: her alışverişin %5'i barınak/sokak köpeklerine mama */}
+      <KumbaraWidget />
 
       {/* KATEGORİLER */}
       <div className="kat-section" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px 52px" }}>
