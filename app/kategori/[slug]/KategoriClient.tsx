@@ -135,7 +135,7 @@ export default function KategoriClient() {
   }, [seciliMarka, seciliAltKat, siralama, urunler, tumKategoriler]);
 
   const handleEkle = (urun: Urun) => {
-    addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url || undefined });
+    addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url || undefined, slug: urun.slug });
     setEklendi(urun.id);
     setTimeout(() => setEklendi(null), 1500);
   };

@@ -8,6 +8,7 @@ interface CartItem {
   emoji: string;
   quantity: number;
   resim_url?: string;
+  slug?: string;        // ürün sayfası linki için (sepet/ödeme özetinde tıklanabilir ad)
 }
 interface CartContextType {
   items: CartItem[];
@@ -25,7 +26,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [yuklendi, setYuklendi] = useState(false);
 
-  // Sayfa açılınca localStorage'dan yükle
+  // Sayfa açılınca localStorage'dan yükle.
+  // localStorage bir dış sistem ve SSR'da YOK → boş state ile başlayıp mount'tan
+  // SONRA yüklüyoruz (server/client hydration mismatch'ini önler). Buradaki
+  // set-state-in-effect KASITLI ve doğru desen, o yüzden bu effect'te kapatıyoruz.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
       const kayitli = localStorage.getItem("evemama_sepet");
@@ -33,6 +38,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
     setYuklendi(true);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Her değişiklikte localStorage'a kaydet
   useEffect(() => {

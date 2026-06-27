@@ -264,7 +264,7 @@ export default function Sepet() {
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: "Georgia, serif", fontSize: 13, fontWeight: 700, color: "#5C3D2E", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 13, fontWeight: 700, color: "#5C3D2E", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.slug ? <Link href={`/urun/${item.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{item.name}</Link> : item.name}</div>
                 <div style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 700, color: "#E8845A" }}>₺{item.price}</div>
               </div>
 

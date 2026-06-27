@@ -200,7 +200,7 @@ export default function AnaSayfaClient() {
   })();
 
   const handleEkle = (urun: Urun) => {
-    addItem({ id: urun.id, name: urun.ad, price: parseFloat(urun.indirimli_fiyat || urun.fiyat) || 0, emoji: "🐾", resim_url: urun.resim_url || undefined });
+    addItem({ id: urun.id, name: urun.ad, price: parseFloat(urun.indirimli_fiyat || urun.fiyat) || 0, emoji: "🐾", resim_url: urun.resim_url || undefined, slug: urun.slug });
     setEklendi(urun.id);
     setTimeout(() => setEklendi(null), 1500);
   };

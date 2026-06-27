@@ -268,7 +268,7 @@ export default function Odeme() {
             <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 16 }}>🧾 Sipariş Özeti</div>
             {items.map(item => (
               <div key={item.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 13, color: "#5C3D2E" }}>
-                <span style={{ flex: 1, paddingRight: 8 }}>{item.name.substring(0, 30)}{item.name.length > 30 ? "..." : ""} <span style={{ opacity: 0.5 }}>x{item.quantity}</span></span>
+                <span style={{ flex: 1, paddingRight: 8 }}>{item.slug ? <Link href={`/urun/${item.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{item.name.substring(0, 30)}{item.name.length > 30 ? "..." : ""}</Link> : <>{item.name.substring(0, 30)}{item.name.length > 30 ? "..." : ""}</>} <span style={{ opacity: 0.5 }}>x{item.quantity}</span></span>
                 <span style={{ fontWeight: 700, flexShrink: 0 }}>₺{(item.price * item.quantity).toFixed(2)}</span>
               </div>
             ))}

@@ -97,7 +97,7 @@ export default function UrunDetayClient() {
   const handleSepet = () => {
     if (!urun) return;
     for (let i = 0; i < adet; i++) {
-      addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url || undefined });
+      addItem({ id: urun.id, name: urun.ad, price: urun.indirimli_fiyat || urun.fiyat, emoji: "🐾", resim_url: urun.resim_url || undefined, slug: typeof slug === "string" ? slug : undefined });
     }
     setEklendi(true);
     setTimeout(() => setEklendi(false), 2500);
