@@ -49,6 +49,11 @@ export default function KumbaraIcerik() {
             : <div style={{ fontSize: 14, opacity: 0.92, marginTop: 10 }}>{"İlk alışverişle ilk katkı senin olabilir 🐾"}</div>}
         </div>
 
+        {/* Haftalık döngü — şeffaflık (sıfırlama pazar dağıtımına bağlı) */}
+        <div style={{ background: "white", border: "1px solid #E8D5B7", borderRadius: 14, padding: "12px 18px", marginBottom: 18, fontSize: 13, color: "#5C3D2E", lineHeight: 1.6, textAlign: "center" }}>
+          🔄 Bu tutar bu haftaya ait. Her hafta biriken miktar <strong>her pazar barınağa verilip sıfırlanır</strong> — yeni hafta sıfırdan başlar.
+        </div>
+
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 36 }}>
           {[
             { s: hicEtki ? "—" : (data?.toplamKopek || 0).toLocaleString("tr-TR"), l: "köpek beslendi" },
