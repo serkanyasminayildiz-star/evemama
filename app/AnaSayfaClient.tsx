@@ -483,22 +483,6 @@ export default function AnaSayfaClient() {
         </div>
       </div>
 
-      {/* SABİT BANNER — Royal Canin kampanya görseli (ana sayfa üstü). 1536×1024,
-          tam-en responsive (mobilde otomatik küçülür), tıklanınca Royal Canin araması. */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "16px 16px 0" }}>
-        <Link href="/urunler?q=Royal Canin" style={{ display: "block" }} aria-label="Royal Canin köpek mamaları — indirimli fırsatlar">
-          <Image
-            src="/royal-canin-banner.png"
-            alt="Royal Canin köpek mamaları — evemama.net'te %100 orijinal, %25-27 indirim"
-            width={1536}
-            height={1024}
-            priority
-            sizes="(max-width: 1200px) 100vw, 1200px"
-            style={{ width: "100%", height: "auto", display: "block", borderRadius: 20 }}
-          />
-        </Link>
-      </div>
-
       {/* HERO — Açık Mamalar banner (sol) + hızlı erişim kartları (sağ, "şimdilik") */}
       <div className="hero-grid">
         {/* Eski gradient carousel kaldırıldı; yerine açık mama banner'ı. Tıklanınca açık mamalar kategorisi. */}
