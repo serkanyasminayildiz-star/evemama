@@ -47,10 +47,12 @@ export default function UrunDetayClient() {
         setUrun(data);
         setSeciliResim(null); // yeni ürün yüklendi → galeri seçimini sıfırla
         setYukleniyor(false);
-        if (data?.kategori_id) {
-          supabase.from("urunler").select("id, ad, slug, fiyat, indirimli_fiyat, resim_url, stok").eq("kategori_id", data.kategori_id).neq("slug", slug).neq("aktif", false).limit(4)
+        if (data) {
+          // "Benzer Ürünler" yerine ÖNE ÇIKAN (oncelikli) ürünler gösterilir —
+          // her ürün sayfasında küratörlü öne çıkan ürünler (kategori bağımsız).
+          supabase.from("urunler").select("id, ad, slug, fiyat, indirimli_fiyat, resim_url, stok").eq("oncelikli", true).neq("slug", slug).neq("aktif", false).gt("stok", 0).limit(4)
             .then(({ data: benzer, error: bErr }) => {
-              if (bErr) console.error("[urun-detay] benzer urunler:", bErr);
+              if (bErr) console.error("[urun-detay] one cikan urunler:", bErr);
               setBenzerUrunler(benzer || []);
             });
         }
@@ -443,12 +445,12 @@ export default function UrunDetayClient() {
         )}
       </div>
 
-      {/* Benzer Ürünler */}
+      {/* Öne Çıkan Ürünler (eski "Benzer Ürünler" bölümü — artık oncelikli ürünler) */}
       {benzerUrunler.length > 0 && (
         <div style={{ background: "white", padding: "40px 0" }}>
           <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 14px" }}>
             <h2 style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", marginBottom: 20 }}>
-              Benzer <span style={{ color: "#E8845A", fontStyle: "italic" }}>Ürünler</span>
+              Öne Çıkan <span style={{ color: "#E8845A", fontStyle: "italic" }}>Ürünler</span>
             </h2>
             <div className="benzer-grid">
               {benzerUrunler.map(u => (
