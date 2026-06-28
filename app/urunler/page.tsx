@@ -102,9 +102,28 @@ export default function Urunler() {
       .finally(() => setYukleniyor(false));
   }, []);
 
+  // Anasayfa arama çubuğundan gelen ?ara= parametresini arama kutusuna taşı (mount'ta 1 kez).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("ara");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (q) setAramaMetni(q);
+  }, []);
+
   const filtrelenmis = useMemo(() => {
     let sonuc = [...urunler];
-    if (aramaMetni) sonuc = sonuc.filter(u => u.ad.toLowerCase().includes(aramaMetni.toLowerCase()));
+    if (aramaMetni.trim()) {
+      // Token-bazlı skorlu eşleşme: her arama kelimesi ad + marka + kategori içinde aranır.
+      // TÜM kelimeleri içeren ürünler gösterilir; hiçbiri tüm kelimeleri içermiyorsa EN ÇOK
+      // kelimeye uyanlar (eksik/yanlış yazıma tolerans, ör. "pupy"). Hiç uymazsa boş liste.
+      const tokens = aramaMetni.toLowerCase().trim().split(/\s+/).filter(Boolean);
+      const skorla = (u: Urun) => {
+        const h = `${u.ad} ${u.markalar?.ad || ""} ${u.kategoriler?.ad || ""}`.toLowerCase();
+        return tokens.filter(t => h.includes(t)).length;
+      };
+      const skorlu = sonuc.map(u => ({ u, s: skorla(u) })).filter(x => x.s > 0);
+      const maxS = skorlu.reduce((m, x) => Math.max(m, x.s), 0);
+      sonuc = skorlu.filter(x => x.s === maxS).map(x => x.u);
+    }
     if (seciliKategori) sonuc = sonuc.filter(u => u.kategoriler?.slug === seciliKategori);
     if (seciliMarka) sonuc = sonuc.filter(u => u.markalar?.ad === seciliMarka);
     if (seciliYas) sonuc = sonuc.filter(u => u.ad.toLowerCase().includes(seciliYas.toLowerCase()) || u.kategoriler?.ad?.toLowerCase().includes(seciliYas.toLowerCase()));
