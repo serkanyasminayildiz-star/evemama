@@ -52,7 +52,7 @@ export default function AnaSayfaClient() {
   const [hata, setHata] = useState<string | null>(null);
   const [aktifSlide, setAktifSlide] = useState(0);
   // Açık mama ürün slaytı görselleri (public/, dikey ~1054×1492).
-  const acikSlaytlar = ["/acik-mama1.png", "/acik-mama2.png", "/acik-mama3.png", "/acik-mama4.png", "/acik-mama5.png", "/acik-mama6.png", "/acik-mama7.png", "/acik-mama8.png"];
+  const acikSlaytlar = ["/acik-mama1.jpg", "/acik-mama2.jpg", "/acik-mama3.jpg", "/acik-mama4.jpg", "/acik-mama5.jpg", "/acik-mama6.jpg", "/acik-mama7.jpg", "/acik-mama8.jpg"];
 
   const getKatGorsel = (slug: string): { bg: string; emoji: string } => {
     const s = slug.toLowerCase();
@@ -550,7 +550,7 @@ export default function AnaSayfaClient() {
         <Link href="/kategori/acik-mamalar" aria-label="Açık Mamalar kategorisi — %100 orijinal, minimum 2027 SKT, 14 gün şartsız iade"
           style={{ display: "block", borderRadius: 28, overflow: "hidden", boxShadow: "0 12px 40px rgba(232,132,90,.22)" }}>
           <Image
-            src="/acik-mama-banner.png"
+            src="/acik-mama-banner.jpg"
             alt="Açık mama alırken en büyük korku son buluyor — evemama.net'te tüm açık mamalar %100 orijinal ve minimum 2027 SKT'li, 14 gün şartsız iade"
             width={1536}
             height={1024}
