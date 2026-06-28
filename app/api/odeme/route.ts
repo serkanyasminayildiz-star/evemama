@@ -171,7 +171,6 @@ export async function POST(req: NextRequest) {
       durum: "beklemede",
       odeme_yontemi: "havale",
       odeme_durumu: "bekliyor",
-      kumbara_tesekkur: !!body.kumbaraTesekkur,
       toplam: hesap.genelToplam,
       ara_toplam: basketTotal,
       ad: buyer.name,
@@ -284,7 +283,6 @@ export async function POST(req: NextRequest) {
         uye_email: uyeEmail, // null ise misafir → sadakat bonusu verilmez
         kullanilan_bonus_id: nihaiBonusId, // bonus yalnızca otomatik indirim kazandıysa harcanır
         kullanilan_kupon_kod: kullanilanKuponKod, // kupon avantajlıysa harcanır
-        kumbara_tesekkur: !!body.kumbaraTesekkur, // teşekkür duvarı onayı (sipariş başarılı olunca siparişler'e taşınır)
         created_at: new Date().toISOString(),
       }, { onConflict: "token" });
     }

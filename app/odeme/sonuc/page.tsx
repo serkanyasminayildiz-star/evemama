@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Script from "next/script";
-import { kumbaraKatkisi } from "../../../lib/kumbara";
 
 // Google Ads tag ID — layout.tsx'te yuklendi. Buradaki conversion label
 // 'Satin Alma' islemine ozel.
@@ -104,11 +103,6 @@ function OdemeSonucIcerik() {
           <div style={{ background: "#E8F5E9", borderRadius: 12, padding: "12px 16px", marginBottom: 12, fontSize: 13, color: "#2E7D32" }}>
             📧 Sipariş onayı e-posta adresinize gönderildi.
           </div>
-          {tutar > 0 && (
-            <div style={{ background: "#EFF9F0", border: "1.5px solid #BFE0C2", borderRadius: 12, padding: "14px 16px", marginBottom: 28, fontSize: 13.5, color: "#2E7D32", lineHeight: 1.6 }}>
-              {"🐾 Bu siparişin sayesinde "}<strong>₺{kumbaraKatkisi(tutar).toLocaleString("tr-TR")}</strong>{" değerinde mama bir sokak dostuna gidiyor — bizden, senin alışverişinle! 💚"}
-            </div>
-          )}
           <Link href="/" style={{ background: "#E8845A", color: "white", padding: "14px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "inline-block" }}>
             Alışverişe Devam Et 🐾
           </Link>

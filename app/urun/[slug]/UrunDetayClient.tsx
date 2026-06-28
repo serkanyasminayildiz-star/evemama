@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { useCart } from "../../../context/CartContext";
-import { kumbaraKatkisi } from "../../../lib/kumbara";
 
 type Yorum = { id: number; ad: string; puan: number; yorum: string; tarih: string; dogrulanmis?: boolean };
 export type UrunDetay = {
@@ -276,14 +275,6 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
             )}
             <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.45, marginTop: 4 }}>KDV Dahil</div>
           </div>
-
-          {/* PATİ KUMBARASI — ürüne özel vurgu: bu alışverişin %5'i sokak/barınak köpeklerine mama */}
-          <Link href="/kumbara" style={{ display: "flex", alignItems: "center", gap: 10, background: "#EFF9F0", border: "1px solid #BFE0C2", borderRadius: 12, padding: "11px 14px", marginBottom: 20, textDecoration: "none" }}>
-            <span style={{ fontSize: 20, flexShrink: 0 }}>🐾</span>
-            <span style={{ fontSize: 12.5, color: "#2E7D32", lineHeight: 1.5 }}>
-              Bu ürünü alırsan bedelinin <strong>%5&apos;i (≈₺{Math.round(kumbaraKatkisi(urun.indirimli_fiyat || urun.fiyat)).toLocaleString("tr-TR")})</strong> sokak ve barınak köpeklerine mama olur. <strong style={{ textDecoration: "underline" }}>Pati Kumbarası →</strong>
-            </span>
-          </Link>
 
           {/* Stok */}
           <div style={{ marginBottom: 20 }}>
