@@ -543,33 +543,8 @@ export default function AnaSayfaClient() {
       {/* PATİ KUMBARASI — sosyal proje: her alışverişin %5'i barınak/sokak köpeklerine mama */}
       <KumbaraWidget />
 
-      {/* KATEGORİLER */}
-      <div className="kat-section" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px 52px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <h2 className="sec-title" style={{ fontFamily: "Georgia,serif", fontSize: 28, fontWeight: 700, color: "#5C3D2E" }}>Kategorilere <span style={{ color: "#E8845A", fontStyle: "italic" }}>Göz At</span></h2>
-          <Link href="/urunler" style={{ fontSize: 14, fontWeight: 600, color: "#E8845A", textDecoration: "none" }}>Tümünü gör →</Link>
-        </div>
-        <div className="kat-grid">
-          {kategoriler
-            // "Kiyafet" kategorilerini ana sayfa carousel'inden gizle (kullanici talebi)
-            .filter(kat => !/kiyafet|kıyafet|giysi/i.test(kat.slug + " " + kat.ad))
-            .map((kat, i) => {
-            const g = getKatGorsel(kat.slug);
-            return (
-              <Link key={i} href={`/kategori/${kat.slug}`} className="kat-card">
-                <div className="kat-card-img" style={{ background: g.bg }}>
-                  <span style={{ fontSize: 48, filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.12))" }}>{g.emoji}</span>
-                </div>
-                <div className="kat-card-label">
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E" }}>{kat.ad}</div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ÖNE ÇIKAN ÜRÜNLER */}
+      {/* ÖNE ÇIKAN ÜRÜNLER — kategori kartları kaldırıldı (kategoriler artık header'da);
+          zaten yatay kaydırmalı olan featured slider bu konuma (kumbaranın altına) alındı */}
       <div style={{ background: "#FFFCF8", padding: "48px 0" }}>
         <div className="urun-section" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 36 }}>
