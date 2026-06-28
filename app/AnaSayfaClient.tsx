@@ -19,6 +19,7 @@ type Urun = {
   kategori_id?: number | null;
   markalar?: { ad: string } | null;
   kategoriler?: { id?: number; ad?: string; slug?: string } | null;
+  oncelikli?: boolean | null;
 };
 type Kategori = {
   id: number;
@@ -34,9 +35,6 @@ export default function AnaSayfaClient() {
   const [oneCikanlar, setOneCikanlar] = useState<Urun[]>([]);
   const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
   const [altKategoriler, setAltKategoriler] = useState<{ [key: string]: Kategori[] }>({});
-  // Tum kategoriler (root + alt seviyelerin hepsi) — urun gruplama icin
-  // her urunun kategori_id'sini root kategoriye kadar takip etmek gerekiyor.
-  const [tumKategoriler, setTumKategoriler] = useState<Kategori[]>([]);
   const [acikMenu, setAcikMenu] = useState<string | null>(null);
   const [mobMenuAcik, setMobMenuAcik] = useState(false);
   const [araInput, setAraInput] = useState("");
@@ -82,9 +80,9 @@ export default function AnaSayfaClient() {
     supabase.from("urunler")
       .select("*, markalar(ad), kategoriler(id, ad, slug)")
       // Limit yuksek tutulur ki TUM aktif+stoktaki urunler dataset'e gelsin;
-      // grouplama (kategori basina max 6) memory'de yapilir. ~800 urun
-      // toplam ~500 KB — modern cihazlarda sorun degil.
-      .eq("oncelikli", true).neq("aktif", false).gt("stok", 0).limit(1000)
+      // memory'de One Cikanlar (oncelikli) + Kedi + Kopek listelerine ayrilir.
+      // ~700 urun toplam ~500 KB — modern cihazlarda sorun degil.
+      .neq("aktif", false).gt("stok", 0).limit(1000)
       .then(({ data, error }) => {
         if (error) {
           console.error("[home] urunler fetch:", error);
@@ -103,16 +101,6 @@ export default function AnaSayfaClient() {
           return;
         }
         setKategoriler(data || []);
-      });
-
-    // Tum kategoriler — parent lookup icin (urun gruplamada leaf -> root)
-    supabase.from("kategoriler").select("id, ad, slug, ust_kategori_id")
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("[home] tumKategoriler fetch:", error);
-          return;
-        }
-        setTumKategoriler(data || []);
       });
   }, []);
 
@@ -161,17 +149,70 @@ export default function AnaSayfaClient() {
     };
   }, [oneCikanlar.length]);
 
-  // Öne Çıkan Ürünler — gruplama KALDIRILDI. İşaretlenen TÜM oncelikli ürünler
-  // tek yatay slider'da gösterilir (mama-filtresi/kategori eşleştirmesi yok).
-  const urunGruplari = (() => {
-    if (!tumKategoriler.length || !oneCikanlar.length) return [] as { urunler: Urun[] }[];
-    return [{ urunler: oneCikanlar.slice(0, 30) }];
-  })();
+  // Anasayfa ürün bölümleri — TEK fetch (oneCikanlar = tüm aktif+stoktaki ürünler);
+  // memory'de 3 listeye ayrılır. Kedi/köpek ayrımı kategori-slug + ürün adındaki
+  // "kedi/köpek" anahtarıyla yapılır (açık kedi/köpek mamaları da doğru bölüme düşsün).
+  const urunMetni = (u: Urun) => `${u.kategoriler?.slug || ""} ${u.ad}`.toLowerCase();
+  const isKedi = (u: Urun) => { const t = urunMetni(u); return /kedi|kitten/.test(t) && !/köpek|kopek/.test(t); };
+  const isKopek = (u: Urun) => { const t = urunMetni(u); return /köpek|kopek|puppy/.test(t) && !/kedi|kitten/.test(t); };
+  const oneCikanUrunler = oneCikanlar.filter(u => u.oncelikli).slice(0, 30);
+  const kediUrunler = oneCikanlar.filter(isKedi).slice(0, 24);
+  const kopekUrunler = oneCikanlar.filter(isKopek).slice(0, 24);
 
   const handleEkle = (urun: Urun) => {
     addItem({ id: urun.id, name: urun.ad, price: parseFloat(urun.indirimli_fiyat || urun.fiyat) || 0, emoji: "🐾", resim_url: urun.resim_url || undefined, slug: urun.slug });
     setEklendi(urun.id);
     setTimeout(() => setEklendi(null), 1500);
+  };
+
+  // Ürün kartı — öne çıkanlar slider'ı + kedi/köpek grid'i ortak kullanır.
+  const urunKart = (urun: Urun, i: number) => {
+    const normalFiyat = parseFloat(urun.fiyat) || 0;
+    const indirimliFiyat = parseFloat(urun.indirimli_fiyat ?? "") || 0;
+    const indirimVar = indirimliFiyat > 0 && indirimliFiyat < normalFiyat;
+    const indirimOrani = indirimVar ? Math.round((1 - indirimliFiyat / normalFiyat) * 100) : 0;
+    const gosterFiyat = indirimVar ? indirimliFiyat : normalFiyat;
+    return (
+      <div key={i} style={{ background: "white", borderRadius: 20, overflow: "hidden", transition: "transform .2s, box-shadow .2s" }}
+        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 16px 40px rgba(92,61,46,0.1)"; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
+        <Link href={`/urun/${urun.slug}`} style={{ textDecoration: "none", display: "block" }}>
+          <div className="urun-img" style={{ height: 160, background: "#f9f9f9", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+            {urun.resim_url
+              ? <Image src={urun.resim_url} alt={urun.ad} fill sizes="(max-width:768px) 50vw, (max-width:1200px) 25vw, 280px" style={{ objectFit: "contain", padding: 12, mixBlendMode: "multiply" }} />
+              : <div style={{ fontSize: 48, opacity: 0.15 }}>🐾</div>}
+            {indirimVar && (
+              <span style={{ position: "absolute", top: 8, right: 8, background: "#C62828", color: "white", fontSize: 12, fontWeight: 800, padding: "5px 9px", borderRadius: 50, boxShadow: "0 2px 8px rgba(198,40,40,0.3)" }}>
+                %{indirimOrani}
+              </span>
+            )}
+            {urun.stok != null && urun.stok <= 5 && urun.stok > 0 && (
+              <span style={{ position: "absolute", top: 8, left: 8, background: "#E8845A", color: "white", fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 50 }}>Son {urun.stok}!</span>
+            )}
+          </div>
+          <div style={{ padding: "12px 14px 8px" }}>
+            {urun.markalar && <div style={{ fontSize: 10, fontWeight: 700, color: "#8BAF8E", textTransform: "uppercase", marginBottom: 3 }}>{urun.markalar.ad}</div>}
+            <div style={{ fontFamily: "Georgia,serif", fontSize: 13, fontWeight: 700, color: "#5C3D2E", lineHeight: 1.35 }}>{urun.ad.substring(0, 45)}{urun.ad.length > 45 ? "..." : ""}</div>
+          </div>
+        </Link>
+        <div style={{ padding: "0 14px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
+            {indirimVar && (
+              <span style={{ fontSize: 11, color: "#999", textDecoration: "line-through", marginBottom: 2 }}>
+                ₺{normalFiyat.toFixed(2)}
+              </span>
+            )}
+            <span style={{ fontFamily: "Georgia,serif", fontSize: 16, fontWeight: 700, color: indirimVar ? "#C62828" : "#5C3D2E" }}>
+              ₺{gosterFiyat.toFixed(2)}
+            </span>
+          </div>
+          <button onClick={() => handleEkle(urun)}
+            style={{ background: eklendi === urun.id ? "#8BAF8E" : "#E8845A", color: "white", border: "none", borderRadius: 50, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all .2s" }}>
+            {eklendi === urun.id ? "✅" : "+ Sepet"}
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const handleAra = () => {
@@ -238,6 +279,8 @@ export default function AnaSayfaClient() {
           flex: 0 0 calc((100% - 80px) / 6);
           scroll-snap-align: start;
         }
+        /* Kedi/Kopek sabit grid — desktop 6 sutun (6x4=24), tablet 3, telefon 2 */
+        .urun-grid-sabit { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
         .ara-btn-active { background: #E8845A; color: white; border: none; border-radius: 10px; padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: transform .1s, background .2s; }
         .ara-btn-active:hover { background: #5C3D2E; }
         .ara-btn-active:active { transform: scale(0.94); }
@@ -274,6 +317,7 @@ export default function AnaSayfaClient() {
           .urun-section { padding: 0 14px !important; }
           .urun-grid { gap: 10px !important; }
           .urun-grid > div { flex: 0 0 calc((100% - 10px) / 2) !important; }
+          .urun-grid-sabit { grid-template-columns: repeat(3,1fr) !important; gap: 10px !important; }
           .urun-img { height: 130px !important; }
           .trust-section { padding: 26px 16px !important; }
           .trust-grid { grid-template-columns: repeat(2,1fr) !important; gap: 16px 12px !important; }
@@ -298,6 +342,7 @@ export default function AnaSayfaClient() {
         @media (max-width: 480px) {
           .banner-title { font-size: 20px !important; }
           .banner-emoji-el { font-size: 70px !important; }
+          .urun-grid-sabit { grid-template-columns: repeat(2,1fr) !important; }
         }
       `}</style>
 
@@ -520,73 +565,44 @@ export default function AnaSayfaClient() {
             <Link href="/urunler" style={{ fontSize: 14, fontWeight: 600, color: "#E8845A", textDecoration: "none" }}>Tümü →</Link>
           </div>
 
-          {urunGruplari.length === 0 ? (
+          {oneCikanUrunler.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 0", color: "#5C3D2E", opacity: 0.4 }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>⏳</div>
               <div>Yükleniyor...</div>
             </div>
           ) : (
-            urunGruplari.map((grup, ki) => {
-              return (
-                <div key={ki}>
-                  <div className="urun-grid" ref={oneCikanRef}>
-                    {grup.urunler.map((urun, i) => {
-                      // Indirim hesaplama — indirimli_fiyat dolu ve normalden kucukse indirim var.
-                      const normalFiyat = parseFloat(urun.fiyat) || 0;
-                      const indirimliFiyat = parseFloat(urun.indirimli_fiyat ?? "") || 0;
-                      const indirimVar = indirimliFiyat > 0 && indirimliFiyat < normalFiyat;
-                      const indirimOrani = indirimVar ? Math.round((1 - indirimliFiyat / normalFiyat) * 100) : 0;
-                      const gosterFiyat = indirimVar ? indirimliFiyat : normalFiyat;
-                      return (
-                      <div key={i} style={{ background: "white", borderRadius: 20, overflow: "hidden", transition: "transform .2s, box-shadow .2s" }}
-                        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 16px 40px rgba(92,61,46,0.1)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
-                        <Link href={`/urun/${urun.slug}`} style={{ textDecoration: "none", display: "block" }}>
-                          <div className="urun-img" style={{ height: 160, background: "#f9f9f9", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                            {urun.resim_url
-                              ? <Image src={urun.resim_url} alt={urun.ad} fill sizes="(max-width:768px) 50vw, (max-width:1200px) 25vw, 280px" style={{ objectFit: "contain", padding: 12, mixBlendMode: "multiply" }} />
-                              : <div style={{ fontSize: 48, opacity: 0.15 }}>🐾</div>}
-                            {/* Indirim rozeti — sag ust kose, kirmizi yuvarlak */}
-                            {indirimVar && (
-                              <span style={{ position: "absolute", top: 8, right: 8, background: "#C62828", color: "white", fontSize: 12, fontWeight: 800, padding: "5px 9px", borderRadius: 50, boxShadow: "0 2px 8px rgba(198,40,40,0.3)" }}>
-                                %{indirimOrani}
-                              </span>
-                            )}
-                            {urun.stok != null && urun.stok <= 5 && urun.stok > 0 && (
-                              <span style={{ position: "absolute", top: 8, left: 8, background: "#E8845A", color: "white", fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 50 }}>Son {urun.stok}!</span>
-                            )}
-                          </div>
-                          <div style={{ padding: "12px 14px 8px" }}>
-                            {urun.markalar && <div style={{ fontSize: 10, fontWeight: 700, color: "#8BAF8E", textTransform: "uppercase", marginBottom: 3 }}>{urun.markalar.ad}</div>}
-                            <div style={{ fontFamily: "Georgia,serif", fontSize: 13, fontWeight: 700, color: "#5C3D2E", lineHeight: 1.35 }}>{urun.ad.substring(0, 45)}{urun.ad.length > 45 ? "..." : ""}</div>
-                          </div>
-                        </Link>
-                        <div style={{ padding: "0 14px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
-                            {indirimVar && (
-                              <span style={{ fontSize: 11, color: "#999", textDecoration: "line-through", marginBottom: 2 }}>
-                                ₺{normalFiyat.toFixed(2)}
-                              </span>
-                            )}
-                            <span style={{ fontFamily: "Georgia,serif", fontSize: 16, fontWeight: 700, color: indirimVar ? "#C62828" : "#5C3D2E" }}>
-                              ₺{gosterFiyat.toFixed(2)}
-                            </span>
-                          </div>
-                          <button onClick={() => handleEkle(urun)}
-                            style={{ background: eklendi === urun.id ? "#8BAF8E" : "#E8845A", color: "white", border: "none", borderRadius: 50, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all .2s" }}>
-                            {eklendi === urun.id ? "✅" : "+ Sepet"}
-                          </button>
-                        </div>
-                      </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })
+            <div className="urun-grid" ref={oneCikanRef}>
+              {oneCikanUrunler.map(urunKart)}
+            </div>
           )}
         </div>
       </div>
+
+      {/* KEDİ — sabit 6×4 grid (24 ürün); kategori-bazlı vitrin */}
+      {kediUrunler.length > 0 && (
+        <div style={{ background: "#FFFCF8", padding: "0 0 24px" }}>
+          <div className="urun-section" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+              <h2 className="sec-title" style={{ fontFamily: "Georgia,serif", fontSize: 28, fontWeight: 700, color: "#5C3D2E" }}>🐱 Kedi <span style={{ color: "#E8845A", fontStyle: "italic" }}>Mamaları</span></h2>
+              <Link href="/kategori/kedi" style={{ fontSize: 14, fontWeight: 600, color: "#E8845A", textDecoration: "none" }}>Tümü →</Link>
+            </div>
+            <div className="urun-grid-sabit">{kediUrunler.map(urunKart)}</div>
+          </div>
+        </div>
+      )}
+
+      {/* KÖPEK — sabit 6×4 grid (24 ürün) */}
+      {kopekUrunler.length > 0 && (
+        <div style={{ background: "#FFFCF8", padding: "0 0 48px" }}>
+          <div className="urun-section" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+              <h2 className="sec-title" style={{ fontFamily: "Georgia,serif", fontSize: 28, fontWeight: 700, color: "#5C3D2E" }}>🐶 Köpek <span style={{ color: "#E8845A", fontStyle: "italic" }}>Mamaları</span></h2>
+              <Link href="/kategori/kopek" style={{ fontSize: 14, fontWeight: 600, color: "#E8845A", textDecoration: "none" }}>Tümü →</Link>
+            </div>
+            <div className="urun-grid-sabit">{kopekUrunler.map(urunKart)}</div>
+          </div>
+        </div>
+      )}
 
       {/* GÜVEN BARI */}
       <div className="trust-section" style={{ background: "#5C3D2E", padding: "36px 48px" }}>
