@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { supabase } from "../lib/supabase";
 import { useCart } from "../context/CartContext";
@@ -29,6 +29,12 @@ type Kategori = {
   sira?: number | null;
   aktif?: boolean;
 };
+
+// Kedi/köpek ayrımı (saf yardımcılar — modül kapsamı, her render'da yeniden yaratılmaz → useMemo deps stabil).
+// Kategori-slug + ürün adındaki "kedi/köpek" anahtarı (açık kedi/köpek mamaları da doğru bölüme düşsün).
+const urunMetni = (u: Urun) => `${u.kategoriler?.slug || ""} ${u.ad}`.toLowerCase();
+const isKedi = (u: Urun) => { const t = urunMetni(u); return /kedi|kitten/.test(t) && !/köpek|kopek/.test(t); };
+const isKopek = (u: Urun) => { const t = urunMetni(u); return /köpek|kopek|puppy/.test(t) && !/kedi|kitten/.test(t); };
 
 export default function AnaSayfaClient() {
   const [kullanici, setKullanici] = useState<User | null>(null);
@@ -153,16 +159,15 @@ export default function AnaSayfaClient() {
   // Anasayfa ürün bölümleri — TEK fetch (oneCikanlar = tüm aktif+stoktaki ürünler);
   // memory'de 3 listeye ayrılır. Kedi/köpek ayrımı kategori-slug + ürün adındaki
   // "kedi/köpek" anahtarıyla yapılır (açık kedi/köpek mamaları da doğru bölüme düşsün).
-  const urunMetni = (u: Urun) => `${u.kategoriler?.slug || ""} ${u.ad}`.toLowerCase();
-  const isKedi = (u: Urun) => { const t = urunMetni(u); return /kedi|kitten/.test(t) && !/köpek|kopek/.test(t); };
-  const isKopek = (u: Urun) => { const t = urunMetni(u); return /köpek|kopek|puppy/.test(t) && !/kedi|kitten/.test(t); };
-  const oneCikanUrunler = oneCikanlar.filter(u => u.oncelikli).slice(0, 30);
-  const kediUrunler = oneCikanlar.filter(isKedi).slice(0, 24);
-  const kopekUrunler = oneCikanlar.filter(isKopek).slice(0, 24);
+  // INP iyileştirmesi: 700 ürünlük filtreler her render'da DEĞİL, yalnız oneCikanlar/araInput
+  // değişince hesaplanır (useMemo). Aksi halde her tuş vuruşunda 4 ağır filtre çalışıyordu.
+  const oneCikanUrunler = useMemo(() => oneCikanlar.filter(u => u.oncelikli).slice(0, 30), [oneCikanlar]);
+  const kediUrunler = useMemo(() => oneCikanlar.filter(isKedi).slice(0, 24), [oneCikanlar]);
+  const kopekUrunler = useMemo(() => oneCikanlar.filter(isKopek).slice(0, 24), [oneCikanlar]);
 
   // Anasayfa arama önerileri — yazılana göre (token-bazlı: tüm kelimeleri ad/marka/kategoride
   // içeren ilk 6 ürün). 2 harften kısa sorguda boş. oneCikanlar zaten tüm aktif+stok ürün.
-  const aramaOnerileri = (() => {
+  const aramaOnerileri = useMemo(() => {
     const q = araInput.trim().toLowerCase();
     if (q.length < 2) return [] as Urun[];
     const tokens = q.split(/\s+/).filter(Boolean);
@@ -170,7 +175,7 @@ export default function AnaSayfaClient() {
       const h = `${u.ad} ${u.markalar?.ad || ""} ${u.kategoriler?.ad || ""}`.toLowerCase();
       return tokens.every(t => h.includes(t));
     }).slice(0, 6);
-  })();
+  }, [araInput, oneCikanlar]);
 
   const handleEkle = (urun: Urun) => {
     addItem({ id: urun.id, name: urun.ad, price: parseFloat(urun.indirimli_fiyat || urun.fiyat) || 0, emoji: "🐾", resim_url: urun.resim_url || undefined, slug: urun.slug });
@@ -557,12 +562,18 @@ export default function AnaSayfaClient() {
         {/* Açık mama ürün slaytı (8 dikey görsel, otomatik döner) — eski hızlı erişim kartlarının yerine */}
         <div className="hero-right">
           <div style={{ position: "relative", width: "100%", aspectRatio: "1054 / 1492", borderRadius: 20, overflow: "hidden", boxShadow: "0 10px 28px rgba(92,61,46,.18)", background: "#fff" }}>
-            {acikSlaytlar.map((src, i) => (
-              <Link key={src} href="/kategori/acik-mamalar" aria-label={`Açık mama ürünü ${i + 1} — açık mamalar kategorisine git`}
-                style={{ position: "absolute", inset: 0, opacity: i === aktifSlide ? 1 : 0, transition: "opacity .6s ease", pointerEvents: i === aktifSlide ? "auto" : "none" }}>
-                <Image src={src} alt={`Royal Canin açık mama ürün görseli ${i + 1}`} fill sizes="(max-width: 768px) 100vw, 380px" style={{ objectFit: "cover" }} priority={i === 0} />
-              </Link>
-            ))}
+            {acikSlaytlar.map((src, i) => {
+              // LCP: 8 görseli birden yükleme — yalnız aktif + komşu (önceki/sonraki) slaytlar
+              // render edilir, gerisi sıra gelince. Banner tek "priority" LCP öğesi olarak kalır.
+              const len = acikSlaytlar.length;
+              const yukle = i === aktifSlide || i === (aktifSlide + 1) % len || i === (aktifSlide - 1 + len) % len;
+              return (
+                <Link key={src} href="/kategori/acik-mamalar" aria-label={`Açık mama ürünü ${i + 1} — açık mamalar kategorisine git`}
+                  style={{ position: "absolute", inset: 0, opacity: i === aktifSlide ? 1 : 0, transition: "opacity .6s ease", pointerEvents: i === aktifSlide ? "auto" : "none" }}>
+                  {yukle && <Image src={src} alt={`Royal Canin açık mama ürün görseli ${i + 1}`} fill sizes="(max-width: 768px) 100vw, 380px" style={{ objectFit: "cover" }} />}
+                </Link>
+              );
+            })}
           </div>
           <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 12, flexWrap: "wrap" }}>
             {acikSlaytlar.map((_, i) => (
