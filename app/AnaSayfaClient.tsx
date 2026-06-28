@@ -523,7 +523,7 @@ export default function AnaSayfaClient() {
 
           {/* Otomatik tamamlama — yazarken eşleşen ürünler; tıkla → ürün sayfası */}
           {aramaOdak && aramaOnerileri.length > 0 && (
-            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, background: "white", border: "1px solid #E8D5B7", borderRadius: 14, boxShadow: "0 16px 40px rgba(92,61,46,0.14)", overflow: "hidden", zIndex: 60 }}>
+            <div onMouseDown={e => e.preventDefault()} style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, background: "white", border: "1px solid #E8D5B7", borderRadius: 14, boxShadow: "0 16px 40px rgba(92,61,46,0.14)", overflow: "hidden", zIndex: 60 }}>
               {aramaOnerileri.map(u => (
                 <Link key={u.id} href={`/urun/${u.slug}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", textDecoration: "none", color: "#5C3D2E", borderBottom: "1px solid #F4EADF" }}>
                   <div style={{ width: 42, height: 42, borderRadius: 8, background: "#FAF6F0", flexShrink: 0, position: "relative", overflow: "hidden" }}>
