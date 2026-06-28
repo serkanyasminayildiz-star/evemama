@@ -38,6 +38,7 @@ export default function AnaSayfaClient() {
   const [acikMenu, setAcikMenu] = useState<string | null>(null);
   const [mobMenuAcik, setMobMenuAcik] = useState(false);
   const [araInput, setAraInput] = useState("");
+  const [aramaOdak, setAramaOdak] = useState(false); // arama kutusu odakta mı (öneri dropdown'u için)
   const [newsletter, setNewsletter] = useState("");
   const [newsletterOk, setNewsletterOk] = useState(false);
   const { addItem, totalItems } = useCart();
@@ -158,6 +159,18 @@ export default function AnaSayfaClient() {
   const oneCikanUrunler = oneCikanlar.filter(u => u.oncelikli).slice(0, 30);
   const kediUrunler = oneCikanlar.filter(isKedi).slice(0, 24);
   const kopekUrunler = oneCikanlar.filter(isKopek).slice(0, 24);
+
+  // Anasayfa arama önerileri — yazılana göre (token-bazlı: tüm kelimeleri ad/marka/kategoride
+  // içeren ilk 6 ürün). 2 harften kısa sorguda boş. oneCikanlar zaten tüm aktif+stok ürün.
+  const aramaOnerileri = (() => {
+    const q = araInput.trim().toLowerCase();
+    if (q.length < 2) return [] as Urun[];
+    const tokens = q.split(/\s+/).filter(Boolean);
+    return oneCikanlar.filter(u => {
+      const h = `${u.ad} ${u.markalar?.ad || ""} ${u.kategoriler?.ad || ""}`.toLowerCase();
+      return tokens.every(t => h.includes(t));
+    }).slice(0, 6);
+  })();
 
   const handleEkle = (urun: Urun) => {
     addItem({ id: urun.id, name: urun.ad, price: parseFloat(urun.indirimli_fiyat || urun.fiyat) || 0, emoji: "🐾", resim_url: urun.resim_url || undefined, slug: urun.slug });
@@ -491,13 +504,38 @@ export default function AnaSayfaClient() {
 
       {/* ARAMA */}
       <div className="ara-section" style={{ padding: "20px 48px", maxWidth: 1400, margin: "0 auto" }}>
-        <div className="ara-bar" style={{ background: "white", border: "2px solid #E8D5B7", borderRadius: 16, padding: "13px 20px", display: "flex", alignItems: "center", gap: 12, maxWidth: 680, margin: "0 auto" }}>
-          <span style={{ fontSize: 18, opacity: 0.35 }}>🔍</span>
-          <input type="text" placeholder="Mama, oyuncak, aksesuar veya marka ara..."
-            value={araInput} onChange={e => setAraInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") handleAra(); }}
-            style={{ flex: 1, border: "none", background: "none", outline: "none", fontSize: 15, fontFamily: "inherit" }} />
-          <button className="ara-btn-active" onClick={handleAra}>Ara</button>
+        <div style={{ maxWidth: 680, margin: "0 auto", position: "relative" }}>
+          <div className="ara-bar" style={{ background: "white", border: "2px solid #E8D5B7", borderRadius: 16, padding: "13px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 18, opacity: 0.35 }}>🔍</span>
+            <input type="text" placeholder="Mama, oyuncak, aksesuar veya marka ara..."
+              value={araInput} onChange={e => setAraInput(e.target.value)}
+              onFocus={() => setAramaOdak(true)}
+              onBlur={() => setTimeout(() => setAramaOdak(false), 150)}
+              onKeyDown={e => { if (e.key === "Enter") handleAra(); }}
+              style={{ flex: 1, border: "none", background: "none", outline: "none", fontSize: 15, fontFamily: "inherit" }} />
+            <button className="ara-btn-active" onClick={handleAra}>Ara</button>
+          </div>
+
+          {/* Otomatik tamamlama — yazarken eşleşen ürünler; tıkla → ürün sayfası */}
+          {aramaOdak && aramaOnerileri.length > 0 && (
+            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, background: "white", border: "1px solid #E8D5B7", borderRadius: 14, boxShadow: "0 16px 40px rgba(92,61,46,0.14)", overflow: "hidden", zIndex: 60 }}>
+              {aramaOnerileri.map(u => (
+                <Link key={u.id} href={`/urun/${u.slug}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", textDecoration: "none", color: "#5C3D2E", borderBottom: "1px solid #F4EADF" }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 8, background: "#FAF6F0", flexShrink: 0, position: "relative", overflow: "hidden" }}>
+                    {u.resim_url && <Image src={u.resim_url} alt={u.ad} fill sizes="42px" style={{ objectFit: "contain", padding: 3, mixBlendMode: "multiply" }} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {u.markalar && <div style={{ fontSize: 10, fontWeight: 700, color: "#8BAF8E", textTransform: "uppercase" }}>{u.markalar.ad}</div>}
+                    <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.ad}</div>
+                  </div>
+                  <div style={{ fontFamily: "Georgia,serif", fontSize: 14, fontWeight: 700, color: "#E8845A", flexShrink: 0 }}>₺{(parseFloat(u.indirimli_fiyat || u.fiyat) || 0).toFixed(2)}</div>
+                </Link>
+              ))}
+              <button onClick={handleAra} style={{ width: "100%", textAlign: "center", padding: "11px", background: "#FFF7ED", border: "none", color: "#E8845A", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                {`"${araInput.trim()}" için tüm sonuçları gör →`}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
