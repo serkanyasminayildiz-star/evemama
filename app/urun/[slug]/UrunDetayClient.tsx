@@ -29,6 +29,8 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
   const [eklendi, setEklendi] = useState(false);
   const [adet, setAdet] = useState(1);
   const [seciliResim, setSeciliResim] = useState<string | null>(null); // galeri: tıklanan küçük resim
+  const [lightbox, setLightbox] = useState(false); // büyük görsel (lightbox) açık mı
+  const [lightboxIndex, setLightboxIndex] = useState(0); // lightbox'ta gösterilen görsel indeksi
   const [aktifSekme, setAktifSekme] = useState<"aciklama" | "yorumlar">("aciklama");
   const [yeniYorum, setYeniYorum] = useState({ ad: "", puan: 5, yorum: "" });
   const [yorumGonderildi, setYorumGonderildi] = useState(false);
@@ -68,6 +70,16 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
         if (data) cekOneCikanlar();
       });
   }, [slug, initialUrun]);
+
+  // Lightbox açıkken Esc ile kapat + arka plan kaydırmasını kilitle.
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLightbox(false); };
+    document.addEventListener("keydown", onKey);
+    const oncekiOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = oncekiOverflow; };
+  }, [lightbox]);
 
   // Üye mi + bu ürüne abone mi? (Abone Ol arayüzü için)
   useEffect(() => {
@@ -217,11 +229,15 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
 
         {/* Sol: Görsel + galeri */}
         <div>
-          <div style={{ background: "white", borderRadius: 24, overflow: "hidden", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 32px rgba(92,61,46,0.08)", marginBottom: 16, position: "relative" }}>
+          <div onClick={() => { if (anaGorsel) { setLightboxIndex(Math.max(0, tumResimler.indexOf(anaGorsel))); setLightbox(true); } }}
+            style={{ background: "white", borderRadius: 24, overflow: "hidden", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 32px rgba(92,61,46,0.08)", marginBottom: 16, position: "relative", cursor: anaGorsel ? "zoom-in" : "default" }}>
             {anaGorsel ? (
               <Image src={anaGorsel} alt={urun.ad} fill priority sizes="(max-width:768px) 100vw, 550px" style={{ objectFit: "contain", padding: 24 }} />
             ) : (
               <div style={{ fontSize: 120, opacity: 0.2 }}>🐾</div>
+            )}
+            {anaGorsel && (
+              <span style={{ position: "absolute", bottom: 12, right: 12, background: "rgba(44,26,14,0.6)", color: "white", borderRadius: 50, padding: "5px 12px", fontSize: 12, fontWeight: 600, pointerEvents: "none", display: "flex", alignItems: "center", gap: 5 }}>🔍 Büyüt</span>
             )}
           </div>
           {tumResimler.length > 1 && (
@@ -232,6 +248,27 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
                   <Image src={src} alt={`${urun.ad} görsel ${i + 1}`} fill sizes="72px" style={{ objectFit: "contain", padding: 6 }} />
                 </button>
               ))}
+            </div>
+          )}
+          {/* LIGHTBOX — ana görsele tıklayınca tam ekran büyük görüntü; ‹ › ile gez, ✕/backdrop/Esc kapat */}
+          {lightbox && tumResimler[lightboxIndex] && (
+            <div onClick={() => setLightbox(false)} style={{ position: "fixed", inset: 0, background: "rgba(20,12,6,0.93)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+              <button onClick={(e) => { e.stopPropagation(); setLightbox(false); }} aria-label="Kapat"
+                style={{ position: "absolute", top: 18, right: 18, width: 44, height: 44, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.16)", color: "white", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>✕</button>
+              {tumResimler.length > 1 && (
+                <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(i => (i - 1 + tumResimler.length) % tumResimler.length); }} aria-label="Önceki görsel"
+                  style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", width: 48, height: 48, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.16)", color: "white", fontSize: 30, cursor: "pointer", lineHeight: 1 }}>‹</button>
+              )}
+              <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", width: "min(92vw, 880px)", height: "86vh" }}>
+                <Image src={tumResimler[lightboxIndex]} alt={urun.ad} fill sizes="92vw" style={{ objectFit: "contain" }} />
+              </div>
+              {tumResimler.length > 1 && (
+                <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % tumResimler.length); }} aria-label="Sonraki görsel"
+                  style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", width: 48, height: 48, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.16)", color: "white", fontSize: 30, cursor: "pointer", lineHeight: 1 }}>›</button>
+              )}
+              {tumResimler.length > 1 && (
+                <div style={{ position: "absolute", bottom: 18, left: 0, right: 0, textAlign: "center", color: "rgba(255,255,255,0.7)", fontSize: 13, pointerEvents: "none" }}>{lightboxIndex + 1} / {tumResimler.length}</div>
+              )}
             </div>
           )}
         </div>
