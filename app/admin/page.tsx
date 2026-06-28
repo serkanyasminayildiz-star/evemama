@@ -649,7 +649,7 @@ export default function Admin() {
     { id: "siparisler", icon: "🛒", ad: "Siparişler", badge: istatistikler.bekleyen_siparis },
     { id: "terk-edilen", icon: "🛍️", ad: "Terk Edilen Sepetler" },
     { id: "basarisiz-odemeler", icon: "❌", ad: "Başarısız Ödemeler" },
-    { id: "kumbara", icon: "🐾", ad: "Pati Kumbarası" },
+    { id: "kumbara", icon: "🐾", ad: "Sokak Dostları" },
     { id: "uyeler", icon: "👤", ad: "Üyeler" },
     { id: "kategoriler", icon: "📁", ad: "Kategoriler" },
     { id: "markalar", icon: "🏷️", ad: "Markalar" },

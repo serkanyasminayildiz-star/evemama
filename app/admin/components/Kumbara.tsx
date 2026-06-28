@@ -8,20 +8,16 @@ const bosForm = { tarih: "", tutar: "", barinak_adi: "", sehir: "", video_url: "
 
 export default function Kumbara() {
   const [dagitimlar, setDagitimlar] = useState<Dagitim[]>([]);
-  const [guncel, setGuncel] = useState<number | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [hata, setHata] = useState("");
   const [form, setForm] = useState({ ...bosForm });
   const [kaydediliyor, setKaydediliyor] = useState(false);
 
   const yukle = useCallback(() => {
-    Promise.all([
-      fetch("/api/admin/kumbara", { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } }).then(r => r.json()),
-      fetch("/api/kumbara").then(r => r.json()),
-    ]).then(([adm, pub]) => {
-      if (adm.error) setHata(adm.error); else setDagitimlar(adm.dagitimlar || []);
-      setGuncel(typeof pub.guncelKumbara === "number" ? pub.guncelKumbara : null);
-    }).catch(() => setHata("Yüklenemedi")).finally(() => setYukleniyor(false));
+    fetch("/api/admin/kumbara", { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } })
+      .then(r => r.json())
+      .then(adm => { if (adm.error) setHata(adm.error); else setDagitimlar(adm.dagitimlar || []); })
+      .catch(() => setHata("Yüklenemedi")).finally(() => setYukleniyor(false));
   }, []);
 
   useEffect(() => { yukle(); }, [yukle]);
@@ -50,12 +46,10 @@ export default function Kumbara() {
 
   return (
     <div style={{ color: "#5C3D2E" }}>
-      <h2 style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 700, marginBottom: 6 }}>🐾 Pati Kumbarası</h2>
+      <h2 style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 700, marginBottom: 6 }}>🐾 Sokak Dostları</h2>
 
-      <div style={{ background: "linear-gradient(135deg,#EFF9F0,#E1F3E4)", border: "1.5px solid #BFE0C2", borderRadius: 14, padding: "16px 18px", marginBottom: 20 }}>
-        <div style={{ fontSize: 13, opacity: 0.7 }}>Bu hafta biriken (dağıtıma hazır)</div>
-        <div style={{ fontFamily: "Georgia, serif", fontSize: 30, fontWeight: 700, color: "#2E7D32" }}>{guncel != null ? tl(guncel) : "…"}</div>
-        <div style={{ fontSize: 12.5, opacity: 0.75, marginTop: 4 }}>Pazar ziyaretini yapınca aşağıdan kaydet → kumbara sıfırlanır, etki + video sitede yayınlanır.</div>
+      <div style={{ background: "linear-gradient(135deg,#EFF9F0,#E1F3E4)", border: "1.5px solid #BFE0C2", borderRadius: 14, padding: "14px 18px", marginBottom: 20, fontSize: 13, lineHeight: 1.6, opacity: 0.9 }}>
+        Her hafta gelirinin %5&apos;i ile mama alıp barınağa/sokağa götür, <strong>videoya çek</strong>, sonra aşağıdan kaydet. Video eklenince anasayfada <strong>Sokak Dostları şeridi otomatik açılır</strong> (ilk video gelene kadar gizli). Sitede hiçbir ₺ tutarı görünmez — yalnız köpek/öğün/ziyaret sayısı.
       </div>
 
       <div style={{ background: "white", border: "1px solid #E8D5B7", borderRadius: 14, padding: "18px 20px", marginBottom: 24 }}>
