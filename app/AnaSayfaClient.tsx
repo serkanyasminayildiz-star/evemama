@@ -84,7 +84,7 @@ export default function AnaSayfaClient() {
       // Limit yuksek tutulur ki TUM aktif+stoktaki urunler dataset'e gelsin;
       // grouplama (kategori basina max 6) memory'de yapilir. ~800 urun
       // toplam ~500 KB — modern cihazlarda sorun degil.
-      .neq("aktif", false).gt("stok", 0).limit(1000)
+      .eq("oncelikli", true).neq("aktif", false).gt("stok", 0).limit(1000)
       .then(({ data, error }) => {
         if (error) {
           console.error("[home] urunler fetch:", error);
@@ -134,70 +134,11 @@ export default function AnaSayfaClient() {
     return () => clearInterval(id);
   }, [acikSlaytlar.length]);
 
-  // Verilen filtre fonksiyonuna uyan ilk kategorinin slug'ini doner.
-  // "Tümünü Gör" linkleri icin kullanilir; eslesme yoksa /urunler'e duser.
-  const findKatSlug = (filterFn: (k: Kategori) => boolean): string => {
-    const match = tumKategoriler.find(filterFn);
-    return match ? match.slug : "";
-  };
-
+  // Öne Çıkan Ürünler — gruplama KALDIRILDI. İşaretlenen TÜM oncelikli ürünler
+  // tek yatay slider'da gösterilir (mama-filtresi/kategori eşleştirmesi yok).
   const urunGruplari = (() => {
-    if (!tumKategoriler.length || !oneCikanlar.length) return [];
-
-    // 6 sabit grup: Kedi Mamasi + Yavru/Yasli; Kopek Mamasi + Yavru/Yasli.
-    // Her urun slug ve isminde gecen kelimelere gore TAG'lenir, ilgili
-    // gruplara eklenir. Bir urun birden fazla gruba girebilir (ornegin
-    // "Yavru Kedi Mamasi" hem ana "Kedi Mamasi"nda hem ozel "Yavru Kedi
-    // Mamalari" grubunda goruntulenir).
-    type Grup = { ad: string; slug: string; urunler: Urun[]; sortKey: number };
-    const gruplar: Record<string, Grup> = {
-      "acik-kedi":     { ad: "Açık Kedi Mamaları",  slug: "acik-kedi-mamalari",  sortKey: -2, urunler: [] },
-      "acik-kopek":    { ad: "Açık Köpek Mamaları", slug: "acik-kopek-mamalari", sortKey: -1, urunler: [] },
-      "kedi-mama":     { ad: "Kedi Maması",         slug: findKatSlug(k => k.slug === "kedi") || "kedi",                            sortKey: 0, urunler: [] },
-      "kedi-yavru":    { ad: "Yavru Kedi Mamaları", slug: findKatSlug(k => /yavru/.test(k.slug) && /kedi/.test(k.slug)) || "urunler", sortKey: 1, urunler: [] },
-      "kedi-konserve": { ad: "Yaş Kedi Mamaları",   slug: findKatSlug(k => /konserve/.test(k.slug) && /kedi/.test(k.slug)) || "urunler", sortKey: 2, urunler: [] },
-      "kopek-mama":    { ad: "Köpek Maması",        slug: findKatSlug(k => k.slug === "kopek") || "kopek",                          sortKey: 3, urunler: [] },
-      "kopek-yavru":   { ad: "Yavru Köpek Mamaları",slug: findKatSlug(k => /yavru/.test(k.slug) && /kopek/.test(k.slug)) || "urunler", sortKey: 4, urunler: [] },
-      "kopek-konserve":{ ad: "Yaş Köpek Mamaları",  slug: findKatSlug(k => /konserve/.test(k.slug) && /kopek/.test(k.slug)) || "urunler", sortKey: 5, urunler: [] },
-    };
-
-    oneCikanlar.forEach(u => {
-      const slug = (u.kategoriler?.slug || "").toLowerCase();
-      const ad = (u.ad || "").toLowerCase();
-      const txt = slug + " " + ad;
-
-      const ekle = (key: string) => {
-        if (gruplar[key].urunler.length < 15) gruplar[key].urunler.push(u);
-      };
-
-      // Açık mamalar: KATEGORİYE göre ayrı bölüm (kat 85/86). Metin eşleştirmesine
-      // girmez ki normal Kedi/Köpek Maması gruplarında TEKRAR görünmesin.
-      if (slug === "acik-kedi-mamalari") { ekle("acik-kedi"); return; }
-      if (slug === "acik-kopek-mamalari") { ekle("acik-kopek"); return; }
-
-      const isKedi = /\bkedi\b|kitten/.test(txt) && !/kopek|köpek/.test(txt);
-      const isKopek = /\bkopek\b|köpek|puppy/.test(txt) && !/\bkedi\b/.test(txt);
-      const isMama = /mama|food|biskuvi|odul|treat|konserve/.test(txt);
-      const isYavru = /yavru|kitten|puppy/.test(txt);
-      // "Yaş" = konserve / wet food. Slug'da "konserve" var veya ad'da "yaş mama"/"wet" geciyor.
-      const isKonserve = /konserve|wet|pate|patê|sos|jelly|gravy|sıvı|pouch/.test(txt);
-
-      if (!isMama) return; // Sadece mama urunleri (aksesuar, kum vb. degil)
-
-      if (isKedi) {
-        ekle("kedi-mama");
-        if (isYavru) ekle("kedi-yavru");
-        if (isKonserve) ekle("kedi-konserve");
-      } else if (isKopek) {
-        ekle("kopek-mama");
-        if (isYavru) ekle("kopek-yavru");
-        if (isKonserve) ekle("kopek-konserve");
-      }
-    });
-
-    return Object.values(gruplar)
-      .filter(g => g.urunler.length >= 2)
-      .sort((a, b) => a.sortKey - b.sortKey);
+    if (!tumKategoriler.length || !oneCikanlar.length) return [] as { urunler: Urun[] }[];
+    return [{ urunler: oneCikanlar.slice(0, 30) }];
   })();
 
   const handleEkle = (urun: Urun) => {
@@ -559,27 +500,8 @@ export default function AnaSayfaClient() {
             </div>
           ) : (
             urunGruplari.map((grup, ki) => {
-              const g = getKatGorsel(grup.slug);
               return (
-                <div key={ki} style={{ marginBottom: 52 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{ width: 48, height: 48, borderRadius: 16, background: g.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, boxShadow: "0 4px 12px rgba(92,61,46,0.1)", flexShrink: 0 }}>
-                        {g.emoji}
-                      </div>
-                      <div>
-                        <h3 style={{ fontFamily: "Georgia,serif", fontSize: 20, fontWeight: 700, color: "#5C3D2E", margin: 0 }}>{grup.ad}</h3>
-                        <div style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.4, marginTop: 2 }}>{grup.urunler.length} ürün gösteriliyor</div>
-                      </div>
-                    </div>
-                    <Link href={`/kategori/${grup.slug}`}
-                      style={{ fontSize: 13, fontWeight: 600, color: "#E8845A", textDecoration: "none", border: "1.5px solid #E8845A", padding: "7px 16px", borderRadius: 50, whiteSpace: "nowrap" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "#E8845A"; e.currentTarget.style.color = "white"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#E8845A"; }}>
-                      Tümünü Gör →
-                    </Link>
-                  </div>
-
+                <div key={ki}>
                   <div className="urun-grid">
                     {grup.urunler.map((urun, i) => {
                       // Indirim hesaplama — indirimli_fiyat dolu ve normalden kucukse indirim var.
@@ -632,10 +554,6 @@ export default function AnaSayfaClient() {
                       );
                     })}
                   </div>
-
-                  {ki < urunGruplari.length - 1 && (
-                    <div style={{ height: 1, background: "linear-gradient(to right, transparent, #E8D5B7, transparent)", marginTop: 48 }} />
-                  )}
                 </div>
               );
             })
