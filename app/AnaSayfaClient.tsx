@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { supabase } from "../lib/supabase";
 import { useCart } from "../context/CartContext";
@@ -133,6 +133,33 @@ export default function AnaSayfaClient() {
     const id = setInterval(() => setAktifSlide(s => (s + 1) % acikSlaytlar.length), 4000);
     return () => clearInterval(id);
   }, [acikSlaytlar.length]);
+
+  // Öne Çıkanlar slider'ı otomatik kayar (~3.5 sn'de bir bir sayfa ilerler);
+  // fareyle üstüne gelince / dokununca durur, çekilince devam eder.
+  const oneCikanRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = oneCikanRef.current;
+    if (!el) return;
+    let dur = false;
+    const durdur = () => { dur = true; };
+    const devam = () => { dur = false; };
+    el.addEventListener("mouseenter", durdur);
+    el.addEventListener("mouseleave", devam);
+    el.addEventListener("touchstart", durdur, { passive: true });
+    el.addEventListener("touchend", devam, { passive: true });
+    const id = setInterval(() => {
+      if (dur || el.scrollWidth <= el.clientWidth) return;
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 8) el.scrollTo({ left: 0, behavior: "smooth" });
+      else el.scrollBy({ left: Math.round(el.clientWidth * 0.85), behavior: "smooth" });
+    }, 3500);
+    return () => {
+      clearInterval(id);
+      el.removeEventListener("mouseenter", durdur);
+      el.removeEventListener("mouseleave", devam);
+      el.removeEventListener("touchstart", durdur);
+      el.removeEventListener("touchend", devam);
+    };
+  }, [oneCikanlar.length]);
 
   // Öne Çıkan Ürünler — gruplama KALDIRILDI. İşaretlenen TÜM oncelikli ürünler
   // tek yatay slider'da gösterilir (mama-filtresi/kategori eşleştirmesi yok).
@@ -502,7 +529,7 @@ export default function AnaSayfaClient() {
             urunGruplari.map((grup, ki) => {
               return (
                 <div key={ki}>
-                  <div className="urun-grid">
+                  <div className="urun-grid" ref={oneCikanRef}>
                     {grup.urunler.map((urun, i) => {
                       // Indirim hesaplama — indirimli_fiyat dolu ve normalden kucukse indirim var.
                       const normalFiyat = parseFloat(urun.fiyat) || 0;
