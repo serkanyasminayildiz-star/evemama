@@ -38,15 +38,15 @@ export default function KumbaraIcerik() {
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div style={{ fontSize: 52 }}>🐾</div>
           <h1 style={{ fontFamily: "Georgia, serif", fontSize: 30, fontWeight: 700, margin: "6px 0" }}>Pati Kumbarası</h1>
-          <p style={{ fontSize: 16, opacity: 0.85, lineHeight: 1.6, maxWidth: 640, margin: "0 auto" }}>{"Sen dostuna mama al — biz sokaktaki dostuna verelim. Her alışverişin %5'i, barınak ve sokak köpeklerine orijinal Royal Canin mama oluyor."}</p>
+          <p style={{ fontSize: 16, opacity: 0.85, lineHeight: 1.6, maxWidth: 640, margin: "0 auto" }}>{"Sen dostuna mama al — biz sokaktaki dostuna verelim. Her alışverişin %5'ini KENDİ cebimizden, sokak ve barınak köpeklerine orijinal Royal Canin mama olarak bağışlıyoruz. Sana ekstra ücret yok."}</p>
         </div>
 
         <div style={{ background: "linear-gradient(135deg,#2E7D32,#43A047)", color: "white", borderRadius: 22, padding: "28px 24px", textAlign: "center", marginBottom: 18 }}>
           <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 4 }}>BU HAFTA KUMBARADA</div>
           <div style={{ fontFamily: "Georgia, serif", fontSize: 44, fontWeight: 700, lineHeight: 1 }}>{tl(data?.guncelKumbara || 0)}</div>
           {(data?.katkiSayisi || 0) > 0
-            ? <div style={{ fontSize: 14, opacity: 0.92, marginTop: 10 }}>💚 {data?.katkiSayisi} dostumuz katkıda bulundu — teşekkürler!</div>
-            : <div style={{ fontSize: 14, opacity: 0.92, marginTop: 10 }}>{"İlk alışverişle ilk katkı senin olabilir 🐾"}</div>}
+            ? <div style={{ fontSize: 14, opacity: 0.92, marginTop: 10 }}>💚 {data?.katkiSayisi} dostumuz alışverişiyle destek oldu — teşekkürler!</div>
+            : <div style={{ fontSize: 14, opacity: 0.92, marginTop: 10 }}>{"İlk patiyi senin alışverişin doyursun 🐾"}</div>}
         </div>
 
         {/* Haftalık döngü — şeffaflık (sıfırlama pazar dağıtımına bağlı) */}
@@ -113,7 +113,7 @@ export default function KumbaraIcerik() {
 
         <section style={{ marginBottom: 36 }}>
           <h2 style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, marginBottom: 6 }}>Teşekkür duvarı 💚</h2>
-          <p style={{ fontSize: 14, opacity: 0.75, marginBottom: 16 }}>{"Katkıda bulunup isminin görünmesine izin veren dostlarımız. Ödeme sırasında kutucuğu işaretleyerek sen de katılabilirsin."}</p>
+          <p style={{ fontSize: 14, opacity: 0.75, marginBottom: 16 }}>{"Alışverişiyle bir sokak dostunu doyuran ve isminin görünmesine izin veren dostlarımız. Ödeme sırasında kutucuğu işaretleyerek sen de yer alabilirsin."}</p>
           {isimler.length === 0 ? (
             <div style={{ ...kart, textAlign: "center" }}>{"İlk teşekkür senin olabilir 🐾"}</div>
           ) : (

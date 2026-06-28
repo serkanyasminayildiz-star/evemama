@@ -106,7 +106,7 @@ function OdemeSonucIcerik() {
           </div>
           {tutar > 0 && (
             <div style={{ background: "#EFF9F0", border: "1.5px solid #BFE0C2", borderRadius: 12, padding: "14px 16px", marginBottom: 28, fontSize: 13.5, color: "#2E7D32", lineHeight: 1.6 }}>
-              {"🐾 Bu siparişinle Pati Kumbarası'na "}<strong>₺{kumbaraKatkisi(tutar).toLocaleString("tr-TR")}</strong>{" bağışladın — bir sokak dostu sana teşekkür ediyor! 💚"}
+              {"🐾 Bu siparişin sayesinde "}<strong>₺{kumbaraKatkisi(tutar).toLocaleString("tr-TR")}</strong>{" değerinde mama bir sokak dostuna gidiyor — bizden, senin alışverişinle! 💚"}
             </div>
           )}
           <Link href="/" style={{ background: "#E8845A", color: "white", padding: "14px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "inline-block" }}>

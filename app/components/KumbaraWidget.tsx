@@ -51,7 +51,7 @@ export default function KumbaraWidget() {
           <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#E1F3E4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>🐾</div>
           <div>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 21, fontWeight: 700, color: "#2E7D32" }}>Pati Kumbarası</div>
-            <div style={{ fontSize: 13.5, color: "#5C3D2E", opacity: 0.75 }}>{"Her alışverişin %5'i barınak ve sokak köpeklerine orijinal mama oluyor"}</div>
+            <div style={{ fontSize: 13.5, color: "#5C3D2E", opacity: 0.75 }}>{"Her alışverişin %5'ini BİZ karşılıyoruz — sokak ve barınak köpeklerine mama (sana ekstra ücret yok)"}</div>
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export default function KumbaraWidget() {
         </div>
 
         <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #DDEEDD" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, marginBottom: 8 }}>💚 Katkıda bulunan dostlarımıza teşekkürler</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, marginBottom: 8 }}>💚 Alışverişiyle bir patiyi doyuran dostlarımıza teşekkürler</div>
           {tesekkurIsimleri.length > 0 ? (
             <div style={{ overflow: "hidden", whiteSpace: "nowrap", WebkitMaskImage: "linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)", maskImage: "linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)" }}>
               <div className="kumbara-track">
@@ -107,7 +107,7 @@ export default function KumbaraWidget() {
         </div>
 
         <Link href="/kumbara" style={{ display: "block", textAlign: "center", marginTop: 18, background: "#2E7D32", color: "white", borderRadius: 14, padding: "13px", fontSize: 14.5, fontWeight: 700, textDecoration: "none" }}>
-          Hikaye, videolar ve tüm bağışlar →
+          Hikaye, videolar ve dağıtımlar →
         </Link>
       </div>
     </section>

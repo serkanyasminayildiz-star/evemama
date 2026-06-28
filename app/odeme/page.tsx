@@ -357,7 +357,7 @@ export default function Odeme() {
               {kumbaraTesekkur && <span style={{ color: "white", fontSize: 13 }}>✓</span>}
             </div>
             <div style={{ fontSize: 13, color: "#2E7D32", lineHeight: 1.55 }}>
-              {"🐾 Bu alışverişin %5'i sokak ve barınak köpeklerine mama oluyor. İsmim "}
+              {"🐾 Bu alışverişin %5'ini biz karşılayıp sokak köpeklerine bağışlıyoruz (senden ekstra ücret alınmaz). İsmim "}
               <strong>{tesekkurAdi(form.name, form.surname) || "(Ad S.)"}</strong>
               {" Pati Kumbarası teşekkür duvarında görünsün."}
             </div>
