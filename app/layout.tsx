@@ -48,19 +48,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             ${GA4_ID ? `gtag('config', '${GA4_ID}');` : ""}
           `}
         </Script>
-        {/* iyzico Alıcı Koruma rozeti — sol altta "Alici Koruma" guven seali.
-            pwi:false => "iyzico ile Ode" (Pay With Iyzico) CTA'si KAPALI:
-            tek odeme yontemi zaten iyzico (gereksiz), mobilde alt navigasyonu
-            kapatiyordu ve tiklanabilir gorunup tiklanmiyordu. Bu rozet gercek
-            odeme akisini ETKILEMEZ (odeme CheckoutForm/api ile yapilir).
-            iyz config buyer-protection.js'ten ONCE yuklenmeli — beforeInteractive. */}
-        <Script id="iyzico-config" strategy="beforeInteractive">
-          {`window.iyz = { token: '94870e88-8639-4167-8044-2defb3b45ded', position: 'bottomLeft', ideaSoft: false, pwi: false };`}
-        </Script>
-        <Script
-          src="https://static.iyzipay.com/buyer-protection/buyer-protection.js"
-          strategy="afterInteractive"
-        />
+        {/* iyzico "Korumalı Alışveriş" (Alıcı Koruma) rozeti KALDIRILDI — sol-alt
+            sabit seal, büyütülen ürün görselinin alt gezinme oklarını örtüyordu +
+            kullanıcı kaldırılmasını istedi. Gerçek ödeme akışını ETKİLEMEZ (ödeme
+            CheckoutForm/api ile). iyzico güvence mesajı checkout sayfasında duruyor. */}
         {/* Microsoft Clarity — oturum kayıtları + heatmap. /admin HARİÇ
             (admin müşteri verisi içerir; KVKK — kayda PII düşmesin). */}
         <ClarityScript id={CLARITY_ID} />
