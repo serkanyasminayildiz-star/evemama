@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
@@ -31,6 +31,7 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
   const [seciliResim, setSeciliResim] = useState<string | null>(null); // galeri: tıklanan küçük resim
   const [lightbox, setLightbox] = useState(false); // büyük görsel (lightbox) açık mı
   const [lightboxIndex, setLightboxIndex] = useState(0); // lightbox'ta gösterilen görsel indeksi
+  const lightboxDokunX = useRef<number | null>(null); // mobil swipe başlangıç X'i
   const [aktifSekme, setAktifSekme] = useState<"aciklama" | "yorumlar">("aciklama");
   const [yeniYorum, setYeniYorum] = useState({ ad: "", puan: 5, yorum: "" });
   const [yorumGonderildi, setYorumGonderildi] = useState(false);
@@ -250,24 +251,35 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
               ))}
             </div>
           )}
-          {/* LIGHTBOX — ana görsele tıklayınca tam ekran büyük görüntü; ‹ › ile gez, ✕/backdrop/Esc kapat */}
+          {/* LIGHTBOX — tam ekran büyük görüntü. Kontroller görselin ÜSTÜNDE (zIndex:10) +
+              dikey reserve (padding) → mobilde görsel X'i/okları örtüp tıklamayı YUTMAZ.
+              Mobilde swipe ile, alttaki ‹ 1/N › ile gezilir; ✕/backdrop/Esc kapatır. */}
           {lightbox && tumResimler[lightboxIndex] && (
-            <div onClick={() => setLightbox(false)} style={{ position: "fixed", inset: 0, background: "rgba(20,12,6,0.93)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div onClick={() => setLightbox(false)} style={{ position: "fixed", inset: 0, background: "rgba(20,12,6,0.93)", zIndex: 1000, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 14px 88px" }}>
               <button onClick={(e) => { e.stopPropagation(); setLightbox(false); }} aria-label="Kapat"
-                style={{ position: "absolute", top: 18, right: 18, width: 44, height: 44, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.16)", color: "white", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>✕</button>
-              {tumResimler.length > 1 && (
-                <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(i => (i - 1 + tumResimler.length) % tumResimler.length); }} aria-label="Önceki görsel"
-                  style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", width: 48, height: 48, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.16)", color: "white", fontSize: 30, cursor: "pointer", lineHeight: 1 }}>‹</button>
-              )}
-              <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", width: "min(92vw, 880px)", height: "86vh" }}>
+                style={{ position: "absolute", top: 12, right: 12, zIndex: 10, width: 48, height: 48, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.18)", color: "white", fontSize: 22, cursor: "pointer", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+
+              <div
+                onClick={(e) => e.stopPropagation()}
+                onTouchStart={(e) => { lightboxDokunX.current = e.touches[0].clientX; }}
+                onTouchEnd={(e) => {
+                  const bas = lightboxDokunX.current; lightboxDokunX.current = null;
+                  if (bas == null || tumResimler.length < 2) return;
+                  const fark = e.changedTouches[0].clientX - bas;
+                  if (Math.abs(fark) > 40) setLightboxIndex(i => fark < 0 ? (i + 1) % tumResimler.length : (i - 1 + tumResimler.length) % tumResimler.length);
+                }}
+                style={{ position: "relative", flex: 1, width: "100%", maxWidth: 880, minHeight: 0 }}>
                 <Image src={tumResimler[lightboxIndex]} alt={urun.ad} fill sizes="92vw" style={{ objectFit: "contain" }} />
               </div>
+
               {tumResimler.length > 1 && (
-                <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % tumResimler.length); }} aria-label="Sonraki görsel"
-                  style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", width: 48, height: 48, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.16)", color: "white", fontSize: 30, cursor: "pointer", lineHeight: 1 }}>›</button>
-              )}
-              {tumResimler.length > 1 && (
-                <div style={{ position: "absolute", bottom: 18, left: 0, right: 0, textAlign: "center", color: "rgba(255,255,255,0.7)", fontSize: 13, pointerEvents: "none" }}>{lightboxIndex + 1} / {tumResimler.length}</div>
+                <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", bottom: 20, left: 0, right: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 20 }}>
+                  <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(i => (i - 1 + tumResimler.length) % tumResimler.length); }} aria-label="Önceki görsel"
+                    style={{ width: 50, height: 50, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.18)", color: "white", fontSize: 28, cursor: "pointer", lineHeight: 1 }}>‹</button>
+                  <span style={{ color: "white", fontSize: 14, fontWeight: 700, minWidth: 46, textAlign: "center" }}>{lightboxIndex + 1} / {tumResimler.length}</span>
+                  <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % tumResimler.length); }} aria-label="Sonraki görsel"
+                    style={{ width: 50, height: 50, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.18)", color: "white", fontSize: 28, cursor: "pointer", lineHeight: 1 }}>›</button>
+                </div>
               )}
             </div>
           )}
