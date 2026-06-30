@@ -80,6 +80,9 @@ type SiparisRow = {
   toplam?: number | string;
   kargo_takip?: string | null;
   urunler?: string | null;
+  fatura_kesildi?: boolean;
+  fatura_uuid?: string | null;
+  fatura_no?: string | null;
 };
 type Kupon = {
   id: number | string;
@@ -141,6 +144,7 @@ export default function Admin() {
   const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
   const [markalar, setMarkalar] = useState<Marka[]>([]);
   const [siparisler, setSiparisler] = useState<SiparisRow[]>([]);
+  const [faturaIslem, setFaturaIslem] = useState<number | null>(null);
   const [siparisDurumFiltre, setSiparisDurumFiltre] = useState("");
   const [acikSiparisId, setAcikSiparisId] = useState<number | null>(null);
   const [siparisKalemleri, setSiparisKalemleri] = useState<{ [key: number]: SiparisKalem[] }>({});
@@ -1629,6 +1633,24 @@ export default function Admin() {
                           setTimeout(() => URL.revokeObjectURL(url), 1000);
                           goster("✅ Paketleme fişi indirildi");
                         }} style={{ ...btn("#8BAF8E"), padding: "9px 16px", fontSize: 12 }}>💾 İndir</button>
+                        <button onClick={async () => {
+                          if (sp.fatura_kesildi || faturaIslem === sp.id) return;
+                          if (!window.confirm(`#${sp.siparis_no} (${sp.ad || ""} ${sp.soyad || ""}) için e-Arşiv faturası kesilsin mi?`)) return;
+                          setFaturaIslem(sp.id);
+                          try {
+                            const r = await fetch("/api/admin/fatura-kes", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` }, body: JSON.stringify({ siparisId: sp.id }) });
+                            const d = await r.json();
+                            if (d.ok) {
+                              goster(`✅ Fatura ${d.zaten ? "zaten kesilmiş" : "kesildi"} — ${d.faturaNo || d.uuid}`);
+                              setSiparisler(prev => prev.map(x => x.id === sp.id ? { ...x, fatura_kesildi: true, fatura_uuid: d.uuid, fatura_no: d.faturaNo } : x));
+                            } else { goster(`❌ ${d.error || "fatura kesilemedi"}`); }
+                          } catch (err) { goster(`❌ ${err instanceof Error ? err.message : "hata"}`); }
+                          setFaturaIslem(null);
+                        }} disabled={sp.fatura_kesildi || faturaIslem === sp.id}
+                          title={sp.fatura_kesildi ? `Fatura: ${sp.fatura_no || sp.fatura_uuid || ""}` : "e-Arşiv faturası kes"}
+                          style={{ ...btn(sp.fatura_kesildi ? "#8BAF8E" : "#E8845A"), padding: "9px 16px", fontSize: 12 }}>
+                          {faturaIslem === sp.id ? "⏳..." : sp.fatura_kesildi ? "✓ Fatura Kesildi" : "🧾 Fatura Kes"}
+                        </button>
                       </div>
                     </div>
                   )}
