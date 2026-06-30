@@ -110,3 +110,12 @@ export async function durumSorgula(uuid: string): Promise<string> {
   const st = yanit.InvoiceStatus as Record<string, unknown> | undefined;
   return (st?.DetailDescription as string) || (st?.Code as string) || (yanit.StatusCode as string) || "bilinmiyor";
 }
+
+/** Kesilmiş e-Arşiv faturanın PDF'i. Nilvera `GET /earchive/Invoices/{uuid}/pdf`
+ *  base64 string'i JSON gövdesinde döner (content-type application/json) → Buffer. */
+export async function faturaPdfArsiv(uuid: string): Promise<Buffer> {
+  const r = await fetch(`${base()}/earchive/Invoices/${encodeURIComponent(uuid)}/pdf`, { headers: authHeader() });
+  if (!r.ok) throw await hata(r);
+  const b64 = (await r.json()) as string; // bare JSON string: "JVBERi0..."
+  return Buffer.from(b64, "base64");
+}

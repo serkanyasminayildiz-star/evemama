@@ -1634,7 +1634,27 @@ export default function Admin() {
                           goster("✅ Paketleme fişi indirildi");
                         }} style={{ ...btn("#8BAF8E"), padding: "9px 16px", fontSize: 12 }}>💾 İndir</button>
                         <button onClick={async () => {
-                          if (sp.fatura_kesildi || faturaIslem === sp.id) return;
+                          if (faturaIslem === sp.id) return;
+                          // Kesilmişse → PDF'i yeni sekmede göster (sekmeyi senkron aç ki popup engellenmesin)
+                          if (sp.fatura_kesildi) {
+                            const win = window.open("about:blank", "_blank");
+                            setFaturaIslem(sp.id);
+                            try {
+                              const r = await fetch(`/api/admin/fatura-goruntule?siparisId=${sp.id}`, { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } });
+                              if (!r.ok) {
+                                win?.close();
+                                const d = await r.json().catch(() => ({} as { error?: string }));
+                                goster(`❌ ${d.error || "fatura görüntülenemedi"}`);
+                              } else {
+                                const url = URL.createObjectURL(await r.blob());
+                                if (win) win.location.href = url; else window.open(url, "_blank");
+                                setTimeout(() => URL.revokeObjectURL(url), 60000);
+                              }
+                            } catch (err) { win?.close(); goster(`❌ ${err instanceof Error ? err.message : "hata"}`); }
+                            setFaturaIslem(null);
+                            return;
+                          }
+                          // Kesilmemişse → fatura kes
                           if (!window.confirm(`#${sp.siparis_no} (${sp.ad || ""} ${sp.soyad || ""}) için e-Arşiv faturası kesilsin mi?`)) return;
                           setFaturaIslem(sp.id);
                           try {
@@ -1646,10 +1666,10 @@ export default function Admin() {
                             } else { goster(`❌ ${d.error || "fatura kesilemedi"}`); }
                           } catch (err) { goster(`❌ ${err instanceof Error ? err.message : "hata"}`); }
                           setFaturaIslem(null);
-                        }} disabled={sp.fatura_kesildi || faturaIslem === sp.id}
-                          title={sp.fatura_kesildi ? `Fatura: ${sp.fatura_no || sp.fatura_uuid || ""}` : "e-Arşiv faturası kes"}
+                        }} disabled={faturaIslem === sp.id}
+                          title={sp.fatura_kesildi ? `Fatura: ${sp.fatura_no || sp.fatura_uuid || ""} — görüntülemek için tıkla` : "e-Arşiv faturası kes"}
                           style={{ ...btn(sp.fatura_kesildi ? "#8BAF8E" : "#E8845A"), padding: "9px 16px", fontSize: 12 }}>
-                          {faturaIslem === sp.id ? "⏳..." : sp.fatura_kesildi ? "✓ Fatura Kesildi" : "🧾 Fatura Kes"}
+                          {faturaIslem === sp.id ? "⏳..." : sp.fatura_kesildi ? "✓ Faturayı Gör" : "🧾 Fatura Kes"}
                         </button>
                       </div>
                     </div>
