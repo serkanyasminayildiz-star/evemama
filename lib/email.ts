@@ -614,3 +614,59 @@ export async function sendHavaleTalimatMaili(p: { siparisNo: string; ad?: string
     return false;
   }
 }
+
+// ── İletişim formu → info@evemama.net ────────────────────────────────────────
+// Müşterinin yazdığı mesajı işletmeye iletir; replyTo=müşteri (inbox'tan
+// direkt "Yanıtla" çalışsın). Kullanıcı girdisi HTML'e kaçırılarak basılır.
+export type IletisimParams = {
+  ad: string;
+  soyad?: string;
+  email: string;
+  mesaj: string;
+  acikRiza?: boolean;
+};
+
+const ILETISIM_TO = "info@evemama.net";
+
+function htmlKacir(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+export async function sendIletisimMaili(p: IletisimParams): Promise<boolean> {
+  const client = getResend();
+  if (!client) {
+    console.warn("[email] RESEND_API_KEY yok, iletisim maili gonderilmedi");
+    return false;
+  }
+  const tamAd = `${p.ad}${p.soyad ? " " + p.soyad : ""}`.trim();
+  const html = `
+  <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#5C3D2E;line-height:1.6;">
+    <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;margin-bottom:4px;">evemama<span style="color:#E8845A;font-style:italic;">.net</span></div>
+    <div style="font-size:12px;opacity:0.6;margin-bottom:16px;">İletişim formu mesajı</div>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      <tr><td style="padding:6px 10px;background:#FDF6EE;font-weight:700;width:110px;">Ad Soyad</td><td style="padding:6px 10px;">${htmlKacir(tamAd)}</td></tr>
+      <tr><td style="padding:6px 10px;background:#FDF6EE;font-weight:700;">E-posta</td><td style="padding:6px 10px;">${htmlKacir(p.email)}</td></tr>
+      <tr><td style="padding:6px 10px;background:#FDF6EE;font-weight:700;">Açık rıza</td><td style="padding:6px 10px;">${p.acikRiza ? "Evet" : "Hayır"} (KVKK: Evet)</td></tr>
+    </table>
+    <div style="margin-top:16px;padding:14px 16px;background:#FDF6EE;border-radius:12px;font-size:14px;white-space:pre-wrap;">${htmlKacir(p.mesaj)}</div>
+    <p style="font-size:12px;opacity:0.5;margin-top:16px;">Bu maile "Yanıtla" dediğinizde cevap doğrudan müşteriye (${htmlKacir(p.email)}) gider.</p>
+  </div>`;
+  try {
+    const { data, error } = await client.emails.send({
+      from: FROM_EMAIL,
+      to: ILETISIM_TO,
+      replyTo: p.email,
+      subject: `📩 İletişim formu — ${tamAd}`,
+      html,
+      text: `İletişim formu\nAd Soyad: ${tamAd}\nE-posta: ${p.email}\nAçık rıza: ${p.acikRiza ? "Evet" : "Hayır"}\n\n${p.mesaj}`,
+    });
+    if (error) {
+      console.error("[email] iletisim maili hatasi:", { from: p.email, error });
+      return false;
+    }
+    return Boolean(data?.id);
+  } catch (err) {
+    console.error("[email] iletisim maili exception:", { from: p.email, err: err instanceof Error ? err.message : String(err) });
+    return false;
+  }
+}

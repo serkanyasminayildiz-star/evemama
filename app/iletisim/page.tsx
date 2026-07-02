@@ -9,16 +9,33 @@ export default function Iletisim() {
   const [mobil, setMobil] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- ilk değer medya sorgusundan senkron okunur
     setMobil(mq.matches);
     const dinle = (e: MediaQueryListEvent) => setMobil(e.matches);
     mq.addEventListener("change", dinle);
     return () => mq.removeEventListener("change", dinle);
   }, []);
 
-  const handleGonder = () => {
-    if (!form.ad || !form.email || !form.mesaj || !form.kvkk) return;
-    setGonderildi(true);
+  const [yukleniyor, setYukleniyor] = useState(false);
+  const [hata, setHata] = useState("");
+
+  const handleGonder = async () => {
+    if (!form.ad || !form.email || !form.mesaj || !form.kvkk || yukleniyor) return;
+    setYukleniyor(true);
+    setHata("");
+    try {
+      const r = await fetch("/api/iletisim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const d = await r.json();
+      if (d.ok) setGonderildi(true);
+      else setHata(d.error || "Mesaj gönderilemedi, lütfen tekrar deneyin.");
+    } catch {
+      setHata("Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.");
+    } finally {
+      setYukleniyor(false);
+    }
   };
 
   return (
@@ -95,9 +112,14 @@ export default function Iletisim() {
                   <Link href="/acik-riza" style={{ color: "#E8845A", textDecoration: "none", fontWeight: 700 }}>Açık Rıza Metni</Link>&apos;ni okudum, anladım ve kabul ediyorum.
                 </span>
               </div>
-              <button onClick={handleGonder} disabled={!form.ad || !form.email || !form.mesaj || !form.kvkk}
-                style={{ width: "100%", background: (!form.ad || !form.email || !form.mesaj || !form.kvkk) ? "#ccc" : "#E8845A", color: "white", border: "none", borderRadius: 14, padding: "15px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                Gönder →
+              {hata && (
+                <div style={{ background: "#FFEBEE", color: "#C62828", padding: "12px 16px", borderRadius: 12, marginBottom: 14, fontSize: 13, textAlign: "center", lineHeight: 1.5 }}>
+                  {hata}
+                </div>
+              )}
+              <button onClick={handleGonder} disabled={!form.ad || !form.email || !form.mesaj || !form.kvkk || yukleniyor}
+                style={{ width: "100%", background: (!form.ad || !form.email || !form.mesaj || !form.kvkk || yukleniyor) ? "#ccc" : "#E8845A", color: "white", border: "none", borderRadius: 14, padding: "15px", fontSize: 15, fontWeight: 700, cursor: yukleniyor ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+                {yukleniyor ? "Gönderiliyor..." : "Gönder →"}
               </button>
             </>
           )}
