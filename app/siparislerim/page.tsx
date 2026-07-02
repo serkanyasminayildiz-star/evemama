@@ -113,10 +113,10 @@ export default function Siparislerim() {
     } catch (err) {
       console.error("[siparis kalemleri]", err);
       // siparisler.urunler JSON kolonunu da deneyelim (alternatif sema)
-      const s = siparisler.find(x => x.id === siparisId);
-      if (s && (s as any).urunler) {
+      const s = siparisler.find(x => x.id === siparisId) as (Siparis & { urunler?: unknown }) | undefined;
+      if (s && s.urunler) {
         try {
-          const arr = typeof (s as any).urunler === "string" ? JSON.parse((s as any).urunler) : (s as any).urunler;
+          const arr = typeof s.urunler === "string" ? JSON.parse(s.urunler) : s.urunler;
           setSiparisKalemleri(prev => ({ ...prev, [String(siparisId)]: (arr || []) as Kalem[] }));
           setAcikSiparis(siparisId);
           return;
@@ -136,10 +136,10 @@ export default function Siparislerim() {
         <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.7, lineHeight: 1.6, marginBottom: 24 }}>
           Siparişlerinizi görüntülemek için lütfen giriş yapın.
         </p>
-        <Link href="/giris" style={{ background: "#E8845A", color: "white", padding: "14px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "inline-block", marginRight: 8 }}>
+        <Link href="/giris?returnUrl=/siparislerim" style={{ background: "#E8845A", color: "white", padding: "14px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "inline-block", marginRight: 8 }}>
           Giriş Yap
         </Link>
-        <Link href="/uye-ol" style={{ background: "#FDF6EE", color: "#5C3D2E", border: "2px solid #E8D5B7", padding: "12px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "inline-block" }}>
+        <Link href="/uye-ol?returnUrl=/siparislerim" style={{ background: "#FDF6EE", color: "#5C3D2E", border: "2px solid #E8D5B7", padding: "12px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "inline-block" }}>
           Üye Ol
         </Link>
       </div>
@@ -289,9 +289,10 @@ export default function Siparislerim() {
                           </div>
                           <div style={{ background: "#FDF6EE", borderRadius: 12, padding: 12 }}>
                             {kalemler.map((k, i) => {
-                              const ad = (k as any).urunler?.ad || k.urun_adi || (k as any).ad || (k as any).name || "Ürün";
-                              const fiyat = parseFloat(String(k.fiyat || (k as any).birim_fiyat || (k as any).price || 0));
-                              const adet = k.adet || (k as any).miktar || (k as any).quantity || 1;
+                              const kx = k as Kalem & { ad?: string; name?: string; birim_fiyat?: number | string; price?: number | string; miktar?: number; quantity?: number };
+                              const ad = kx.urunler?.ad || kx.urun_adi || kx.ad || kx.name || "Ürün";
+                              const fiyat = parseFloat(String(kx.fiyat || kx.birim_fiyat || kx.price || 0));
+                              const adet = kx.adet || kx.miktar || kx.quantity || 1;
                               return (
                                 <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: "#5C3D2E", borderBottom: i < kalemler.length - 1 ? "1px dashed #E8D5B7" : "none" }}>
                                   <span>{ad} <span style={{ opacity: 0.5 }}>× {adet}</span></span>

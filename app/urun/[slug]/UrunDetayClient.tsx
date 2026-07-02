@@ -20,6 +20,9 @@ export type UrunDetay = {
 export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: UrunDetay | null }) {
   const { slug } = useParams();
   const { addItem, totalPrice, totalItems } = useCart();
+  // Giriş sonrası bu ürüne geri dön (?returnUrl) — abone/yorum giriş bağlantılarında.
+  const aktifSlug = Array.isArray(slug) ? slug[0] : slug;
+  const girisGeri = aktifSlug ? `/giris?returnUrl=${encodeURIComponent(`/urun/${aktifSlug}`)}` : "/giris";
   // initialUrun: server'da çekilip prop ile gelen ürün → anında render (hızlı LCP).
   // Yoksa (client-side gezinme) null başlar, aşağıdaki effect client'tan çeker.
   const [urun, setUrun] = useState<UrunDetay | null>(initialUrun);
@@ -386,7 +389,7 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
                       <button onClick={handleAboneOl} disabled={aboneIslem} style={{ flex: 1, minWidth: 130, background: aboneIslem ? "#C9B79C" : "#E8845A", color: "white", border: "none", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, cursor: aboneIslem ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{aboneIslem ? "..." : "Abone Ol"}</button>
                     </div>
                   ) : (
-                    <Link href="/giris" style={{ display: "inline-block", color: "#E8845A", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Abone olmak için giriş yapın →</Link>
+                    <Link href={girisGeri} style={{ display: "inline-block", color: "#E8845A", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Abone olmak için giriş yapın →</Link>
                   )}
                 </>
               )}
@@ -471,7 +474,7 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
               <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 20 }}>✍️ Yorum Yaz</div>
               {!aboneToken ? (
                 <div style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.85, lineHeight: 1.7 }}>
-                  Yorum yapmak için <Link href="/giris" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>giriş yapın →</Link><br />
+                  Yorum yapmak için <Link href={girisGeri} style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>giriş yapın →</Link><br />
                   <span style={{ fontSize: 12.5, opacity: 0.7 }}>Böylece yorumlar gerçek müşterilerden olur; siparişiniz varsa &quot;✓ Doğrulanmış müşteri&quot; rozetiyle güven verir.</span>
                 </div>
               ) : (

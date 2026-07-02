@@ -63,7 +63,7 @@ export default function Aboneliklerim() {
           <div style={{ background: "white", borderRadius: 20, padding: "40px 28px", textAlign: "center", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
             <div style={{ fontSize: 15, color: "#5C3D2E", marginBottom: 20 }}>Aboneliklerinizi görmek için giriş yapın.</div>
-            <Link href="/giris" style={{ background: "#E8845A", color: "white", padding: "12px 28px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14 }}>Giriş Yap →</Link>
+            <Link href="/giris?returnUrl=/aboneliklerim" style={{ background: "#E8845A", color: "white", padding: "12px 28px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14 }}>Giriş Yap →</Link>
           </div>
         ) : abonelikler.length === 0 ? (
           <div style={{ background: "white", borderRadius: 20, padding: "40px 28px", textAlign: "center", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
