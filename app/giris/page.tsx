@@ -68,7 +68,7 @@ export default function GirisYap() {
         </div>
 
         <div style={{ textAlign: "right", marginBottom: 24 }}>
-          <a href="#" style={{ fontSize: 12, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>Şifremi unuttum</a>
+          <Link href="/sifremi-unuttum" style={{ fontSize: 12, color: "#E8845A", textDecoration: "none", fontWeight: 600 }}>Şifremi unuttum</Link>
         </div>
 
         <button onClick={handleGiris} disabled={yukleniyor} style={{ width: "100%", background: yukleniyor ? "#ccc" : "#E8845A", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
