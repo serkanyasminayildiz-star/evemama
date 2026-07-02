@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  color-scheme: light; /* UA form elemanları/scrollbar da hep açık çizilsin */
 }
 
 @theme inline {
@@ -12,12 +13,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Site tasarımı sabit AÇIK tema (inline kahverengi/krem renkler). Next.js'in
+   varsayılan dark-mode override'ı kaldırıldı: cihaz koyu moddayken --foreground
+   #ededed oluyor ve açıkça renk verilmemiş metinler (ör. admin tabloları) beyaz
+   zeminde görünmez kalıyordu. Koyu mod desteklenene kadar tema hep açık. */
 
 body {
   background: var(--background);
