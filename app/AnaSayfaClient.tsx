@@ -407,7 +407,7 @@ export default function AnaSayfaClient() {
           { href: "/kategori/kedi", label: "🐱 Kedi" },
           { href: "/kategori/kopek", label: "🐶 Köpek" },
           { href: "/kategori/acik-mamalar", label: "🥣 Açık Mama" },
-          { href: "/kategori/en-cok-satanlar", label: "⭐ Öne Çıkanlar" },
+          { href: "/one-cikanlar", label: "⭐ Öne Çıkanlar" },
           { href: "/urunler", label: "🛍️ Tüm Ürünler" },
           { href: "/kampanyalar", label: "🏷️ Kampanyalar" },
           { href: "/blog", label: "📝 Blog" },
@@ -499,7 +499,7 @@ export default function AnaSayfaClient() {
               );
             })}
             <Link href="/kategori/acik-mamalar" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>🥣 Açık Mama</Link>
-            <Link href="/kategori/en-cok-satanlar" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>⭐ Öne Çıkanlar</Link>
+            <Link href="/one-cikanlar" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>⭐ Öne Çıkanlar</Link>
             <Link href="/urunler" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>🛍️ Tüm Ürünler</Link>
             <Link href="/kampanyalar" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>🏷️ Kampanyalar</Link>
             <Link href="/blog" className="cat-tab" style={{ flexShrink: 0, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: 0.6, textDecoration: "none", whiteSpace: "nowrap", borderBottom: "2px solid transparent" }}>📝 Blog</Link>
