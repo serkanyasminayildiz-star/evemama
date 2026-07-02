@@ -145,6 +145,16 @@ export default function Admin() {
   const [markalar, setMarkalar] = useState<Marka[]>([]);
   const [siparisler, setSiparisler] = useState<SiparisRow[]>([]);
   const [faturaIslem, setFaturaIslem] = useState<number | null>(null);
+  // Mobil görünüm (≤768px): sidebar çekmeceye döner, grid'ler tek/çift kolona iner.
+  const [mobil, setMobil] = useState(false);
+  const [menuAcik, setMenuAcik] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    setMobil(mq.matches);
+    const dinle = (e: MediaQueryListEvent) => setMobil(e.matches);
+    mq.addEventListener("change", dinle);
+    return () => mq.removeEventListener("change", dinle);
+  }, []);
   const [siparisDurumFiltre, setSiparisDurumFiltre] = useState("");
   const [acikSiparisId, setAcikSiparisId] = useState<number | null>(null);
   const [siparisKalemleri, setSiparisKalemleri] = useState<{ [key: number]: SiparisKalem[] }>({});
@@ -631,7 +641,7 @@ export default function Admin() {
 
   // ── GİRİŞ EKRANI ───────────────────────────────────────────────────────────
   if (!giris) return (
-    <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
+    <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif", padding: 20 }}>
       <div style={{ background: "white", borderRadius: 24, padding: "48px 40px", maxWidth: 380, width: "100%", boxShadow: "0 20px 60px rgba(92,61,46,0.1)", textAlign: "center" }}>
         <div style={{ fontSize: 52, marginBottom: 16 }}>🔐</div>
         <div style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#5C3D2E", marginBottom: 6 }}>Admin Paneli</div>
@@ -677,7 +687,7 @@ export default function Admin() {
 
       {/* BİLDİRİM */}
       {bildirim && (
-        <div style={{ position: "fixed", top: 24, right: 24, background: bildirim.startsWith("❌") ? "#C62828" : "#2C1A0E", color: "white", padding: "14px 22px", borderRadius: 14, fontSize: 14, fontWeight: 600, zIndex: 9999, boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+        <div style={{ position: "fixed", top: mobil ? 66 : 24, right: mobil ? 14 : 24, left: mobil ? 14 : "auto", background: bildirim.startsWith("❌") ? "#C62828" : "#2C1A0E", color: "white", padding: "14px 22px", borderRadius: 14, fontSize: 14, fontWeight: 600, zIndex: 9999, boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
           {bildirim}
         </div>
       )}
@@ -701,7 +711,7 @@ export default function Admin() {
               <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 5 }}>Slug</label>
               <input value={duzenleKategori.slug} onChange={e => setDuzenleKategori({ ...duzenleKategori, slug: e.target.value })} style={s} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 20 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 5 }}>Üst Kategori</label>
                 <select value={duzenleKategori.ust_kategori_id || ""} onChange={e => setDuzenleKategori({ ...duzenleKategori, ust_kategori_id: e.target.value ? Number(e.target.value) : null })} style={s}>
@@ -757,7 +767,7 @@ export default function Admin() {
 
             <div style={{ marginBottom: 16, padding: 14, background: "#FDF6EE", borderRadius: 14, border: "2px dashed #E8D5B7" }}>
               <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 8 }}>📷 RESİMLER (max 6) — ilki ana resim</label>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: mobil ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 8, marginBottom: 10 }}>
                 {[...(duzenleUrun.resim_url ? [duzenleUrun.resim_url] : []), ...(duzenleUrun.resimler || [])].map((url: string, i: number) => (
                   <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden", background: "white", border: i === 0 ? "2px solid #E8845A" : "1px solid #E8D5B7" }}>
                     <Image src={url} alt="" fill sizes="120px" style={{ objectFit: "contain", padding: 4 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -817,7 +827,7 @@ export default function Admin() {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr" : "1fr 1fr", gap: 12 }}>
               <div style={{ gridColumn: "1/-1" }}>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.7, display: "block", marginBottom: 5 }}>Ürün Adı *</label>
                 <input value={duzenleUrun.ad} onChange={e => setDuzenleUrun({ ...duzenleUrun, ad: e.target.value })} style={s} />
@@ -896,14 +906,24 @@ export default function Admin() {
       )}
 
       {/* SOL MENÜ */}
-      <div style={{ width: 220, background: "#1C0F06", minHeight: "100vh", position: "fixed", left: 0, top: 0, bottom: 0, overflowY: "auto", zIndex: 100 }}>
+      {/* Mobil: hamburger + karartma; sidebar çekmece olur */}
+      {mobil && (
+        <button onClick={() => setMenuAcik(a => !a)} aria-label="Menüyü aç/kapat"
+          style={{ position: "fixed", top: 12, left: 12, zIndex: 130, background: "#1C0F06", color: "#FDF6EE", border: "none", borderRadius: 12, width: 44, height: 44, fontSize: 20, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}>
+          {menuAcik ? "✕" : "☰"}
+        </button>
+      )}
+      {mobil && menuAcik && (
+        <div onClick={() => setMenuAcik(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 110 }} />
+      )}
+      <div style={{ width: 220, background: "#1C0F06", minHeight: "100vh", position: "fixed", left: 0, top: 0, bottom: 0, overflowY: "auto", zIndex: mobil ? 120 : 100, transform: mobil && !menuAcik ? "translateX(-105%)" : "translateX(0)", transition: "transform 0.25s ease", boxShadow: mobil && menuAcik ? "8px 0 32px rgba(0,0,0,0.35)" : "none" }}>
         <div style={{ padding: "22px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ fontFamily: "Georgia,serif", fontSize: 18, fontWeight: 700, color: "#FDF6EE" }}>evemama<span style={{ color: "#E8845A" }}>.net</span></div>
           <div style={{ fontSize: 10, color: "#F4C09A", opacity: 0.5, marginTop: 3, textTransform: "uppercase", letterSpacing: 1 }}>Yönetim Paneli</div>
         </div>
         <nav style={{ padding: "10px 8px" }}>
           {menuler.map(m => (
-            <button key={m.id} onClick={() => setAktifSayfa(m.id)}
+            <button key={m.id} onClick={() => { setAktifSayfa(m.id); setMenuAcik(false); }}
               style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: aktifSayfa === m.id ? "rgba(232,132,90,0.18)" : "none", border: "none", borderLeft: aktifSayfa === m.id ? "3px solid #E8845A" : "3px solid transparent", cursor: "pointer", color: aktifSayfa === m.id ? "#E8845A" : "#FDF6EE", fontSize: 13, fontWeight: aktifSayfa === m.id ? 700 : 400, marginBottom: 1, fontFamily: "inherit", opacity: aktifSayfa === m.id ? 1 : 0.6, textAlign: "left" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 9 }}><span style={{ fontSize: 15 }}>{m.icon}</span>{m.ad}</span>
               {m.badge && m.badge > 0 ? <span style={{ background: "#E8845A", color: "white", borderRadius: 50, fontSize: 10, padding: "2px 7px", fontWeight: 700 }}>{m.badge}</span> : null}
@@ -911,20 +931,20 @@ export default function Admin() {
           ))}
         </nav>
         <div style={{ padding: "8px", marginTop: 8, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-          <Link href="/" target="_blank" style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 14px", background: "rgba(255,255,255,0.04)", borderRadius: 10, color: "#FDF6EE", textDecoration: "none", fontSize: 13, opacity: 0.5 }}>
+          <Link href="/" target="_blank" onClick={() => setMenuAcik(false)} style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 14px", background: "rgba(255,255,255,0.04)", borderRadius: 10, color: "#FDF6EE", textDecoration: "none", fontSize: 13, opacity: 0.5 }}>
             🏠 Siteye Git
           </Link>
         </div>
       </div>
 
       {/* ANA İÇERİK */}
-      <div style={{ marginLeft: 220, flex: 1, padding: "28px 28px 60px", minWidth: 0 }}>
+      <div style={{ marginLeft: mobil ? 0 : 220, flex: 1, padding: mobil ? "66px 14px 60px" : "28px 28px 60px", minWidth: 0 }}>
 
         {/* ── DASHBOARD ────────────────────────────────────────────────────── */}
         {aktifSayfa === "dashboard" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 26, fontWeight: 700, color: "#2C1A0E", marginBottom: 24 }}>Dashboard</h1>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr 1fr" : "repeat(4,1fr)", gap: 16, marginBottom: 20 }}>
               {[
                 { icon: "📦", ad: "Toplam Ürün", deger: istatistikler.urunler, renk: "#E8845A", sayfa: "urunler" },
                 { icon: "🛒", ad: "Toplam Sipariş", deger: istatistikler.siparisler, renk: "#8BAF8E", sayfa: "siparisler" },
@@ -940,7 +960,7 @@ export default function Admin() {
                 </div>
               ))}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 20 }}>
               <div style={{ background: "white", borderRadius: 18, padding: 22, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <h3 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", margin: 0 }}>📉 Stok Uyarıları</h3>
@@ -972,7 +992,7 @@ export default function Admin() {
                 </div>
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
               {[
                 { icon: "📁", ad: "Toplam Kategori", deger: istatistikler.kategoriler, renk: "#5C3D2E", sayfa: "kategoriler" },
                 { icon: "📝", ad: "Bekleyen Soru", deger: istatistikler.bekleyenSoru, renk: "#9C27B0", sayfa: "blog" },
@@ -1013,7 +1033,7 @@ export default function Admin() {
                 {/* Cok resimli galeri — ilk resim ana kart, kalan 5 ek resim */}
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 6 }}>📷 RESİMLER (max 6) — ilki ana resim</label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: mobil ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 8, marginBottom: 8 }}>
                     {[...(yeniUrun.resim_url ? [yeniUrun.resim_url] : []), ...yeniUrun.resimler].map((url, i) => (
                       <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden", background: "#FDF6EE", border: i === 0 ? "2px solid #E8845A" : "1px solid #E8D5B7" }}>
                         <Image src={url} alt="" fill sizes="120px" style={{ objectFit: "contain", padding: 4 }} />
@@ -1042,13 +1062,13 @@ export default function Admin() {
                   <div style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.5 }}>Dosya seç (birden fazla seçebilirsin). İlk resim ürün kartlarında ana resim olarak gösterilir.</div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr 1fr" : "2fr 1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>ÜRÜN ADI *</label><input type="text" autoComplete="off" placeholder="Ürün adını yazın..." value={yeniUrun.ad} onChange={e => setYeniUrun({ ...yeniUrun, ad: e.target.value })} style={s} /></div>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>FİYAT ₺ *</label><input type="number" step="0.01" placeholder="0.00" value={yeniUrun.fiyat} onChange={e => setYeniUrun({ ...yeniUrun, fiyat: e.target.value })} style={s} /></div>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>İNDİRİMLİ ₺</label><input type="number" step="0.01" placeholder="Boş bırakın" value={yeniUrun.indirimli_fiyat} onChange={e => setYeniUrun({ ...yeniUrun, indirimli_fiyat: e.target.value })} style={s} /></div>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>STOK</label><input type="number" placeholder="0" value={yeniUrun.stok} onChange={e => setYeniUrun({ ...yeniUrun, stok: e.target.value })} style={s} /></div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>KATEGORİ</label><select value={yeniUrun.kategori_id} onChange={e => setYeniUrun({ ...yeniUrun, kategori_id: e.target.value })} style={s}><option value="">Seçin</option>{kategoriler.map(k => <option key={k.id} value={k.id}>{k.ust_kategori_id ? "└ " : ""}{k.ad}</option>)}</select></div>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>MARKA</label><select value={yeniUrun.marka_id} onChange={e => setYeniUrun({ ...yeniUrun, marka_id: e.target.value })} style={s}><option value="">Seçin</option>{markalar.map(m => <option key={m.id} value={m.id}>{m.ad}</option>)}</select></div>
                   <div><label style={{ fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, display: "block", marginBottom: 4 }}>ETİKET</label><select value={yeniUrun.etiket} onChange={e => setYeniUrun({ ...yeniUrun, etiket: e.target.value })} style={s}><option value="">Yok</option><option value="yeni">🆕 Yeni</option><option value="indirim">💥 İndirim</option><option value="cok-satan">⭐ Çok Satan</option><option value="kampanya">🏷️ Kampanya</option><option value="son-stok">⚠️ Son Stok</option></select></div>
@@ -1145,7 +1165,7 @@ export default function Admin() {
             {/* ÜRÜN TABLOSU */}
             <div style={{ background: "white", borderRadius: 18, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", overflow: "hidden" }}>
               <div style={{ padding: "12px 18px", borderBottom: "1px solid #F0E8E0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <button onClick={() => setSeciliUrunler(urunler.map(u => u.id))} style={{ ...btn("#5C3D2E"), padding: "6px 12px", fontSize: 11 }}>Tümünü Seç</button>
                   <span style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.5 }}>Sayfa {sayfaNo + 1}/{Math.max(1, toplamSayfa)} — {toplamUrun} ürün</span>
                 </div>
@@ -1157,7 +1177,7 @@ export default function Admin() {
                 </div>
               </div>
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 760 }}>
                   <thead>
                     <tr style={{ background: "#FAF5EF" }}>
                       <th style={{ padding: "10px 12px", width: 40, textAlign: "center" }}>
@@ -1325,7 +1345,7 @@ export default function Admin() {
         {aktifSayfa === "stok" && (
           <div>
             <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>📉 Stok Takibi</h1>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr 1fr" : "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
               {[
                 { label: "Toplam Aktif Ürün", deger: stokIstatistik.toplam_aktif, renk: "#8BAF8E", bg: "#F1F8F2", icon: "📦" },
                 { label: "Stok Tükendi", deger: stokIstatistik.stok_yok, renk: "#C62828", bg: "#FFEBEE", icon: "❌" },
@@ -1339,7 +1359,7 @@ export default function Admin() {
                 </div>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
               {([
                 ["tukendi", "❌ Stok Yok", stokIstatistik.stok_yok],
                 ["kritik", "⚠️ Kritik (1–5)", stokIstatistik.kritik],
@@ -1361,7 +1381,8 @@ export default function Admin() {
                   <div style={{ fontSize: 16, color: "#8BAF8E", fontWeight: 600 }}>Bu kategoride sorun yok!</div>
                 </div>
               ) : (
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 680 }}>
                   <thead>
                     <tr style={{ background: "#FAF5EF" }}>
                       {["", "ÜRÜN ADI", "KATEGORİ", "MARKA", "MEVCUT STOK", "DURUM", "HIZLI GÜNCELLE"].map(h => (
@@ -1416,6 +1437,7 @@ export default function Admin() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           </div>
@@ -1480,7 +1502,7 @@ export default function Admin() {
                   {/* Sipariş detay (açılır) */}
                   {acikSiparisId === sp.id && (
                     <div style={{ padding: "18px 20px" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
                         <div style={{ background: "#FDF6EE", borderRadius: 12, padding: "12px 16px", color: "#5C3D2E" }}>
                           <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.6, marginBottom: 6, textTransform: "uppercase" }}>Müşteri Bilgileri</div>
                           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2, color: "#2C1A0E" }}>{sp.ad} {sp.soyad}</div>
