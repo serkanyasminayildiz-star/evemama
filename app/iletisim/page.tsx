@@ -1,10 +1,20 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Iletisim() {
   const [form, setForm] = useState({ ad: "", soyad: "", email: "", mesaj: "", kvkk: false, acikRiza: false });
   const [gonderildi, setGonderildi] = useState(false);
+  // Mobil görünüm (≤768px): iki kolonlu yerleşim alt alta iner (admin'deki desenle aynı).
+  const [mobil, setMobil] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- ilk değer medya sorgusundan senkron okunur
+    setMobil(mq.matches);
+    const dinle = (e: MediaQueryListEvent) => setMobil(e.matches);
+    mq.addEventListener("change", dinle);
+    return () => mq.removeEventListener("change", dinle);
+  }, []);
 
   const handleGonder = () => {
     if (!form.ad || !form.email || !form.mesaj || !form.kvkk) return;
@@ -13,11 +23,11 @@ export default function Iletisim() {
 
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", fontFamily: "sans-serif" }}>
-      <header style={{ background: "white", padding: "16px 48px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <header style={{ background: "white", padding: mobil ? "14px 20px" : "16px 48px", borderBottom: "1px solid #E8D5B7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Link href="/" style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", textDecoration: "none" }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></Link>
       </header>
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: mobil ? "28px 16px" : "48px 24px", display: "grid", gridTemplateColumns: mobil ? "1fr" : "1fr 1fr", gap: mobil ? 24 : 40 }}>
         <div>
           <h1 style={{ fontFamily: "Georgia, serif", fontSize: 36, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>Bize Ulaşın</h1>
           <div style={{ width: 60, height: 4, background: "#E8845A", borderRadius: 2, marginBottom: 32 }} />
@@ -45,7 +55,7 @@ export default function Iletisim() {
           </div>
         </div>
 
-        <div style={{ background: "white", borderRadius: 24, padding: "36px 32px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
+        <div style={{ background: "white", borderRadius: 24, padding: mobil ? "26px 18px" : "36px 32px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
           {gonderildi ? (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
               <div style={{ fontSize: 64, marginBottom: 16 }}>✅</div>
@@ -55,7 +65,7 @@ export default function Iletisim() {
           ) : (
             <>
               <h2 style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", marginBottom: 24 }}>Mesaj Gönder</h2>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>Ad *</label>
                   <input value={form.ad} onChange={e => setForm({ ...form, ad: e.target.value })} placeholder="Adınız" style={{ width: "100%", padding: "12px 14px", border: "2px solid #E8D5B7", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white", boxSizing: "border-box" as const }} />
@@ -94,7 +104,7 @@ export default function Iletisim() {
         </div>
       </div>
 
-      <footer style={{ background: "#2C1A0E", padding: "32px 48px", textAlign: "center" }}>
+      <footer style={{ background: "#2C1A0E", padding: mobil ? "28px 20px" : "32px 48px", textAlign: "center" }}>
         <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.3 }}>© 2025 evemama.net — Tüm hakları saklıdır.</div>
       </footer>
     </main>
