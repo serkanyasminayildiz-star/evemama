@@ -1,13 +1,23 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
+
+// Açık yönlendirme koruması: yalnız site-içi mutlak path kabul et (//, /\ engelli).
+function guvenliGeri(raw: string | null): string {
+  return raw && /^\/(?![/\\])/.test(raw) ? raw : "/";
+}
 
 export default function GirisYap() {
   const [email, setEmail] = useState("");
   const [sifre, setSifre] = useState("");
   const [mesaj, setMesaj] = useState("");
   const [yukleniyor, setYukleniyor] = useState(false);
+  const [geri, setGeri] = useState("/"); // giriş sonrası dönülecek sayfa (?returnUrl)
+
+  useEffect(() => {
+    setGeri(guvenliGeri(new URLSearchParams(window.location.search).get("returnUrl")));
+  }, []);
 
   const handleGiris = async () => {
     setYukleniyor(true);
@@ -17,7 +27,7 @@ export default function GirisYap() {
         setMesaj("Hata: E-posta veya şifre yanlış!");
       } else {
         setMesaj("✅ Giriş başarılı! Yönlendiriliyorsunuz...");
-        setTimeout(() => { window.location.href = "/"; }, 1500);
+        setTimeout(() => { window.location.href = geri; }, 1500);
       }
     } catch (err) {
       console.error("[giris] signIn beklenmeyen hata:", err);
@@ -67,7 +77,7 @@ export default function GirisYap() {
 
         <div style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#5C3D2E", opacity: 0.6 }}>
           Hesabın yok mu?{" "}
-          <Link href="/uye-ol" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Üye Ol</Link>
+          <Link href={geri === "/" ? "/uye-ol" : `/uye-ol?returnUrl=${encodeURIComponent(geri)}`} style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Üye Ol</Link>
         </div>
 
       </div>

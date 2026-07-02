@@ -1,7 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
+
+// Açık yönlendirme koruması: yalnız site-içi mutlak path kabul et (//, /\ engelli).
+function guvenliGeri(raw: string | null): string {
+  return raw && /^\/(?![/\\])/.test(raw) ? raw : "/";
+}
 
 export default function UyeOl() {
   const [ad, setAd] = useState("");
@@ -11,16 +16,30 @@ export default function UyeOl() {
   const [sifre2, setSifre2] = useState("");
   const [mesaj, setMesaj] = useState("");
   const [yukleniyor, setYukleniyor] = useState(false);
+  const [geri, setGeri] = useState("/"); // kayıt/giriş sonrası dönülecek sayfa (?returnUrl)
+
+  useEffect(() => {
+    setGeri(guvenliGeri(new URLSearchParams(window.location.search).get("returnUrl")));
+  }, []);
 
   const handleUyeOl = async () => {
     if (sifre !== sifre2) { setMesaj("Şifreler eşleşmiyor!"); return; }
     setYukleniyor(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email, password: sifre,
         options: { data: { full_name: ad, phone: telefon } }
       });
-      setMesaj(error ? "Hata: " + error.message : "✅ Kayıt başarılı! E-postanı kontrol et.");
+      if (error) {
+        setMesaj("Hata: " + error.message);
+      } else if (data.session) {
+        // Email onayı kapalı → signUp anında oturum açar: otomatik giriş + geldiği sayfaya dön.
+        setMesaj("✅ Kayıt başarılı! Giriş yapılıyor...");
+        setTimeout(() => { window.location.href = geri; }, 1200);
+      } else {
+        // Email onayı açıksa oturum gelmez → doğrulama gerekir.
+        setMesaj("✅ Kayıt başarılı! Giriş yapmak için e-postanı kontrol et.");
+      }
     } catch (err) {
       console.error("[uye-ol] signUp beklenmeyen hata:", err);
       setMesaj("Hata: Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.");
@@ -88,7 +107,7 @@ export default function UyeOl() {
 
         <div style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#5C3D2E", opacity: 0.6 }}>
           Zaten hesabın var mı?{" "}
-          <Link href="/giris" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Giriş Yap</Link>
+          <Link href={geri === "/" ? "/giris" : `/giris?returnUrl=${encodeURIComponent(geri)}`} style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Giriş Yap</Link>
         </div>
 
       </div>

@@ -228,7 +228,7 @@ export default function Sepet() {
         <div style={{ background: "linear-gradient(135deg,#FFF5F0,#FFE8D5)", padding: "12px 24px", textAlign: "center" }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 6 }}>
             🎁 İlk siparişinize <strong style={{ color: "#E8845A" }}>200₺ indirim</strong> kazanmak için
-            <Link href="/giris" style={{ color: "#E8845A", fontWeight: 700, marginLeft: 6, textDecoration: "none" }}>giriş yapın →</Link>
+            <Link href="/giris?returnUrl=/sepet" style={{ color: "#E8845A", fontWeight: 700, marginLeft: 6, textDecoration: "none" }}>giriş yapın →</Link>
           </div>
         </div>
       )}
@@ -375,7 +375,7 @@ export default function Sepet() {
 
           {!kullanici && totalPrice >= ILK_SIPARIS.MIN_SEPET && (
             <div style={{ background: "#FFF5F0", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#5C3D2E", textAlign: "center", border: "1.5px dashed #E8845A" }}>
-              🎁 İlk siparişinize <strong>200₺ indirim</strong> için <Link href="/giris" style={{ color: "#E8845A", fontWeight: 700 }}>giriş yapın →</Link>
+              🎁 İlk siparişinize <strong>200₺ indirim</strong> için <Link href="/giris?returnUrl=/sepet" style={{ color: "#E8845A", fontWeight: 700 }}>giriş yapın →</Link>
             </div>
           )}
 
