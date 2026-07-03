@@ -95,12 +95,6 @@ type Kupon = {
   bitis_tarihi?: string | null;
   aktif?: boolean;
 };
-type KargoAyar = {
-  sabit_ucret?: number | string | null;
-  ucretsiz_limit?: number | string | null;
-  "ucretsiz limit"?: number | string | null;
-  [k: string]: unknown;
-};
 type BlogSoru = {
   id: number | string;
   ad: string;
@@ -160,7 +154,6 @@ export default function Admin() {
   const [siparisKalemleri, setSiparisKalemleri] = useState<{ [key: number]: SiparisKalem[] }>({});
   const [kalemYukleniyor, setKalemYukleniyor] = useState<number | null>(null);
   const [kuponlar, setKuponlar] = useState<Kupon[]>([]);
-  const [kargoAyar, setKargoAyar] = useState<KargoAyar | null>(null);
   const [siteAyarlari, setSiteAyarlari] = useState<Record<string, string>>({});
   const [blogSorular, setBlogSorular] = useState<BlogSoru[]>([]);
   const [cevaplar, setCevaplar] = useState<{ [key: number]: string }>({});
@@ -281,10 +274,6 @@ export default function Admin() {
     const { data } = await supabase.from("kuponlar").select("*").order("created_at", { ascending: false });
     setKuponlar(data || []);
   };
-  const kargoYukle = async () => {
-    const { data } = await supabase.from("kargo_ayarlari").select("*").limit(1).single();
-    setKargoAyar(data);
-  };
   const blogSorulariYukle = async () => {
     const { data } = await supabase.from("blog_sorular").select("*").order("created_at", { ascending: false });
     setBlogSorular(data || []);
@@ -312,7 +301,7 @@ export default function Admin() {
   const handleGiris = () => {
     if (sifre === ADMIN_SIFRE) {
       setGiris(true);
-      kategorileriYukle(); markalariYukle(); kargoYukle(); siteAyarlariYukle(); istatistikleriYukle();
+      kategorileriYukle(); markalariYukle(); siteAyarlariYukle(); istatistikleriYukle();
     } else setHataMesaji("Hatalı şifre!");
   };
 
@@ -597,15 +586,6 @@ export default function Admin() {
   };
 
   // ── DİĞER İŞLEMLER ─────────────────────────────────────────────────────────
-  const kargoGuncelle = async () => {
-    if (!kargoAyar) return;
-    const g: Record<string, number> = { sabit_ucret: parseFloat(String(kargoAyar.sabit_ucret)) };
-    if ("ucretsiz_limit" in kargoAyar) g.ucretsiz_limit = parseFloat(String(kargoAyar.ucretsiz_limit));
-    if ("ucretsiz limit" in kargoAyar) g["ucretsiz limit"] = parseFloat(String(kargoAyar["ucretsiz limit"]));
-    const { error } = await supabase.from("kargo_ayarlari").update(g).eq("id", kargoAyar.id as number);
-    if (error) { goster("❌ " + error.message); return; }
-    goster("✅ Kargo ayarları güncellendi");
-  };
 
   const kuponEkle = async () => {
     if (!yeniKupon.kod || !yeniKupon.indirim_degeri) return;
@@ -1737,7 +1717,7 @@ export default function Admin() {
 
         {/* ── KARGO ────────────────────────────────────────────────────────── */}
         {aktifSayfa === "kargo" && (
-          <Kargo kargoAyar={kargoAyar} setKargoAyar={setKargoAyar} kargoGuncelle={kargoGuncelle} s={s} btn={btn} />
+          <Kargo />
         )}
 
         {aktifSayfa === "ayarlar" && (

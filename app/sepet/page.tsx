@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import type { User } from "@supabase/supabase-js";
-import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim } from "../../lib/indirim";
+import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
 
 export default function Sepet() {
   const { items, removeItem, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
@@ -102,6 +102,7 @@ export default function Sepet() {
   // EN AVANTAJLISI (kupon vs otomatik üst üste binmez) ve genelToplam burada.
   const hesap = hesaplaIndirim({
     sepetTutari: totalPrice,
+    toplamAgirlikKg: sepetAgirligiKg(items),
     ilkSiparis: ilkSiparisIndirimi,
     bonusTutar: bonusUygulanabilir ? bonus!.tutar : 0,
     kuponIndirimi: uygulananKupon ? uygulananKupon.indirim : 0,

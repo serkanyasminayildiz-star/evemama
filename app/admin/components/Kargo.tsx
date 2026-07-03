@@ -1,53 +1,47 @@
 "use client";
-import type { CSSProperties } from "react";
+import { KARGO } from "../../../lib/indirim";
 
-type KargoAyar = {
-  ucretsiz_limit?: number | string | null;
-  "ucretsiz limit"?: number | string | null;
-  sabit_ucret?: number | string | null;
-  [k: string]: unknown;
-} | null;
-
-type Props = {
-  kargoAyar: KargoAyar;
-  setKargoAyar: (k: KargoAyar) => void;
-  kargoGuncelle: () => Promise<void> | void;
-  s: CSSProperties;
-  btn: (bg?: string, extra?: CSSProperties) => CSSProperties;
-};
-
-// Kargo sayfasi — state/handler parent'tan prop olarak gelir.
-// kargoAyar JSON kolonunda hem snake_case (ucretsiz_limit) hem eski
-// boslukli ("ucretsiz limit") anahtarlari birlikte tutuluyor; ikisini
-// de set ediyoruz (backward compatibility).
-export default function Kargo({ kargoAyar, setKargoAyar, kargoGuncelle, s, btn }: Props) {
+// Kargo kuralları BİLGİ PANELİ — değerler lib/indirim.ts TEK KAYNAK'tan okunur
+// (sepet/ödeme/sunucu hesabıyla birebir aynı sabitler; drift imkânsız).
+//
+// NOT: Eski düzenlenebilir form kaldırıldı — kargo_ayarlari tablosunu checkout
+// HİÇ okumuyordu (süs ayardı; admin 100₺ yazsa da müşteri 29.90 ödüyordu).
+// Kural değişikliği kod üzerinden yapılır (lib/indirim.ts KARGO sabitleri).
+export default function Kargo() {
+  const satir: React.CSSProperties = { display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #F0E8E0", fontSize: 14, color: "#5C3D2E" };
+  const kademeler = [
+    { aralik: "0 – 5 kg", ucret: KARGO.BASLANGIC },
+    { aralik: "5 – 10 kg", ucret: KARGO.BASLANGIC + KARGO.KADEME_UCRET },
+    { aralik: "10 – 15 kg", ucret: KARGO.BASLANGIC + 2 * KARGO.KADEME_UCRET },
+  ];
   return (
     <div>
       <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Kargo Ayarları</h1>
-      <div style={{ background: "white", borderRadius: 18, padding: 28, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", maxWidth: 520 }}>
-        {kargoAyar ? (
-          <>
-            <div style={{ background: "#FDF6EE", borderRadius: 12, padding: "12px 16px", marginBottom: 24, fontSize: 13, color: "#5C3D2E" }}>
-              <strong>Mevcut:</strong> Ücretsiz limit = ₺{String(kargoAyar.ucretsiz_limit ?? kargoAyar["ucretsiz limit"] ?? "?")} | Sabit ücret = ₺{String(kargoAyar.sabit_ucret ?? "?")}
-            </div>
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 13, fontWeight: 700, color: "#5C3D2E", display: "block", marginBottom: 8 }}>🎁 Ücretsiz Kargo Limiti (₺)</label>
-              <input type="number" step="0.01" value={String(kargoAyar.ucretsiz_limit ?? kargoAyar["ucretsiz limit"] ?? "")}
-                onChange={e => setKargoAyar({ ...kargoAyar, ucretsiz_limit: e.target.value, "ucretsiz limit": e.target.value })} style={s} />
-              <div style={{ fontSize: 12, color: "#5C3D2E", opacity: 0.5, marginTop: 4 }}>Bu tutarın üzerindeki siparişler ücretsiz kargo</div>
-            </div>
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ fontSize: 13, fontWeight: 700, color: "#5C3D2E", display: "block", marginBottom: 8 }}>🚚 Standart Kargo Ücreti (₺)</label>
-              <input type="number" step="0.01" value={String(kargoAyar.sabit_ucret || "")} onChange={e => setKargoAyar({ ...kargoAyar, sabit_ucret: e.target.value })} style={s} />
-            </div>
-            <button onClick={kargoGuncelle} style={{ ...btn(), padding: "14px 32px", fontSize: 15 }}>💾 Kaydet</button>
-          </>
-        ) : (
-          <div style={{ textAlign: "center", padding: "40px 0", opacity: 0.5 }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🚚</div>
-            <div>Kargo ayarı bulunamadı</div>
+
+      <div style={{ background: "white", borderRadius: 18, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", maxWidth: 560, overflow: "hidden", marginBottom: 16 }}>
+        <div style={{ background: "#E8F5E9", padding: "14px 16px", fontSize: 13, color: "#2E7D32", fontWeight: 700 }}>
+          🎁 Ücretsiz Kargo: sepet ₺{KARGO.BEDAVA_ESIK.toLocaleString("tr-TR")} ve üzeri
+        </div>
+        <div style={{ padding: "14px 16px", background: "#FAF5EF", fontSize: 11, fontWeight: 700, color: "#5C3D2E", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          Altındaki sepetlerde ağırlık tarifesi (toplam sepet ağırlığı)
+        </div>
+        {kademeler.map(k => (
+          <div key={k.aralik} style={satir}>
+            <span>📦 {k.aralik}</span>
+            <strong>₺{k.ucret}</strong>
           </div>
-        )}
+        ))}
+        <div style={{ ...satir, borderBottom: "none" }}>
+          <span>➕ 15 kg üzeri her başlanmış {KARGO.KADEME_KG} kg</span>
+          <strong>+₺{KARGO.KADEME_UCRET}</strong>
+        </div>
+      </div>
+
+      <div style={{ background: "#FDF6EE", borderRadius: 14, padding: "14px 18px", maxWidth: 560, fontSize: 13, color: "#5C3D2E", lineHeight: 1.7 }}>
+        <strong>Nasıl çalışır?</strong><br />
+        • Ürün ağırlığı, ürün <strong>adından</strong> okunur (&quot;… 12 kg&quot;, &quot;… 400 gr&quot; gibi). Adında ağırlık olmayan ürün <strong>{KARGO.VARSAYILAN_URUN_KG} kg</strong> sayılır.<br />
+        • Sepetteki tüm ürünlerin ağırlığı (adet dahil) toplanır, tarife toplam ağırlığa uygulanır. Örn: 2 × 12 kg mama = 24 kg → ₺{KARGO.BASLANGIC + 4 * KARGO.KADEME_UCRET}.<br />
+        • Bu değerler kodda tek kaynaktan yönetilir; sepet, ödeme ve sunucu hesabı hep aynı tarifeyi kullanır. Değişiklik istersen söylemen yeterli.
       </div>
     </div>
   );

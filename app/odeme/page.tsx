@@ -3,7 +3,7 @@ import { useState, useEffect, type ChangeEvent } from "react";
 import Link from "next/link";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
-import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim } from "../../lib/indirim";
+import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
 import { HAVALE_HESAP } from "../../lib/havale";
 import { TR_ILLER, IL_LISTESI } from "../../lib/tr-iller";
 
@@ -108,6 +108,7 @@ export default function Odeme() {
   // TEK KAYNAK indirim hesabı — server (api/odeme) + sepet ile AYNI saf fonksiyon.
   const hesap = hesaplaIndirim({
     sepetTutari: totalPrice,
+    toplamAgirlikKg: sepetAgirligiKg(items),
     ilkSiparis: ilkSiparisIndirimi,
     bonusTutar: bonusUygulanabilir ? bonus!.tutar : 0,
     kuponIndirimi: uygulananKupon ? uygulananKupon.indirim : 0,

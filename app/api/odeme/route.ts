@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
-import { ILK_SIPARIS, SADAKAT, hesaplaIndirim } from "../../../lib/indirim";
+import { ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../../lib/indirim";
 import { sendHavaleTalimatMaili } from "../../../lib/email";
 
 // Sepet ürünü — client'tan gelen JSON şekli (explicit any yerine).
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
 
   // TEK KAYNAK indirim hesabı — client (sepet/odeme) ile AYNI saf fonksiyon.
   // EN AVANTAJLISI (kupon vs otomatik üst üste binmez) ve genelToplam burada.
-  const hesap = hesaplaIndirim({ sepetTutari: basketTotal, ilkSiparis: ilkSiparisHak, bonusTutar, kuponIndirimi });
+  const hesap = hesaplaIndirim({ sepetTutari: basketTotal, toplamAgirlikKg: sepetAgirligiKg(items), ilkSiparis: ilkSiparisHak, bonusTutar, kuponIndirimi });
 
   // Kupon kazandıysa kupon harcanır (kod işaretlenir); değilse bonus (varsa)
   // harcanır. Hangisi → odeme_gecici'ye yazılır, odeme/sonuc'ta işaretlenir.

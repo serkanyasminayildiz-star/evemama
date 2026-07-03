@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { useCart } from "../../../context/CartContext";
+import { KARGO, kargoUcretiKg, sepetAgirligiKg, urunAgirligiKg } from "../../../lib/indirim";
 
 type Yorum = { id: number; ad: string; puan: number; yorum: string; tarih: string; dogrulanmis?: boolean };
 export type UrunDetay = {
@@ -19,7 +20,7 @@ export type UrunDetay = {
 
 export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: UrunDetay | null }) {
   const { slug } = useParams();
-  const { addItem, totalPrice, totalItems } = useCart();
+  const { addItem, totalPrice, totalItems, items } = useCart();
   // Giriş sonrası bu ürüne geri dön (?returnUrl) — abone/yorum giriş bağlantılarında.
   const aktifSlug = Array.isArray(slug) ? slug[0] : slug;
   const girisGeri = aktifSlug ? `/giris?returnUrl=${encodeURIComponent(`/urun/${aktifSlug}`)}` : "/giris";
@@ -175,8 +176,11 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
 
   const indirimOrani = urun.indirimli_fiyat ? Math.round(((urun.fiyat - urun.indirimli_fiyat) / urun.fiyat) * 100) : 0;
   const ortPuan = yorumlar.length ? yorumlar.reduce((s, y) => s + y.puan, 0) / yorumlar.length : 0;
-  const kargoUcreti = (totalPrice + (urun.indirimli_fiyat || urun.fiyat) * adet) >= 1000 ? 0 : 29.90;
-  const kargoyaKalan = 1000 - totalPrice;
+  // Kargo tahmini: sepet + bu ürün (adet dahil) — sepet/ödeme ile aynı tarife (lib/indirim).
+  const kargoUcreti = (totalPrice + (urun.indirimli_fiyat || urun.fiyat) * adet) >= KARGO.BEDAVA_ESIK
+    ? 0
+    : kargoUcretiKg(sepetAgirligiKg(items) + urunAgirligiKg(urun.ad) * adet);
+  const kargoyaKalan = KARGO.BEDAVA_ESIK - totalPrice;
   // Galeri: ana görsel + ek görseller (resimler). Tekilleştir, boşları at.
   const tumResimler = Array.from(new Set([urun.resim_url, ...(Array.isArray(urun.resimler) ? urun.resimler : [])].filter((u): u is string => !!u)));
   const anaGorsel = seciliResim || urun.resim_url || null;
