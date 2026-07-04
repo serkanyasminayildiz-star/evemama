@@ -48,6 +48,17 @@ function iceriyor(kaynak: string, aranan: string): boolean {
   return kaynak.toLocaleLowerCase("tr-TR").includes(aranan);
 }
 
+/** Aynı mamanın paket boyutlarını tek saymak için formül anahtarı: addan
+ *  ağırlık ifadeleri ("2 Kg", "400gr", "1,5 kg") ayıklanır, boşluk sadeleşir.
+ *  ("Fit 32" gibi formül numaraları korunur — yalnız kg/gr kalıpları silinir.) */
+function formulAnahtari(ad: string): string {
+  return ad
+    .toLocaleLowerCase("tr-TR")
+    .replace(/\d+[.,]?\d*\s*(kg|gr)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** Stoktaki ürünlerden tür'e uyan adayları çeker (kategori adı/slug veya ürün adına göre). */
 export async function adaylariGetir(tur: "kedi" | "kopek"): Promise<AsistanUrun[]> {
   const { data, error } = await sb()
@@ -90,8 +101,9 @@ export async function oneriUret(girdi: AsistanGirdi): Promise<AsistanSonuc> {
 
 KURALLAR:
 - YALNIZ listede verilen id'leri kullan; listede olmayan ürün ÖNERME, ürün uydurma.
-- En uygun 3 ürünü seç (gerçekten uygun daha azsa daha az seç; hiç uygun yoksa boş dizi).
-- MARKA ÖNCELİĞİ: Bu ihtiyaca uygun Royal Canin ürünü VARSA önerilerde Royal Canin'e öncelik ver ve ilk sıralara koy (stok istikrarı en yüksek marka). Royal Canin'de uygun ürün yoksa diğer markalardan öner. Ancak uygunluktan asla ödün verme — ihtiyaca uymayan bir Royal Canin, uyan başka markadan iyi değildir.
+- En uygun 3-5 ürünü uygunluk sırasıyla seç (gerçekten uygun daha azsa daha az; hiç uygun yoksa boş dizi).
+- ÇEŞİTLİLİK ŞARTI: Her öneri FARKLI bir mama/formül olmalı. Aynı mamanın farklı paket boyutları (örn. Kitten 2 Kg ve Kitten 10 Kg) TEK ürün sayılır — en uygun TEK boyutu seç, diğer boyutları ASLA ayrıca önerme. Müşteriye gerçek alternatifler sun.
+- MARKA ÖNCELİĞİ: Bu ihtiyaca uygun Royal Canin ürünü VARSA 1. öneri Royal Canin olsun (stok istikrarı en yüksek marka). 2. ve 3. öneriler FARKLI formüller olmalı — başka bir Royal Canin serisi veya başka marka olabilir. Royal Canin'de uygun ürün yoksa tamamen diğer markalardan öner. Uygunluktan asla ödün verme — ihtiyaca uymayan bir Royal Canin, uyan başka markadan iyi değildir.
 - Uygunluk eşitse ⭐ işaretli ürünü tercih et.
 - Her öneri için 1-2 cümle samimi, NET Türkçe gerekçe yaz (ürünün hangi özelliği bu derde iyi gelir). Tıbbi tedavi vaadi verme, abartma.
 - Belirti ciddi bir sağlık sorununa işaret ediyorsa (sürekli kusma, kan, ağrı, ani kilo kaybı vb.) "not" alanına kısa bir "veterinere danışın" uyarısı yaz; değilse not null olsun.
@@ -107,7 +119,7 @@ KURALLAR:
     },
     body: JSON.stringify({
       model: CLAUDE_MODEL,
-      max_tokens: 700,
+      max_tokens: 1000,
       system,
       messages: [{ role: "user", content: `MÜŞTERİ PROFİLİ:\n${profil}\n\nÜRÜN LİSTESİ (id|ad|⭐=öne çıkan):\n${liste}` }],
     }),
@@ -130,9 +142,18 @@ KURALLAR:
   }
 
   const idMap = new Map(adaylar.map(u => [u.id, u]));
+  // Güvenlik ağı: model kurala rağmen aynı mamanın farklı boyutunu dönerse
+  // formül anahtarıyla tekilleştir (ilk/en uygun boyut kalır) → sonra ilk 3.
+  const gorulen = new Set<string>();
   const oneriler = (veri.oneriler || [])
     .map(o => ({ urun: idMap.get(Number(o.id)), neden: String(o.neden || "") }))
     .filter((o): o is { urun: AsistanUrun; neden: string } => !!o.urun)
+    .filter(o => {
+      const anahtar = formulAnahtari(o.urun.ad);
+      if (gorulen.has(anahtar)) return false;
+      gorulen.add(anahtar);
+      return true;
+    })
     .slice(0, 3);
 
   return { oneriler, not: veri.not || null };
