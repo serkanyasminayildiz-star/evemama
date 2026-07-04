@@ -91,6 +91,7 @@ export async function oneriUret(girdi: AsistanGirdi): Promise<AsistanSonuc> {
 KURALLAR:
 - YALNIZ listede verilen id'leri kullan; listede olmayan ürün ÖNERME, ürün uydurma.
 - En uygun 3 ürünü seç (gerçekten uygun daha azsa daha az seç; hiç uygun yoksa boş dizi).
+- MARKA ÖNCELİĞİ: Bu ihtiyaca uygun Royal Canin ürünü VARSA önerilerde Royal Canin'e öncelik ver ve ilk sıralara koy (stok istikrarı en yüksek marka). Royal Canin'de uygun ürün yoksa diğer markalardan öner. Ancak uygunluktan asla ödün verme — ihtiyaca uymayan bir Royal Canin, uyan başka markadan iyi değildir.
 - Uygunluk eşitse ⭐ işaretli ürünü tercih et.
 - Her öneri için 1-2 cümle samimi, NET Türkçe gerekçe yaz (ürünün hangi özelliği bu derde iyi gelir). Tıbbi tedavi vaadi verme, abartma.
 - Belirti ciddi bir sağlık sorununa işaret ediyorsa (sürekli kusma, kan, ağrı, ani kilo kaybı vb.) "not" alanına kısa bir "veterinere danışın" uyarısı yaz; değilse not null olsun.

@@ -545,6 +545,29 @@ export default function AnaSayfaClient() {
         </div>
       </div>
 
+      {/* MAMA ASİSTANI — AI destekli mama önerisi (arama kutusunun altı, hero üstü) */}
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "6px 14px 16px" }}>
+        <div style={{ background: "linear-gradient(135deg,#FFF3E6,#FFE3CC)", border: "1.5px solid #E8845A", borderRadius: 18, padding: "16px 18px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "10px 18px" }}>
+          <div style={{ textAlign: "center" }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "#5C3D2E" }}>🤖🐾 Mama Asistanı</span>
+            <span style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.75, marginLeft: 8 }}>Dostunun derdini yaz, en uygun mamayı önerelim</span>
+          </div>
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              const v = String(new FormData(e.currentTarget).get("q") || "").trim();
+              window.location.href = v ? `/mama-asistani?q=${encodeURIComponent(v)}` : "/mama-asistani";
+            }}
+            style={{ display: "flex", gap: 8, flex: "1 1 300px", maxWidth: 520 }}>
+            <input name="q" placeholder='örn: "tüyleri çok dökülüyor"' maxLength={200}
+              style={{ flex: 1, minWidth: 0, padding: "11px 14px", border: "2px solid #E8D5B7", borderRadius: 50, fontSize: 13, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white" }} />
+            <button type="submit" style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 50, padding: "11px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0 }}>
+              Öneri Al →
+            </button>
+          </form>
+        </div>
+      </div>
+
       {/* HERO — Açık Mamalar banner (sol) + hızlı erişim kartları (sağ, "şimdilik") */}
       <div className="hero-grid">
         {/* Eski gradient carousel kaldırıldı; yerine açık mama banner'ı. Tıklanınca açık mamalar kategorisi. */}
@@ -602,29 +625,6 @@ export default function AnaSayfaClient() {
           </div>
         </div>
       </Link>
-
-      {/* MAMA ASİSTANI — AI destekli mama önerisi (dostunun derdini yaz → öneri) */}
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "8px 14px" }}>
-        <div style={{ background: "linear-gradient(135deg,#FFF3E6,#FFE3CC)", border: "1.5px solid #E8845A", borderRadius: 18, padding: "16px 18px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "10px 18px" }}>
-          <div style={{ textAlign: "center" }}>
-            <span style={{ fontSize: 15, fontWeight: 800, color: "#5C3D2E" }}>🤖🐾 Mama Asistanı</span>
-            <span style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.75, marginLeft: 8 }}>Dostunun derdini yaz, en uygun mamayı önerelim</span>
-          </div>
-          <form
-            onSubmit={e => {
-              e.preventDefault();
-              const v = String(new FormData(e.currentTarget).get("q") || "").trim();
-              window.location.href = v ? `/mama-asistani?q=${encodeURIComponent(v)}` : "/mama-asistani";
-            }}
-            style={{ display: "flex", gap: 8, flex: "1 1 300px", maxWidth: 520 }}>
-            <input name="q" placeholder='örn: "tüyleri çok dökülüyor"' maxLength={200}
-              style={{ flex: 1, minWidth: 0, padding: "11px 14px", border: "2px solid #E8D5B7", borderRadius: 50, fontSize: 13, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white" }} />
-            <button type="submit" style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 50, padding: "11px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0 }}>
-              Öneri Al →
-            </button>
-          </form>
-        </div>
-      </div>
 
       {/* PATİ KUMBARASI — sosyal proje: her alışverişin %5'i barınak/sokak köpeklerine mama */}
       <KumbaraWidget />
