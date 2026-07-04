@@ -1,12 +1,13 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "../../../lib/supabase";
 import { oneriUret } from "../../../lib/mamaAsistani";
 
-// Mama Asistanı — public endpoint ama ücretli API çağırıyor: girdiler sınırlanır +
-// IP başına best-effort hız sınırı (serverless instance-lokal; tam koruma değil,
-// kaba kötüye kullanımı keser).
+// Mama Asistanı — ÜYELERE ÖZEL (ücretli AI çağrısı: hem maliyet koruması hem
+// üyelik teşviki). Supabase Bearer token doğrulanır (api/yorum ile aynı desen);
+// ek olarak girdi sınırları + best-effort hız limiti (kullanıcı bazlı).
 const noStore = { "Cache-Control": "no-store" };
-const istekler = new Map<string, number[]>(); // ip → zaman damgaları
+const istekler = new Map<string, number[]>(); // üye e-postası → istek zaman damgaları
 const LIMIT = 8;               // pencere başına istek
 const PENCERE_MS = 5 * 60_000; // 5 dk
 
@@ -23,10 +24,24 @@ function metin(v: unknown, max: number): string {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
 }
 
+async function uyeEmail(req: NextRequest): Promise<string | null> {
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) return null;
+  try {
+    const { data } = await supabase.auth.getUser(auth.slice(7));
+    return data?.user?.email || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "bilinmiyor";
-    if (hizAsildi(ip)) {
+    const email = await uyeEmail(req);
+    if (!email) {
+      return NextResponse.json({ error: "uyelik-gerekli" }, { status: 401, headers: noStore });
+    }
+    if (hizAsildi(email)) {
       return NextResponse.json({ error: "Çok sık denedin — birkaç dakika sonra tekrar dene." }, { status: 429, headers: noStore });
     }
 

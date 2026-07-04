@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useCart } from "../../context/CartContext";
+import { supabase } from "../../lib/supabase";
 
 // Mama Asistanı — müşteri dostunun ihtiyacını yazar, AI stoktaki ürünlerden
 // en uygun 3'ünü gerekçesiyle önerir. Sonuç kartları /kampanyalar ile birebir.
@@ -35,29 +36,58 @@ export default function MamaAsistani() {
   const [oneriler, setOneriler] = useState<Oneri[] | null>(null);
   const [notMetni, setNotMetni] = useState<string | null>(null);
   const [eklendi, setEklendi] = useState<number | null>(null);
+  const [girisGerek, setGirisGerek] = useState(false); // üye değil → giriş/üye ol kartı
 
   useEffect(() => {
     // Ana sayfa şeridinden gelen soru (?q=) forma önceden doldurulur.
     const q = new URLSearchParams(window.location.search).get("q");
     if (q) setMesaj(q.slice(0, 600));
+    // Giriş/üye ol dönüşü: gitmeden önce sakladığımız formu geri yükle (yazdıkları kaybolmasın).
+    try {
+      const sakli = localStorage.getItem("evemama_asistan_form");
+      if (sakli) {
+        const f = JSON.parse(sakli) as { tur?: "kedi" | "kopek"; yas?: string; cins?: string; mesaj?: string };
+        if (f.tur) setTur(f.tur);
+        if (f.yas) setYas(f.yas);
+        if (f.cins) setCins(f.cins);
+        if (f.mesaj) setMesaj(f.mesaj);
+        localStorage.removeItem("evemama_asistan_form");
+      }
+    } catch { /* bozuk stash sessizce atlanır */ }
   }, []);
+
+  // Giriş/üye ol'a gitmeden formu sakla — dönüşte geri yüklenir.
+  const girisYolculugu = (hedef: "/giris" | "/uye-ol") => {
+    try { localStorage.setItem("evemama_asistan_form", JSON.stringify({ tur, yas, cins, mesaj })); } catch { /* dolu storage sessiz */ }
+    window.location.href = `${hedef}?returnUrl=${encodeURIComponent("/mama-asistani")}`;
+  };
 
   const handleSor = async () => {
     if (!tur) { setHata("Önce kedi mi köpek mi seç 🙂"); return; }
     if (mesaj.trim().length < 5) { setHata("Dostunun ihtiyacını kısaca yaz (örn: tüyleri çok dökülüyor)."); return; }
     setYukleniyor(true);
     setHata("");
+    setGirisGerek(false);
     setOneriler(null);
     try {
+      // Üyelere özel: oturum token'ı olmadan istek atmayız (server da 401 doğrular).
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setGirisGerek(true);
+        setYukleniyor(false);
+        return;
+      }
       const r = await fetch("/api/mama-asistani", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ tur, yas, cins, mesaj }),
       });
       const d = await r.json();
       if (d.ok) {
         setOneriler(d.oneriler || []);
         setNotMetni(d.not || null);
+      } else if (r.status === 401) {
+        setGirisGerek(true);
       } else {
         setHata(d.error || "Öneri hazırlanamadı, tekrar dene.");
       }
@@ -117,6 +147,9 @@ export default function MamaAsistani() {
           <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.7, margin: "10px auto 0", maxWidth: 480, lineHeight: 1.6 }}>
             Dostunun özelliğini veya problemini yaz — stoktaki ürünler arasından ona en uygun mamaları önerelim.
           </p>
+          <div style={{ display: "inline-block", marginTop: 10, background: "#FFF3E6", border: "1px solid #E8845A", borderRadius: 50, padding: "5px 14px", fontSize: 12, fontWeight: 700, color: "#E8845A" }}>
+            🔒 Üyelere özel — üyelik ücretsiz
+          </div>
         </div>
 
         {/* Form */}
@@ -154,6 +187,18 @@ export default function MamaAsistani() {
 
           {hata && (
             <div style={{ background: "#FFEBEE", color: "#C62828", padding: "12px 16px", borderRadius: 12, marginBottom: 14, fontSize: 13, textAlign: "center" }}>{hata}</div>
+          )}
+
+          {girisGerek && (
+            <div style={{ background: "#FFF8E1", border: "1.5px solid #F9A825", borderRadius: 14, padding: "18px 16px", marginBottom: 14, textAlign: "center" }}>
+              <div style={{ fontSize: 26, marginBottom: 6 }}>🔒</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#5C3D2E", marginBottom: 4 }}>Mama Asistanı üyelere özel</div>
+              <div style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.7, marginBottom: 14 }}>Ücretsiz üye ol, sınırsız öneri al — yazdıkların kaybolmaz, giriş sonrası buraya dönersin.</div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                <button onClick={() => girisYolculugu("/uye-ol")} style={{ background: "#E8845A", color: "white", border: "none", borderRadius: 50, padding: "11px 24px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Üye Ol (ücretsiz) →</button>
+                <button onClick={() => girisYolculugu("/giris")} style={{ background: "white", color: "#5C3D2E", border: "2px solid #E8D5B7", borderRadius: 50, padding: "11px 24px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Giriş Yap</button>
+              </div>
+            </div>
           )}
 
           <button onClick={handleSor} disabled={yukleniyor}
