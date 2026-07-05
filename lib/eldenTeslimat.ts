@@ -16,6 +16,7 @@ export const ELDEN_TESLIMAT = {
   KESIM_SAATI: 12,                 // bu saate kadar sipariş → aynı gün
   TESLIM_ARALIGI: "15:00 – 18:00", // teslim saat aralığı
   GUNLER: "Pazartesi – Cumartesi", // Pazar teslimat yok
+  MIN_SEPET: 1000,                 // elden teslimat için minimum sepet tutarı (₺, ürünler toplamı)
   ODEME_NOTU: "Kapıda nakit ödeme (çok yakında kapıda kartla ödeme)",
 } as const;
 

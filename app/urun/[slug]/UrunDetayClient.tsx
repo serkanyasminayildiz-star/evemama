@@ -408,7 +408,7 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
                 { icon: "🔒", text: <><strong>Güvenli Ödeme</strong> — iyzico altyapısı, 3D Secure ile korumalı</> },
                 { icon: "✅", text: <><strong>%100 Orijinal Ürün</strong> — Yetkili kaynaktan, faturalı</> },
                 { icon: "⚡", text: <><strong>Aynı Gün Kargo</strong> — Saat 12:00&apos;a kadar verilen siparişler bugün kargoya verilir</> },
-                { icon: "🛵", text: <><strong>İzmir&apos;e Aynı Gün ELDEN Teslimat</strong> — 12:00&apos;a kadar siparişte bugün 15:00–18:00 kapında (9 merkez ilçe, kapıda nakit)</> },
+                { icon: "🛵", text: <><strong>İzmir&apos;e Aynı Gün ELDEN Teslimat</strong> — 12:00&apos;a kadar siparişte bugün 15:00–18:00 kapında (9 merkez ilçe, min ₺1.000 sepet, kapıda nakit)</> },
                 { icon: "🎁", text: <><strong>1000₺ Üzeri Ücretsiz Kargo</strong> — {kargoUcreti === 0 ? "Siparişiniz kapsam dahilinde!" : `₺${kargoyaKalan.toFixed(2)} daha ekleyin`}</> },
                 { icon: "↩️", text: <><strong>14 Gün İade Garantisi</strong> — Koşulsuz iade hakkı</> },
               ].map((item, i) => (

@@ -24,6 +24,7 @@ export default function Kargo() {
             📍 <strong>Kapsam:</strong> {ELDEN_TESLIMAT.ILCELER.join(", ")} <span style={{ opacity: 0.6 }}>(yalnız bu {ELDEN_TESLIMAT.ILCELER.length} merkez ilçe)</span><br />
             ⏰ Saat <strong>12:00&apos;a kadar</strong> verilen siparişler <strong>aynı gün {ELDEN_TESLIMAT.TESLIM_ARALIGI} arası</strong> elden teslim edilir; 12:00 sonrası siparişler bir sonraki teslimat gününe sarkar.<br />
             📅 Teslimat günleri: <strong>{ELDEN_TESLIMAT.GUNLER}</strong> (Pazar teslimat yoktur).<br />
+            🧺 Minimum sipariş tutarı: <strong>₺{ELDEN_TESLIMAT.MIN_SEPET.toLocaleString("tr-TR")}</strong>.<br />
             💵 Ödeme: <strong>kapıda nakit</strong> — çok yakında kapıda kartla ödeme.<br />
             🚚 Elden teslimatta <strong>kargo ücreti alınmaz</strong>. Ödeme adımında adresinizde İzmir + kapsam ilçesi seçiliyse &quot;Elden Teslim — Aynı Gün&quot; seçeneği görünür.<br />
             📞 Teslimattan önce telefonla haber verilir.

@@ -5,7 +5,7 @@ import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
 import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
 import { HAVALE_HESAP } from "../../lib/havale";
-import { eldenUygun, teslimBilgisi } from "../../lib/eldenTeslimat";
+import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../lib/eldenTeslimat";
 import { TR_ILLER, IL_LISTESI } from "../../lib/tr-iller";
 
 export default function Odeme() {
@@ -123,9 +123,10 @@ export default function Odeme() {
     : [indirimAciklama, ilkSiparisIndirimi ? "İlk sipariş" : "", bonusUygulanabilir ? "Sadakat bonusu" : ""].filter(Boolean).join(" + ");
   const genelToplam = hesap.genelToplam;
 
-  // İzmir elden teslimat: il=İzmir + kapsam ilçesi seçiliyse seçenek görünür;
-  // elden seçiliyken KARGO ALINMAZ (elden götürüyoruz) → ödenecek = toplam - kargo.
-  const eldenSecilebilir = eldenUygun(form.city, form.ilce);
+  // İzmir elden teslimat: il=İzmir + kapsam ilçesi + sepet ≥ MIN_SEPET ise seçenek
+  // görünür; elden seçiliyken KARGO ALINMAZ → ödenecek = toplam - kargo.
+  const eldenKonumUygun = eldenUygun(form.city, form.ilce);
+  const eldenSecilebilir = eldenKonumUygun && totalPrice >= ELDEN_TESLIMAT.MIN_SEPET;
   const eldenAktif = odemeYontemi === "elden" && eldenSecilebilir;
   const odenecekToplam = eldenAktif ? Math.max(0, genelToplam - kargoUcreti) : genelToplam;
   useEffect(() => {
@@ -277,6 +278,12 @@ export default function Odeme() {
             {odemeYontemi === "kart" && (
               <div style={{ marginTop: 14, background: "#FDF6EE", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "#5C3D2E", opacity: 0.8 }}>
                 🔒 Kart bilgileriniz <strong>iyzico</strong>&apos;nun güvenli sayfasında girilecektir.
+              </div>
+            )}
+
+            {eldenKonumUygun && !eldenSecilebilir && (
+              <div style={{ marginTop: 14, background: "#FFF8E1", border: "1.5px dashed #F9A825", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
+                🛵 <strong>İzmir Aynı Gün Elden Teslimat</strong> minimum ₺{ELDEN_TESLIMAT.MIN_SEPET.toLocaleString("tr-TR")} sepette geçerli — <strong>₺{(ELDEN_TESLIMAT.MIN_SEPET - totalPrice).toFixed(2)}</strong> daha ekleyin, bugün kapınıza getirelim!
               </div>
             )}
 

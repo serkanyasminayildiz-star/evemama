@@ -631,7 +631,7 @@ export default function AnaSayfaClient() {
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 14px 8px" }}>
           <div style={{ background: "linear-gradient(135deg,#FFF3E0,#FFE0B2)", border: "1.5px solid #E8845A", borderRadius: 18, padding: "13px 18px", display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: "6px 22px" }}>
             <span style={{ fontSize: 14, fontWeight: 800, color: "#5C3D2E" }}>🛵 İZMİR&apos;E AYNI GÜN <span style={{ color: "#E8845A" }}>ELDEN TESLİMAT</span></span>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: "#5C3D2E", opacity: 0.75 }}>12:00&apos;a kadar siparişte bugün 15:00–18:00 kapında · 9 merkez ilçe · Kapıda nakit · Cumartesi dahil</span>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: "#5C3D2E", opacity: 0.75 }}>12:00&apos;a kadar siparişte bugün 15:00–18:00 kapında · 9 merkez ilçe · Min. sepet ₺1.000 · Kapıda nakit · Cumartesi dahil</span>
           </div>
         </div>
       </Link>

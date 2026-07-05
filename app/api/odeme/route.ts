@@ -4,7 +4,7 @@ import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
 import { ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../../lib/indirim";
-import { eldenUygun, teslimBilgisi } from "../../../lib/eldenTeslimat";
+import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../../lib/eldenTeslimat";
 import { sendHavaleTalimatMaili, sendEldenTeslimMaili } from "../../../lib/email";
 
 // Sepet ürünü — client'tan gelen JSON şekli (explicit any yerine).
@@ -167,6 +167,9 @@ export async function POST(req: NextRequest) {
   if (body.yontem === "elden") {
     if (!eldenUygun(String(buyer.city || ""), String(body.ilce || ""))) {
       return NextResponse.json({ error: "Elden teslimat yalnız İzmir merkez ilçelerinde geçerlidir." }, { status: 400 });
+    }
+    if (basketTotal < ELDEN_TESLIMAT.MIN_SEPET) {
+      return NextResponse.json({ error: `Elden teslimat minimum ₺${ELDEN_TESLIMAT.MIN_SEPET} sepet tutarında geçerlidir.` }, { status: 400 });
     }
     const eldenToplam = Math.max(0, hesap.genelToplam - hesap.kargo); // kargo yok
     const teslim = teslimBilgisi();
