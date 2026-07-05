@@ -5,12 +5,13 @@ import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
 import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
 import { HAVALE_HESAP } from "../../lib/havale";
+import { eldenUygun, teslimBilgisi } from "../../lib/eldenTeslimat";
 import { TR_ILLER, IL_LISTESI } from "../../lib/tr-iller";
 
 export default function Odeme() {
   const { items, totalPrice, clearCart } = useCart();
   const [yukleniyor, setYukleniyor] = useState(false);
-  const [odemeYontemi, setOdemeYontemi] = useState<"kart" | "havale">("kart");
+  const [odemeYontemi, setOdemeYontemi] = useState<"kart" | "havale" | "elden">("kart");
   const [sozlesme, setSozlesme] = useState(false);
   const [aydinlatma, setAydinlatma] = useState(false);
   const [hata, setHata] = useState("");
@@ -122,6 +123,16 @@ export default function Odeme() {
     : [indirimAciklama, ilkSiparisIndirimi ? "İlk sipariş" : "", bonusUygulanabilir ? "Sadakat bonusu" : ""].filter(Boolean).join(" + ");
   const genelToplam = hesap.genelToplam;
 
+  // İzmir elden teslimat: il=İzmir + kapsam ilçesi seçiliyse seçenek görünür;
+  // elden seçiliyken KARGO ALINMAZ (elden götürüyoruz) → ödenecek = toplam - kargo.
+  const eldenSecilebilir = eldenUygun(form.city, form.ilce);
+  const eldenAktif = odemeYontemi === "elden" && eldenSecilebilir;
+  const odenecekToplam = eldenAktif ? Math.max(0, genelToplam - kargoUcreti) : genelToplam;
+  useEffect(() => {
+    // İl/ilçe değişip kapsamdan çıkarsa elden seçimi karta döner (gizli seçim kalmasın).
+    if (odemeYontemi === "elden" && !eldenSecilebilir) setOdemeYontemi("kart");
+  }, [odemeYontemi, eldenSecilebilir]);
+
   // Sadakat bonusu KAZANMA (bu sipariş → BİR SONRAKİ alışveriş). Yalnızca ÜYE.
   // Ödenecek tutara (genelToplam) göre eşik: ≥5000 → 200, ≥3000 → 150 —
   // odeme/sonuc'taki kurallarla BİREBİR AYNI. Sepetteki ile de aynı (tek kaynak).
@@ -145,9 +156,20 @@ export default function Odeme() {
           "Content-Type": "application/json",
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.ilce ? `${form.address}, ${form.ilce}` : form.address, city: form.city }, kuponKodu: uygulananKupon?.kod || "", yontem: odemeYontemi }),
+        body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.ilce ? `${form.address}, ${form.ilce}` : form.address, city: form.city }, ilce: form.ilce, kuponKodu: uygulananKupon?.kod || "", yontem: odemeYontemi }),
       });
       const data = await res.json();
+      // Elden teslim: sipariş "ödeme bekliyor (elden)" oluştu → onay sayfasına git.
+      if (odemeYontemi === "elden") {
+        if (data.elden && data.siparisNo) {
+          clearCart();
+          window.location.href = `/odeme/elden?siparis=${encodeURIComponent(data.siparisNo)}&tutar=${encodeURIComponent(data.toplam || odenecekToplam.toFixed(2))}&teslim=${encodeURIComponent(data.teslim || "")}`;
+        } else {
+          setHata("Sipariş oluşturulamadı: " + (data.error || "Bilinmeyen hata"));
+          setYukleniyor(false);
+        }
+        return;
+      }
       // Havale: sipariş "ödeme bekliyor" olarak oluştu → sepeti temizle, onay sayfasına git.
       if (odemeYontemi === "havale") {
         if (data.havale && data.siparisNo) {
@@ -235,9 +257,10 @@ export default function Odeme() {
             <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 18 }}>💳 Ödeme Yöntemi</div>
             <div className="odeme-yontem-grid">
               {([
-                { id: "kart", icon: "💳", title: "Kredi / Banka Kartı", sub: "Taksit seçeneği mevcut" },
-                { id: "havale", icon: "🏦", title: "Banka Havalesi / EFT", sub: "Banka hesabına havale/EFT" },
-              ] as const).map(o => (
+                { id: "kart" as const, icon: "💳", title: "Kredi / Banka Kartı", sub: "Taksit seçeneği mevcut" },
+                { id: "havale" as const, icon: "🏦", title: "Banka Havalesi / EFT", sub: "Banka hesabına havale/EFT" },
+                ...(eldenSecilebilir ? [{ id: "elden" as const, icon: "🛵", title: "Elden Teslim — Aynı Gün", sub: "İzmir merkez · kapıda nakit · kargo yok" }] : []),
+              ]).map(o => (
                 <div key={o.id} onClick={() => setOdemeYontemi(o.id)}
                   style={{ border: `2px solid ${odemeYontemi === o.id ? "#E8845A" : "#E8D5B7"}`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", background: odemeYontemi === o.id ? "#FFF5F0" : "white", transition: "all .2s", display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ width: 20, height: 20, borderRadius: "50%", border: `2px solid ${odemeYontemi === o.id ? "#E8845A" : "#E8D5B7"}`, background: odemeYontemi === o.id ? "#E8845A" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -254,6 +277,17 @@ export default function Odeme() {
             {odemeYontemi === "kart" && (
               <div style={{ marginTop: 14, background: "#FDF6EE", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "#5C3D2E", opacity: 0.8 }}>
                 🔒 Kart bilgileriniz <strong>iyzico</strong>&apos;nun güvenli sayfasında girilecektir.
+              </div>
+            )}
+
+            {eldenAktif && (
+              <div style={{ marginTop: 14, background: "#F0FAF1", border: "1.5px solid #8BAF8E", borderRadius: 14, padding: "16px 18px" }}>
+                <div style={{ fontWeight: 700, color: "#2E7D32", marginBottom: 10, fontSize: 14 }}>🛵 İzmir Elden Teslimat — {form.ilce}</div>
+                <div style={{ fontSize: 13, color: "#5C3D2E", lineHeight: 1.8 }}>
+                  📦 <strong>{teslimBilgisi().metin}</strong> <span style={{ opacity: 0.6 }}>(saat 12:00&apos;a kadar verilen siparişler aynı gün)</span><br />
+                  💵 Ödeme: <strong>kapıda nakit — ₺{odenecekToplam.toFixed(2)}</strong> <span style={{ opacity: 0.6 }}>(çok yakında kapıda kartla ödeme)</span><br />
+                  📅 Teslimat günleri: Pazartesi – Cumartesi · Teslimattan önce telefonla haber veriyoruz
+                </div>
               </div>
             )}
 
@@ -290,8 +324,8 @@ export default function Odeme() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14, fontSize: 13, color: "#5C3D2E" }}>
                 <span>Kargo</span>
-                <span style={{ color: kargoUcreti === 0 ? "#8BAF8E" : "#5C3D2E", fontWeight: kargoUcreti === 0 ? 700 : 400 }}>
-                  {kargoUcreti === 0 ? "Ücretsiz 🎉" : `₺${kargoUcreti.toFixed(2)}`}
+                <span style={{ color: eldenAktif || kargoUcreti === 0 ? "#8BAF8E" : "#5C3D2E", fontWeight: eldenAktif || kargoUcreti === 0 ? 700 : 400 }}>
+                  {eldenAktif ? "Elden Teslim 🛵 Ücretsiz" : kargoUcreti === 0 ? "Ücretsiz 🎉" : `₺${kargoUcreti.toFixed(2)}`}
                 </span>
               </div>
               {indirimMiktari > 0 && (
@@ -344,7 +378,7 @@ export default function Odeme() {
 
               <div style={{ borderTop: "2px solid #FDF6EE", paddingTop: 14, display: "flex", justifyContent: "space-between" }}>
                 <span style={{ fontFamily: "Georgia, serif", fontSize: 17, fontWeight: 700, color: "#5C3D2E" }}>Toplam</span>
-                <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#E8845A" }}>₺{genelToplam.toFixed(2)}</span>
+                <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#E8845A" }}>₺{odenecekToplam.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -378,7 +412,7 @@ export default function Odeme() {
           {/* Buton artık DEVRE DIŞI değil — kutular işaretsizse tıklayınca handleOde uyarı verir */}
           <button onClick={handleOde} disabled={yukleniyor}
             style={{ width: "100%", background: "#E8845A", color: "white", border: "none", borderRadius: 16, padding: "16px", fontSize: 16, fontWeight: 700, cursor: yukleniyor ? "not-allowed" : "pointer", fontFamily: "inherit", boxShadow: "0 8px 20px rgba(232,132,90,0.3)", transition: "all .2s", opacity: yukleniyor ? 0.7 : 1 }}>
-            {yukleniyor ? "Yükleniyor..." : odemeYontemi === "havale" ? "Siparişi Tamamla 🏦" : "Ödemeye Geç 🔒"}
+            {yukleniyor ? "Yükleniyor..." : odemeYontemi === "elden" ? "Siparişi Tamamla 🛵" : odemeYontemi === "havale" ? "Siparişi Tamamla 🏦" : "Ödemeye Geç 🔒"}
           </button>
 
           <div style={{ textAlign: "center", marginTop: 10, fontSize: 11, color: "#5C3D2E", opacity: 0.4 }}>

@@ -1448,8 +1448,8 @@ export default function Admin() {
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ fontFamily: "Georgia,serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E" }}>#{sp.siparis_no}</span>
                       <span style={{ fontSize: 12, opacity: 0.5 }}>{new Date(sp.created_at).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                      <span style={{ background: sp.odeme_yontemi === "kredi_karti" ? "#E3F2FD" : "#E8F5E9", color: sp.odeme_yontemi === "kredi_karti" ? "#1565C0" : "#2E7D32", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
-                        {sp.odeme_yontemi === "kredi_karti" ? "💳 Kart" : "🏦 Havale"}
+                      <span style={{ background: sp.odeme_yontemi === "kredi_karti" ? "#E3F2FD" : sp.odeme_yontemi === "elden" ? "#FFF3E0" : "#E8F5E9", color: sp.odeme_yontemi === "kredi_karti" ? "#1565C0" : sp.odeme_yontemi === "elden" ? "#E65100" : "#2E7D32", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
+                        {sp.odeme_yontemi === "kredi_karti" ? "💳 Kart" : sp.odeme_yontemi === "elden" ? "🛵 Elden/Nakit" : "🏦 Havale"}
                       </span>
                       <span style={{ background: (({ beklemede: "#FFF3E0", hazirlaniyor: "#E3F2FD", kargoda: "#E8F5E9", tamamlandi: "#F3E5F5", iptal: "#FFEBEE" }) as Record<string, string>)[sp.durum ?? ""] || "#F5F5F5", color: (({ beklemede: "#E65100", hazirlaniyor: "#1565C0", kargoda: "#2E7D32", tamamlandi: "#6A1B9A", iptal: "#C62828" }) as Record<string, string>)[sp.durum ?? ""] || "#666", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
                         {sp.durum || "beklemede"}
@@ -1580,11 +1580,11 @@ export default function Admin() {
                         </select>
                         <select value={sp.odeme_durumu || "beklemede"} onChange={async e => {
                           const yeni = e.target.value;
-                          // Havale siparişi "ödendi"ye geçince: server'da stok düş + onay maili (idempotent).
-                          if (sp.odeme_yontemi === "havale" && yeni === "odendi" && sp.odeme_durumu !== "odendi") {
+                          // Havale/elden siparişi "ödendi"ye geçince: server'da stok düş + onay maili (idempotent).
+                          if ((sp.odeme_yontemi === "havale" || sp.odeme_yontemi === "elden") && yeni === "odendi" && sp.odeme_durumu !== "odendi") {
                             const r = await fetch("/api/admin/havale-onayla", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` }, body: JSON.stringify({ siparis_no: sp.siparis_no }) });
-                            if (r.ok) { siparisleriYukle(siparisDurumFiltre); goster("✅ Havale onaylandı — stok düşüldü, onay maili gönderildi"); }
-                            else { goster("❌ Havale onaylanamadı"); }
+                            if (r.ok) { siparisleriYukle(siparisDurumFiltre); goster("✅ Ödeme onaylandı — stok düşüldü, onay maili gönderildi"); }
+                            else { goster("❌ Ödeme onaylanamadı"); }
                             return;
                           }
                           await supabase.from("siparisler").update({ odeme_durumu: yeni }).eq("id", sp.id); siparisleriYukle(siparisDurumFiltre); goster("✅ Ödeme durumu güncellendi");

@@ -615,6 +615,49 @@ export async function sendHavaleTalimatMaili(p: { siparisNo: string; ad?: string
   }
 }
 
+// ── İzmir elden teslimat — sipariş alındı maili ──────────────────────────────
+// Elden teslim siparişi oluşunca müşteriye teslim günü + kapıda nakit bilgisi.
+export async function sendEldenTeslimMaili(p: { siparisNo: string; ad?: string; email: string; toplam: number | string; teslimMetni: string }): Promise<boolean> {
+  const client = getResend();
+  if (!client) {
+    console.warn("[email] RESEND_API_KEY tanimli degil, elden teslim maili gonderilmedi:", p.email);
+    return false;
+  }
+  if (!p.email) return false;
+  const tutar = typeof p.toplam === "number" ? tr(p.toplam) : p.toplam;
+  const html = `
+  <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#5C3D2E;line-height:1.6;">
+    <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;margin-bottom:14px;">evemama<span style="color:#E8845A;font-style:italic;">.net</span></div>
+    <h2 style="font-size:19px;">Siparişin alındı — elden teslim ediyoruz! 🛵</h2>
+    <p>Merhaba${p.ad ? " " + p.ad : ""}, <strong>#${p.siparisNo}</strong> numaralı siparişin İzmir içi elden teslimat kapsamında hazırlanıyor.</p>
+    <div style="background:#FDF6EE;border-radius:14px;padding:16px 18px;margin:18px 0;">
+      <div style="font-size:14px;margin-bottom:6px;">📦 Teslimat: <strong>${p.teslimMetni}</strong></div>
+      <div style="font-size:14px;margin-bottom:6px;">💵 Ödeme: <strong>Kapıda nakit — ₺${tutar}</strong></div>
+      <div style="font-size:12.5px;opacity:0.7;">Teslimattan önce telefonla haber vereceğiz. Lütfen ödeme tutarını nakit hazır bulundur.</div>
+    </div>
+    <p style="font-size:12.5px;opacity:0.6;">Sorun/değişiklik için bu maile yanıt verebilir ya da sitedeki iletişim sayfasını kullanabilirsin.</p>
+    <hr style="border:none;border-top:1px solid #E8D5B7;margin:20px 0;">
+    <p style="font-size:12px;opacity:0.5;">evemama.net · Dostlarının mama ve ihtiyaçları 🐾</p>
+  </div>`;
+  try {
+    const { data, error } = await client.emails.send({
+      from: FROM_EMAIL,
+      to: p.email,
+      subject: `Siparişin alındı — İzmir elden teslimat 🛵 (#${p.siparisNo})`,
+      html,
+      text: `Siparisin alindi (#${p.siparisNo}). Teslimat: ${p.teslimMetni}. Odeme: kapida nakit ₺${tutar}. Teslimattan once telefonla haber verecegiz.`,
+    });
+    if (error) {
+      console.error("[email] elden teslim maili hatasi:", { email: p.email, error });
+      return false;
+    }
+    return Boolean(data?.id);
+  } catch (err) {
+    console.error("[email] elden teslim maili exception:", { email: p.email, err: err instanceof Error ? err.message : String(err) });
+    return false;
+  }
+}
+
 // ── İletişim formu → info@evemama.net ────────────────────────────────────────
 // Müşterinin yazdığı mesajı işletmeye iletir; replyTo=müşteri (inbox'tan
 // direkt "Yanıtla" çalışsın). Kullanıcı girdisi HTML'e kaçırılarak basılır.

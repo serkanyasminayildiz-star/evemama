@@ -4,7 +4,8 @@ import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
 import { ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../../lib/indirim";
-import { sendHavaleTalimatMaili } from "../../../lib/email";
+import { eldenUygun, teslimBilgisi } from "../../../lib/eldenTeslimat";
+import { sendHavaleTalimatMaili, sendEldenTeslimMaili } from "../../../lib/email";
 
 // Sepet ürünü — client'tan gelen JSON şekli (explicit any yerine).
 type SepetUrun = { id: string | number; name: string; price: number; quantity: number };
@@ -158,6 +159,57 @@ export async function POST(req: NextRequest) {
 
   const priceStr = basketTotal.toFixed(2);
   const paidPriceStr = hesap.genelToplam.toFixed(2);
+
+  // ── İZMİR ELDEN TESLİMAT (kapıda nakit) ─────────────────────────────────────
+  // Havale akışının ikizi: iyzico'ya GİTME, sipariş "ödeme bekliyor (elden)" oluşur;
+  // KARGO ALINMAZ (elden götürüyoruz). İl+ilçe SUNUCUDA doğrulanır (client atlanamaz).
+  // STOK + onay maili admin "ödendi" işaretleyince düşer (havale-onayla, elden dahil).
+  if (body.yontem === "elden") {
+    if (!eldenUygun(String(buyer.city || ""), String(body.ilce || ""))) {
+      return NextResponse.json({ error: "Elden teslimat yalnız İzmir merkez ilçelerinde geçerlidir." }, { status: 400 });
+    }
+    const eldenToplam = Math.max(0, hesap.genelToplam - hesap.kargo); // kargo yok
+    const teslim = teslimBilgisi();
+    const siparisNo = "EVE" + Date.now().toString().slice(-8);
+    const { error: eldenErr } = await supabase.from("siparisler").insert({
+      siparis_no: siparisNo,
+      durum: "beklemede",
+      odeme_yontemi: "elden",
+      odeme_durumu: "bekliyor",
+      toplam: eldenToplam,
+      ara_toplam: basketTotal,
+      ad: buyer.name,
+      soyad: buyer.surname,
+      email: buyer.email,
+      telefon: buyer.phone || "",
+      adres: buyer.address,
+      sehir: buyer.city,
+      urunler: JSON.stringify(items),
+      created_at: new Date().toISOString(),
+    });
+    if (eldenErr) {
+      console.error("[odeme] elden siparis kayit hatasi:", eldenErr);
+      return NextResponse.json({ error: "Sipariş oluşturulamadı, lütfen tekrar deneyin." }, { status: 500 });
+    }
+    if (nihaiBonusId) {
+      try {
+        await supabaseAdmin.from("sadakat_bonuslari")
+          .update({ kullanildi: true, kullanildi_siparis_no: siparisNo })
+          .eq("id", nihaiBonusId).eq("kullanildi", false);
+      } catch (e) { console.error("[odeme] elden bonus isaretleme:", e); }
+    }
+    if (kullanilanKuponKod) {
+      try {
+        const { data: k } = await supabaseAdmin.from("kuponlar").select("kullanim_sayisi").eq("kod", kullanilanKuponKod).maybeSingle();
+        await supabaseAdmin.from("kuponlar").update({ kullanim_sayisi: (Number(k?.kullanim_sayisi) || 0) + 1 }).eq("kod", kullanilanKuponKod);
+      } catch (e) { console.error("[odeme] elden kupon sayaci:", e); }
+    }
+    try {
+      await sendEldenTeslimMaili({ siparisNo, ad: buyer.name, email: buyer.email, toplam: eldenToplam, teslimMetni: teslim.metin });
+    } catch (e) { console.error("[odeme] elden mail:", e); }
+    console.log("[odeme] elden teslim siparisi olusturuldu:", siparisNo);
+    return NextResponse.json({ elden: true, siparisNo, toplam: eldenToplam.toFixed(2), teslim: teslim.metin });
+  }
 
   // ── HAVALE/EFT ──────────────────────────────────────────────────────────────
   // Havale seçildiyse iyzico'ya GİTME. Siparişi "ödeme bekliyor (havale)" olarak

@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
     .from("siparisler").select("*").eq("siparis_no", siparisNo).maybeSingle();
   if (sipErr || !sip) return NextResponse.json({ error: "siparis bulunamadi" }, { status: 404 });
 
-  if (sip.odeme_yontemi !== "havale") {
-    return NextResponse.json({ error: "Bu işlem yalnız havale siparişleri içindir." }, { status: 400 });
+  if (sip.odeme_yontemi !== "havale" && sip.odeme_yontemi !== "elden") {
+    return NextResponse.json({ error: "Bu işlem yalnız havale/elden teslim siparişleri içindir." }, { status: 400 });
   }
   // Zaten ödendiyse → çift stok düşürme YOK (idempotent).
   if (sip.odeme_durumu === "odendi") {

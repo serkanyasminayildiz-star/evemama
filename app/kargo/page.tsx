@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ELDEN_TESLIMAT } from "../../lib/eldenTeslimat";
 export const metadata = {
   title: "Kargo ve Teslimat",
   description: "evemama.net kargo süreleri, ücretsiz kargo limiti, anlaşmalı kargo firmaları ve teslimat detayları.",
@@ -16,9 +17,22 @@ export default function Kargo() {
         <div style={{ width: 60, height: 4, background: "#E8845A", borderRadius: 2, marginBottom: 8 }} />
         <p style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.5, marginBottom: 40 }}>Son güncelleme tarihi: 01/02/2026</p>
 
+        {/* İzmir elden teslimat — öne çıkan blok (kurallar lib/eldenTeslimat TEK KAYNAK) */}
+        <div style={{ background: "linear-gradient(135deg,#FFF3E0,#FFE0B2)", border: "2px solid #E8845A", borderRadius: 24, padding: "28px 32px", marginBottom: 24 }}>
+          <h2 style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", margin: "0 0 12px" }}>🛵 İzmir&apos;e Aynı Gün ELDEN Teslimat</h2>
+          <div style={{ fontSize: 15, color: "#5C3D2E", lineHeight: 2 }}>
+            📍 <strong>Kapsam:</strong> {ELDEN_TESLIMAT.ILCELER.join(", ")} <span style={{ opacity: 0.6 }}>(yalnız bu {ELDEN_TESLIMAT.ILCELER.length} merkez ilçe)</span><br />
+            ⏰ Saat <strong>12:00&apos;a kadar</strong> verilen siparişler <strong>aynı gün {ELDEN_TESLIMAT.TESLIM_ARALIGI} arası</strong> elden teslim edilir; 12:00 sonrası siparişler bir sonraki teslimat gününe sarkar.<br />
+            📅 Teslimat günleri: <strong>{ELDEN_TESLIMAT.GUNLER}</strong> (Pazar teslimat yoktur).<br />
+            💵 Ödeme: <strong>kapıda nakit</strong> — çok yakında kapıda kartla ödeme.<br />
+            🚚 Elden teslimatta <strong>kargo ücreti alınmaz</strong>. Ödeme adımında adresinizde İzmir + kapsam ilçesi seçiliyse &quot;Elden Teslim — Aynı Gün&quot; seçeneği görünür.<br />
+            📞 Teslimattan önce telefonla haber verilir.
+          </div>
+        </div>
+
         <div style={{ background: "white", borderRadius: 24, padding: "40px 48px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
           {[
-            { baslik: "1. Kargo Seçenekleri", icerik: "Siparişleriniz anlaşmalı olduğumuz MNG Kargo ile gönderilir. Farklı kargo seçenekleri hız, maliyet ve teslimat zamanı açısından değişiklik gösterebilir." },
+            { baslik: "1. Kargo Seçenekleri", icerik: "Siparişleriniz anlaşmalı olduğumuz MNG Kargo ile gönderilir. Farklı kargo seçenekleri hız, maliyet ve teslimat zamanı açısından değişiklik gösterebilir. İzmir merkez ilçelerinde ayrıca aynı gün elden teslimat seçeneği sunulur (yukarıdaki kutu)." },
             { baslik: "2. Teslimat Süresi", icerik: "Ürünlerinizin teslimat süresi, sipariş verilen ürünlerin türüne ve seçtiğiniz kargo seçeneğine bağlı olarak değişebilir. Siparişinizin tahmini teslimat tarihini alışveriş sepetinizde görebilirsiniz." },
             { baslik: "3. Sipariş İzleme", icerik: "Siparişiniz kargoya verildiğinde, size bir takip numarası ve kargo şirketi bilgisi sağlanacaktır. Bu bilgileri kullanarak siparişinizin nerede olduğunu kolayca izleyebilirsiniz." },
             { baslik: "4. Teslimat Adresi", icerik: "Lütfen sipariş verirken doğru teslimat adresi ve iletişim bilgilerini sağladığınızdan emin olun. Yanlış teslimat adresi verilmesi durumunda sorumluluk kabul edilmez." },
