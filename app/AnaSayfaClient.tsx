@@ -42,6 +42,19 @@ export default function AnaSayfaClient() {
   const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
   const [altKategoriler, setAltKategoriler] = useState<{ [key: string]: Kategori[] }>({});
   const [acikMenu, setAcikMenu] = useState<string | null>(null);
+
+  // Kategori menüsü DIŞINA tıklanınca kapat — dokunmatikte (hover yok) menü
+  // tıklamayla açılır; kapanışı da bu sağlar. (Clarity bulgusu: hover-only
+  // menü mobilde açılmıyor, kullanıcı defalarca tıklıyordu → tıkla-aç eklendi.)
+  useEffect(() => {
+    if (!acikMenu) return;
+    const kapat = (e: PointerEvent) => {
+      const hedef = e.target as Element | null;
+      if (!hedef?.closest?.("[data-katmenu]")) setAcikMenu(null);
+    };
+    document.addEventListener("pointerdown", kapat);
+    return () => document.removeEventListener("pointerdown", kapat);
+  }, [acikMenu]);
   const [mobMenuAcik, setMobMenuAcik] = useState(false);
   const [araInput, setAraInput] = useState("");
   const [aramaOdak, setAramaOdak] = useState(false); // arama kutusu odakta mı (öneri dropdown'u için)
@@ -479,9 +492,12 @@ export default function AnaSayfaClient() {
               const kat = kategoriler.find(k => k.slug === slug);
               if (!kat) return null;
               return (
-                <div key={slug} style={{ position: "relative", flexShrink: 0 }}
+                <div key={slug} data-katmenu style={{ position: "relative", flexShrink: 0 }}
                   onMouseEnter={() => setAcikMenu(slug)} onMouseLeave={() => setAcikMenu(null)}>
-                  <div className="cat-tab" style={{ padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: acikMenu === slug ? 1 : 0.6, whiteSpace: "nowrap", borderBottom: acikMenu === slug ? "2px solid #E8845A" : "2px solid transparent", cursor: "pointer" }}>
+                  {/* Hem hover hem TIKLAMA açar (dokunmatikte hover yok); dışarı tıklama kapatır. */}
+                  <div className="cat-tab" role="button" aria-expanded={acikMenu === slug} aria-haspopup="true"
+                    onClick={() => setAcikMenu(slug)}
+                    style={{ padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: acikMenu === slug ? 1 : 0.6, whiteSpace: "nowrap", borderBottom: acikMenu === slug ? "2px solid #E8845A" : "2px solid transparent", cursor: "pointer", userSelect: "none" }}>
                     {getKatGorsel(slug).emoji} {kat.ad} {altKategoriler[slug]?.length > 0 ? "▾" : ""}
                   </div>
                   {acikMenu === slug && altKategoriler[slug]?.length > 0 && (
