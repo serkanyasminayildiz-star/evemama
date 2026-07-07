@@ -43,6 +43,15 @@ export default function AnaSayfaClient() {
   const [altKategoriler, setAltKategoriler] = useState<{ [key: string]: Kategori[] }>({});
   const [acikMenu, setAcikMenu] = useState<string | null>(null);
 
+  // Cihaz hover destekliyor mu? (masaüstü=true) — Kedi/Köpek sekme davranışı buna
+  // göre ayrışır: masaüstünde hover panel açar + TIKLAMA kategoriye GİDER;
+  // dokunmatikte tıklama paneli açar/kapar (hover yok).
+  const [hoverVar, setHoverVar] = useState(true);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- ilk değer medya sorgusundan senkron okunur
+    setHoverVar(window.matchMedia("(hover: hover)").matches);
+  }, []);
+
   // Kategori menüsü DIŞINA tıklanınca kapat — dokunmatikte (hover yok) menü
   // tıklamayla açılır; kapanışı da bu sağlar. (Clarity bulgusu: hover-only
   // menü mobilde açılmıyor, kullanıcı defalarca tıklıyordu → tıkla-aç eklendi.)
@@ -494,9 +503,14 @@ export default function AnaSayfaClient() {
               return (
                 <div key={slug} data-katmenu style={{ position: "relative", flexShrink: 0 }}
                   onMouseEnter={() => setAcikMenu(slug)} onMouseLeave={() => setAcikMenu(null)}>
-                  {/* Hem hover hem TIKLAMA açar (dokunmatikte hover yok); dışarı tıklama kapatır. */}
+                  {/* Masaüstü: hover panel açar, TIKLAMA kategori sayfasına gider (kullanıcı
+                      beklentisi — Clarity'de tıklayıp gidememe dead-click üretiyordu).
+                      Dokunmatik: tıklama paneli açar/kapar; dışarı dokunma kapatır. */}
                   <div className="cat-tab" role="button" aria-expanded={acikMenu === slug} aria-haspopup="true"
-                    onClick={() => setAcikMenu(slug)}
+                    onClick={() => {
+                      if (hoverVar) window.location.href = `/kategori/${slug}`;
+                      else setAcikMenu(acikMenu === slug ? null : slug);
+                    }}
                     style={{ padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#5C3D2E", opacity: acikMenu === slug ? 1 : 0.6, whiteSpace: "nowrap", borderBottom: acikMenu === slug ? "2px solid #E8845A" : "2px solid transparent", cursor: "pointer", userSelect: "none" }}>
                     {getKatGorsel(slug).emoji} {kat.ad} {altKategoriler[slug]?.length > 0 ? "▾" : ""}
                   </div>
