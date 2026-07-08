@@ -54,7 +54,7 @@ export default function Hakkimizda() {
             {[
               { icon: "✅", title: "Güvenilir Markalar", desc: "Dünya ve Türkiye'nin önde gelen pet markalarının ürünlerini sunuyoruz." },
               { icon: "📦", title: "Orijinal ve Faturalı Ürünler", desc: "Tüm ürünlerimiz orijinaldir ve faturalı olarak teslim edilir." },
-              { icon: "🚀", title: "Hızlı Kargo", desc: "Saat 12:00'a kadar verilen siparişler aynı gün kargoya verilir." },
+              { icon: "🚀", title: "Hızlı Kargo", desc: "Saat 13:00'a kadar verilen siparişler aynı gün kargoya verilir." },
               { icon: "💬", title: "Güçlü Müşteri Desteği", desc: "Satış öncesi ve sonrası her aşamada yanınızdayız." },
             ].map((item, i) => (
               <div key={i} style={{ background: "#FDF6EE", borderRadius: 16, padding: "20px" }}>
