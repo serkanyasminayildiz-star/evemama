@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { clarityEvent } from "../lib/clarity";
 
 interface CartItem {
   id: number;
@@ -48,6 +49,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, yuklendi]);
 
   const addItem = (item: Omit<CartItem, "quantity">) => {
+    clarityEvent("sepete-ekleme"); // funnel: kaç oturum sepete ürün atıyor
     setItems(prev => {
       const existing = prev.find(i => i.id === item.id);
       if (existing) {

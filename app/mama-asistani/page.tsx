@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
+import { clarityEvent } from "../../lib/clarity";
 
 // Mama Asistanı — müşteri dostunun ihtiyacını yazar, AI stoktaki ürünlerden
 // en uygun 3'ünü gerekçesiyle önerir. Sonuç kartları /kampanyalar ile birebir.
@@ -86,6 +87,7 @@ export default function MamaAsistani() {
       if (d.ok) {
         setOneriler(d.oneriler || []);
         setNotMetni(d.not || null);
+        clarityEvent("mama-asistani-oneri"); // asistan kullanımı funnel'da görünsün
       } else if (r.status === 401) {
         setGirisGerek(true);
       } else {

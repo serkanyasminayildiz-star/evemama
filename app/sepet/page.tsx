@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
+import { clarityEvent, claritySet } from "../../lib/clarity";
 
 export default function Sepet() {
   const { items, removeItem, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
@@ -72,8 +73,12 @@ export default function Sepet() {
         setKuponMesaj("");
       } else {
         setUygulananKupon(null);
-        if (!sessiz) setKuponMesaj(d.mesaj || "Kupon geçersiz.");
-        else if (typeof window !== "undefined") localStorage.removeItem("evemama_kupon");
+        if (!sessiz) {
+          setKuponMesaj(d.mesaj || "Kupon geçersiz.");
+          // Clarity: kullanıcı kupon deneyip reddedildi (YENİLE10/İ-I gibi vakaları görünür kılar)
+          clarityEvent("kupon-hatasi");
+          claritySet("kupon-denenen", kod.trim());
+        } else if (typeof window !== "undefined") localStorage.removeItem("evemama_kupon");
       }
     } catch {
       if (!sessiz) setKuponMesaj("Kupon doğrulanamadı, tekrar deneyin.");

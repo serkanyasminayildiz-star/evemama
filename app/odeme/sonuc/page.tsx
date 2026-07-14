@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Script from "next/script";
+import { clarityEvent } from "../../../lib/clarity";
 
 // Google Ads tag ID — layout.tsx'te yuklendi. Buradaki conversion label
 // 'Satin Alma' islemine ozel.
@@ -30,6 +31,14 @@ function OdemeSonucIcerik() {
   // Ayni siparis sayfaya birden fazla kez render edilirse conversion event'i
   // sadece bir kez tetiklenmeli; useRef ile flag tutuyoruz.
   const conversionFired = useRef(false);
+  const clarityFired = useRef(false);
+
+  // Clarity: başarılı sipariş olayı — gtag'den BAĞIMSIZ (gtag engelliyse de düşsün).
+  useEffect(() => {
+    if (durum !== "basarili" || clarityFired.current) return;
+    clarityFired.current = true;
+    clarityEvent("siparis-basarili");
+  }, [durum]);
 
   useEffect(() => {
     if (durum !== "basarili" || conversionFired.current) return;

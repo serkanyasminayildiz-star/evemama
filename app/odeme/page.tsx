@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
 import { HAVALE_HESAP } from "../../lib/havale";
 import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../lib/eldenTeslimat";
+import { clarityEvent, claritySet } from "../../lib/clarity";
 import { TR_ILLER, IL_LISTESI } from "../../lib/tr-iller";
 
 export default function Odeme() {
@@ -83,8 +84,12 @@ export default function Odeme() {
         setKuponMesaj("");
       } else {
         setUygulananKupon(null);
-        if (!sessiz) setKuponMesaj(d.mesaj || "Kupon geçersiz.");
-        else if (typeof window !== "undefined") localStorage.removeItem("evemama_kupon");
+        if (!sessiz) {
+          setKuponMesaj(d.mesaj || "Kupon geçersiz.");
+          // Clarity: kupon reddi görünür olsun (yazım hatası/limit/süre vakaları)
+          clarityEvent("kupon-hatasi");
+          claritySet("kupon-denenen", kod.trim());
+        } else if (typeof window !== "undefined") localStorage.removeItem("evemama_kupon");
       }
     } catch {
       if (!sessiz) setKuponMesaj("Kupon doğrulanamadı, tekrar deneyin.");
@@ -146,6 +151,9 @@ export default function Odeme() {
     if (!form.name || !form.surname || !form.email || !form.address || !form.city || !form.ilce) { setHata("Lütfen tüm zorunlu alanları doldurun (il ve ilçe dahil)."); return; }
     setHata("");
     setYukleniyor(true);
+    // Clarity funnel: ödeme denemesi + seçilen yöntem (kart/havale/elden)
+    clarityEvent("odeme-basladi");
+    claritySet("odeme-yontemi", odemeYontemi);
     try {
       // Üyelik doğrulaması SUNUCUDA yapılır (ilk sipariş indirimi için).
       // Oturum token'ını gönderiyoruz; sunucu indirimi/tutarı kendisi

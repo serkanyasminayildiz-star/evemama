@@ -1,6 +1,7 @@
 import { CartProvider } from "../context/CartContext";
 import Script from "next/script";
 import ClarityScript from "./ClarityScript";
+import ClarityKimlik from "./ClarityKimlik";
 import "./globals.css";
 
 // Google Ads conversion tracking Tag ID (AW-...).
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Microsoft Clarity — oturum kayıtları + heatmap. /admin HARİÇ
             (admin müşteri verisi içerir; KVKK — kayda PII düşmesin). */}
         <ClarityScript id={CLARITY_ID} />
+        <ClarityKimlik />
         <CartProvider>{children}</CartProvider>
       </body>
     </html>
