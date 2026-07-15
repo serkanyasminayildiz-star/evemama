@@ -1,6 +1,6 @@
 "use client";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
-import { supabase } from "../../../lib/supabase";
+import { adminYaz } from "../adminYaz";
 
 type Soru = {
   id: number | string;
@@ -35,13 +35,13 @@ export default function Blog({ bekleyenSorular, blogSorular, cevaplar, setCevapl
             <div key={bs.id} style={{ background: "#FFF8E8", borderRadius: 14, padding: 18, marginBottom: 14, border: "1px solid #F4C09A" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
                 <div><span style={{ fontWeight: 700, fontSize: 14, color: "#5C3D2E" }}>{bs.ad}</span><span style={{ fontSize: 11, opacity: 0.5, marginLeft: 8 }}>{new Date(bs.created_at).toLocaleDateString("tr-TR")}</span></div>
-                <button onClick={async () => { await supabase.from("blog_sorular").delete().eq("id", bs.id); blogSorulariYukle(); goster("✅ Silindi"); }} style={{ background: "#FFEBEE", border: "none", borderRadius: 8, padding: "5px 10px", fontSize: 12, cursor: "pointer", color: "#C62828" }}>🗑️</button>
+                <button onClick={async () => { await adminYaz("blog_sorular", "delete", { filtre: { id: bs.id } }); blogSorulariYukle(); goster("✅ Silindi"); }} style={{ background: "#FFEBEE", border: "none", borderRadius: 8, padding: "5px 10px", fontSize: 12, cursor: "pointer", color: "#C62828" }}>🗑️</button>
               </div>
               <p style={{ fontSize: 14, fontWeight: 600, color: "#5C3D2E", marginBottom: 12 }}>❓ {bs.soru}</p>
               <div style={{ display: "flex", gap: 8 }}>
                 <textarea placeholder="Cevap yazın..." value={cevaplar[bs.id] || ""} onChange={e => setCevaplar(prev => ({ ...prev, [bs.id]: e.target.value }))}
                   rows={3} style={{ flex: 1, padding: "10px 14px", border: "2px solid #E8D5B7", borderRadius: 10, fontSize: 13, outline: "none", fontFamily: "inherit", resize: "vertical" as const }} />
-                <button onClick={async () => { const cevap = cevaplar[bs.id]; if (!cevap?.trim()) return; await supabase.from("blog_sorular").update({ cevap, onaylandi: true }).eq("id", bs.id); setCevaplar(prev => { const y = { ...prev }; delete y[bs.id]; return y; }); blogSorulariYukle(); istatistikleriYukle(); goster("✅ Cevap yayınlandı"); }}
+                <button onClick={async () => { const cevap = cevaplar[bs.id]; if (!cevap?.trim()) return; await adminYaz("blog_sorular", "update", { veri: { cevap, onaylandi: true }, filtre: { id: bs.id } }); setCevaplar(prev => { const y = { ...prev }; delete y[bs.id]; return y; }); blogSorulariYukle(); istatistikleriYukle(); goster("✅ Cevap yayınlandı"); }}
                   disabled={!cevaplar[bs.id]?.trim()} style={{ ...btn(!cevaplar[bs.id]?.trim() ? "#ccc" : "#E8845A"), alignSelf: "flex-start" }}>
                   💾 Cevapla
                 </button>
@@ -57,8 +57,8 @@ export default function Blog({ bekleyenSorular, blogSorular, cevaplar, setCevapl
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ fontWeight: 700, fontSize: 13 }}>{bs.ad}</span>
               <div style={{ display: "flex", gap: 6 }}>
-                <button onClick={async () => { await supabase.from("blog_sorular").update({ onaylandi: false }).eq("id", bs.id); blogSorulariYukle(); goster("✅ Gizlendi"); }} style={{ background: "#FFF5F0", color: "#E8845A", border: "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Gizle</button>
-                <button onClick={async () => { await supabase.from("blog_sorular").delete().eq("id", bs.id); blogSorulariYukle(); istatistikleriYukle(); goster("✅ Silindi"); }} style={{ background: "#FFEBEE", border: "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, cursor: "pointer", color: "#C62828" }}>🗑️</button>
+                <button onClick={async () => { await adminYaz("blog_sorular", "update", { veri: { onaylandi: false }, filtre: { id: bs.id } }); blogSorulariYukle(); goster("✅ Gizlendi"); }} style={{ background: "#FFF5F0", color: "#E8845A", border: "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Gizle</button>
+                <button onClick={async () => { await adminYaz("blog_sorular", "delete", { filtre: { id: bs.id } }); blogSorulariYukle(); istatistikleriYukle(); goster("✅ Silindi"); }} style={{ background: "#FFEBEE", border: "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, cursor: "pointer", color: "#C62828" }}>🗑️</button>
               </div>
             </div>
             <p style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: bs.cevap ? 8 : 0 }}>❓ {bs.soru}</p>

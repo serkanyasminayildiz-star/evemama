@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../../lib/supabase";
+import { adminYaz } from "./adminYaz";
 import CsvImport from "./CsvImport";
 import Kargo from "./components/Kargo";
 import SiteAyarlari from "./components/SiteAyarlari";
@@ -292,13 +293,14 @@ export default function Admin() {
     const { data } = await supabase.from("markalar").select("*").order("ad");
     setMarkalar(data || []);
   };
+  // Kupon/blog listeleri server API'den (RLS: kupon kodları anon'a sızmaz).
   const kuponlariYukle = async () => {
-    const { data } = await supabase.from("kuponlar").select("*").order("created_at", { ascending: false });
-    setKuponlar(data || []);
+    const { data } = await adminYaz("kuponlar", "select");
+    setKuponlar((data as unknown as Kupon[]) || []);
   };
   const blogSorulariYukle = async () => {
-    const { data } = await supabase.from("blog_sorular").select("*").order("created_at", { ascending: false });
-    setBlogSorular(data || []);
+    const { data } = await adminYaz("blog_sorular", "select");
+    setBlogSorular((data as unknown as BlogSoru[]) || []);
   };
   const siteAyarlariYukle = async () => {
     const { data } = await supabase.from("site_ayarlari").select("*");
@@ -313,7 +315,7 @@ export default function Admin() {
     const [{ count: uc }, { count: kc }, { count: bc }, sayilar] = await Promise.all([
       supabase.from("urunler").select("*", { count: "exact", head: true }),
       supabase.from("kategoriler").select("*", { count: "exact", head: true }),
-      supabase.from("blog_sorular").select("*", { count: "exact", head: true }).eq("onaylandi", false),
+      adminYaz("blog_sorular", "select", { filtre: { onaylandi: false } }).then(r => ({ count: r.data?.length || 0 })),
       fetch("/api/admin/siparisler?sayilar=1", { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } })
         .then(r => r.json()).catch(() => ({ toplam: 0, bekleyen: 0, bugun: 0 })),
     ]);
@@ -412,7 +414,7 @@ export default function Admin() {
     const ekResimler = tumResimler.slice(1);
     // Kisa aciklama bos ise uzun aciklamadan otomatik uret.
     const kisaAck = yeniUrun.kisa_aciklama?.trim() || (yeniUrun.aciklama ? kisaOzet(yeniUrun.aciklama) : null);
-    const { error } = await supabase.from("urunler").insert({
+    const { error } = await adminYaz("urunler", "insert", { veri: {
       ad: yeniUrun.ad, slug,
       fiyat: parseFloat(yeniUrun.fiyat),
       indirimli_fiyat: yeniUrun.indirimli_fiyat ? parseFloat(yeniUrun.indirimli_fiyat) : null,
@@ -426,7 +428,7 @@ export default function Admin() {
       kategori_id: yeniUrun.kategori_id || null,
       marka_id: yeniUrun.marka_id || null,
       aktif: true,
-    });
+    } });
     if (error) { goster("❌ " + error.message); return; }
     setYeniUrun({ ad: "", fiyat: "", indirimli_fiyat: "", stok: "", resim_url: "", resimler: [], gtin: "", kategori_id: "", marka_id: "", kisa_aciklama: "", aciklama: "", etiket: "" });
     setYeniUrunAcik(false);
@@ -441,7 +443,7 @@ export default function Admin() {
     const anaResim = tumResimler[0] || null;
     const ekResimler = tumResimler.slice(1);
     const kisaAck = duzenleUrun.kisa_aciklama?.trim() || (duzenleUrun.aciklama ? kisaOzet(duzenleUrun.aciklama) : null);
-    const { error } = await supabase.from("urunler").update({
+    const { error } = await adminYaz("urunler", "update", { filtre: { id: duzenleUrun.id }, veri: {
       ad: duzenleUrun.ad, fiyat: parseFloat(String(duzenleUrun.fiyat)),
       indirimli_fiyat: duzenleUrun.indirimli_fiyat ? parseFloat(String(duzenleUrun.indirimli_fiyat)) : null,
       stok: parseInt(String(duzenleUrun.stok)),
@@ -451,7 +453,7 @@ export default function Admin() {
       aciklama: duzenleUrun.aciklama || null, etiket: duzenleUrun.etiket || null,
       kategori_id: duzenleUrun.kategori_id || null, marka_id: duzenleUrun.marka_id || null,
       aktif: duzenleUrun.aktif,
-    }).eq("id", duzenleUrun.id);
+    } });
     if (error) { goster("❌ " + error.message); return; }
     setDuzenleUrun(null);
     urunleriYukle(sayfaNo, aramaMetni, filtreler);
@@ -465,7 +467,7 @@ export default function Admin() {
     if (edit.alan === "fiyat") g.fiyat = parseFloat(edit.deger);
     if (edit.alan === "indirimli_fiyat") g.indirimli_fiyat = edit.deger ? parseFloat(edit.deger) : null;
     if (edit.alan === "stok") g.stok = parseInt(edit.deger);
-    await supabase.from("urunler").update(g).eq("id", edit.id);
+    await adminYaz("urunler", "update", { veri: g, filtre: { id: edit.id } });
     setInlineEdit(null);
     urunleriYukle(sayfaNo, aramaMetni, filtreler);
     goster("✅ Güncellendi");
@@ -473,14 +475,14 @@ export default function Admin() {
 
   const urunSil = async (id: number) => {
     if (!confirm("Bu ürünü silmek istediğinizden emin misiniz?")) return;
-    await supabase.from("urunler").delete().eq("id", id);
+    await adminYaz("urunler", "delete", { filtre: { id: id } });
     urunleriYukle(sayfaNo, aramaMetni, filtreler);
     istatistikleriYukle();
     goster("✅ Ürün silindi");
   };
 
   const aktifToggle = async (id: number, aktif: boolean) => {
-    await supabase.from("urunler").update({ aktif: !aktif }).eq("id", id);
+    await adminYaz("urunler", "update", { veri: { aktif: !aktif }, filtre: { id: id } });
     urunleriYukle(sayfaNo, aramaMetni, filtreler);
     goster(`✅ ${!aktif ? "Aktif" : "Pasif"} edildi`);
   };
@@ -489,7 +491,7 @@ export default function Admin() {
   // disari verilir. Google Ads Shopping kampanyasinda bu etikete gore
   // ayri reklam grubu + yuksek TBM tanimlanabilir.
   const oncelikliToggle = async (id: number, oncelikli: boolean) => {
-    await supabase.from("urunler").update({ oncelikli: !oncelikli }).eq("id", id);
+    await adminYaz("urunler", "update", { veri: { oncelikli: !oncelikli }, filtre: { id: id } });
     urunleriYukle(sayfaNo, aramaMetni, filtreler);
     goster(`${!oncelikli ? "⭐ Öncelikli yapıldı" : "Öncelikli kaldırıldı"}`);
   };
@@ -499,28 +501,28 @@ export default function Admin() {
     setYukleniyor(true);
     if (topluIslem.tip === "fiyat_yuzde" && topluIslem.deger) {
       const yuzde = parseFloat(topluIslem.deger) / 100;
-      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await supabase.from("urunler").update({ fiyat: Math.round(Number(u.fiyat) * (1 + yuzde) * 100) / 100 }).eq("id", id); }
+      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await adminYaz("urunler", "update", { veri: { fiyat: Math.round(Number(u.fiyat) * (1 + yuzde) * 100) / 100 }, filtre: { id: id } }); }
     } else if (topluIslem.tip === "indirim_yuzde" && topluIslem.deger) {
       const yuzde = parseFloat(topluIslem.deger) / 100;
-      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await supabase.from("urunler").update({ indirimli_fiyat: Math.round(Number(u.fiyat) * (1 - yuzde) * 100) / 100 }).eq("id", id); }
+      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await adminYaz("urunler", "update", { veri: { indirimli_fiyat: Math.round(Number(u.fiyat) * (1 - yuzde) * 100) / 100 }, filtre: { id: id } }); }
     } else if (topluIslem.tip === "fiyat_tl" && topluIslem.deger) {
       const miktar = parseFloat(topluIslem.deger);
-      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await supabase.from("urunler").update({ fiyat: Math.max(0, Math.round((Number(u.fiyat) + miktar) * 100) / 100) }).eq("id", id); }
+      for (const id of seciliUrunler) { const u = urunler.find(u => u.id === id); if (u) await adminYaz("urunler", "update", { veri: { fiyat: Math.max(0, Math.round((Number(u.fiyat) + miktar) * 100) / 100) }, filtre: { id: id } }); }
     } else if (topluIslem.tip === "stok_sifirla") {
-      for (const id of seciliUrunler) await supabase.from("urunler").update({ stok: parseInt(topluIslem.deger) || 0 }).eq("id", id);
+      for (const id of seciliUrunler) await adminYaz("urunler", "update", { veri: { stok: parseInt(topluIslem.deger) || 0 }, filtre: { id: id } });
     } else if (topluIslem.tip === "indirim_kaldir") {
-      for (const id of seciliUrunler) await supabase.from("urunler").update({ indirimli_fiyat: null }).eq("id", id);
+      for (const id of seciliUrunler) await adminYaz("urunler", "update", { veri: { indirimli_fiyat: null }, filtre: { id: id } });
     } else if (topluIslem.tip === "aktif_et") {
-      for (const id of seciliUrunler) await supabase.from("urunler").update({ aktif: true }).eq("id", id);
+      for (const id of seciliUrunler) await adminYaz("urunler", "update", { veri: { aktif: true }, filtre: { id: id } });
     } else if (topluIslem.tip === "pasif_et") {
-      for (const id of seciliUrunler) await supabase.from("urunler").update({ aktif: false }).eq("id", id);
+      for (const id of seciliUrunler) await adminYaz("urunler", "update", { veri: { aktif: false }, filtre: { id: id } });
     } else if (topluIslem.tip === "etiket" && topluIslem.etiket) {
-      for (const id of seciliUrunler) await supabase.from("urunler").update({ etiket: topluIslem.etiket }).eq("id", id);
+      for (const id of seciliUrunler) await adminYaz("urunler", "update", { veri: { etiket: topluIslem.etiket }, filtre: { id: id } });
     } else if (topluIslem.tip === "etiket_kaldir") {
-      for (const id of seciliUrunler) await supabase.from("urunler").update({ etiket: null }).eq("id", id);
+      for (const id of seciliUrunler) await adminYaz("urunler", "update", { veri: { etiket: null }, filtre: { id: id } });
     } else if (topluIslem.tip === "sil") {
       if (!confirm(`${seciliUrunler.length} ürünü SİLMEK istediğinizden emin misiniz? Bu işlem geri alınamaz!`)) { setYukleniyor(false); return; }
-      for (const id of seciliUrunler) await supabase.from("urunler").delete().eq("id", id);
+      for (const id of seciliUrunler) await adminYaz("urunler", "delete", { filtre: { id: id } });
     }
     setSeciliUrunler([]);
     urunleriYukle(sayfaNo, aramaMetni, filtreler);
@@ -533,12 +535,12 @@ export default function Admin() {
   const kategoriEkle = async () => {
     if (!yeniKategori.ad) { goster("⚠️ Kategori adı zorunludur!"); return; }
     const slug = yeniKategori.slug || slugUret(yeniKategori.ad);
-    const { error } = await supabase.from("kategoriler").insert({
+    const { error } = await adminYaz("kategoriler", "insert", { veri: {
       ad: yeniKategori.ad, slug,
       ust_kategori_id: yeniKategori.ust_kategori_id || null,
       sira: parseInt(yeniKategori.sira) || 0,
       aktif: true,
-    });
+    } });
     if (error) { goster("❌ " + error.message); return; }
     setYeniKategori({ ad: "", slug: "", ust_kategori_id: "", sira: "0" });
     kategorileriYukle();
@@ -548,11 +550,11 @@ export default function Admin() {
 
   const kategoriGuncelle = async () => {
     if (!duzenleKategori) return;
-    const { error } = await supabase.from("kategoriler").update({
+    const { error } = await adminYaz("kategoriler", "update", { filtre: { id: duzenleKategori.id }, veri: {
       ad: duzenleKategori.ad, slug: duzenleKategori.slug,
       ust_kategori_id: duzenleKategori.ust_kategori_id || null,
       sira: parseInt(String(duzenleKategori.sira)) || 0,
-    }).eq("id", duzenleKategori.id);
+    } });
     if (error) { goster("❌ " + error.message); return; }
     setDuzenleKategori(null);
     kategorileriYukle();
@@ -561,14 +563,14 @@ export default function Admin() {
 
   const kategoriSil = async (id: number) => {
     if (!confirm("Bu kategoriyi silmek istediğinizden emin misiniz?")) return;
-    const { error } = await supabase.from("kategoriler").delete().eq("id", id);
+    const { error } = await adminYaz("kategoriler", "delete", { filtre: { id: id } });
     if (error) { goster("❌ Bu kategoriye bağlı ürünler var, önce ürünleri güncelle!"); return; }
     kategorileriYukle(); istatistikleriYukle();
     goster("✅ Kategori silindi");
   };
 
   const kategoriAktifToggle = async (id: number, aktif: boolean) => {
-    await supabase.from("kategoriler").update({ aktif: !aktif }).eq("id", id);
+    await adminYaz("kategoriler", "update", { veri: { aktif: !aktif }, filtre: { id: id } });
     kategorileriYukle();
     goster(`✅ ${!aktif ? "Aktif" : "Pasif"} edildi`);
   };
@@ -577,7 +579,7 @@ export default function Admin() {
   const markaEkle = async () => {
     if (!yeniMarka.ad) { goster("⚠️ Marka adı zorunludur!"); return; }
     const slug = yeniMarka.slug || slugUret(yeniMarka.ad);
-    const { error } = await supabase.from("markalar").insert({ ad: yeniMarka.ad, slug, aktif: true });
+    const { error } = await adminYaz("markalar", "insert", { veri: { ad: yeniMarka.ad, slug, aktif: true } });
     if (error) { goster("❌ " + error.message); return; }
     setYeniMarka({ ad: "", slug: "" });
     markalariYukle();
@@ -586,7 +588,7 @@ export default function Admin() {
 
   const markaGuncelle = async () => {
     if (!duzenleMarka) return;
-    const { error } = await supabase.from("markalar").update({ ad: duzenleMarka.ad, slug: duzenleMarka.slug }).eq("id", duzenleMarka.id);
+    const { error } = await adminYaz("markalar", "update", { veri: { ad: duzenleMarka.ad, slug: duzenleMarka.slug }, filtre: { id: duzenleMarka.id } });
     if (error) { goster("❌ " + error.message); return; }
     setDuzenleMarka(null);
     markalariYukle();
@@ -595,14 +597,14 @@ export default function Admin() {
 
   const markaSil = async (id: number) => {
     if (!confirm("Bu markayı silmek istediğinizden emin misiniz?")) return;
-    const { error } = await supabase.from("markalar").delete().eq("id", id);
+    const { error } = await adminYaz("markalar", "delete", { filtre: { id: id } });
     if (error) { goster("❌ Bu markaya bağlı ürünler var!"); return; }
     markalariYukle();
     goster("✅ Marka silindi");
   };
 
   const markaAktifToggle = async (id: number, aktif: boolean) => {
-    await supabase.from("markalar").update({ aktif: !aktif }).eq("id", id);
+    await adminYaz("markalar", "update", { veri: { aktif: !aktif }, filtre: { id: id } });
     markalariYukle();
     goster(`✅ ${!aktif ? "Aktif" : "Pasif"} edildi`);
   };
@@ -611,19 +613,19 @@ export default function Admin() {
 
   const kuponEkle = async () => {
     if (!yeniKupon.kod || !yeniKupon.indirim_degeri) return;
-    await supabase.from("kuponlar").insert({
+    await adminYaz("kuponlar", "insert", { veri: {
       kod: yeniKupon.kod.toUpperCase(), indirim_tipi: yeniKupon.indirim_tipi,
       indirim_degeri: parseFloat(yeniKupon.indirim_degeri),
       min_sepet: parseFloat(yeniKupon.min_sepet) || 0,
       kullanim_limiti: parseInt(yeniKupon.kullanim_limiti) || 100,
       bitis_tarihi: yeniKupon.bitis_tarihi || null, aktif: true,
-    });
+    } });
     setYeniKupon({ kod: "", indirim_tipi: "yuzde", indirim_degeri: "", min_sepet: "", kullanim_limiti: "100", bitis_tarihi: "" });
     kuponlariYukle(); goster("✅ Kupon eklendi");
   };
 
   const siteAyarKaydet = async (anahtar: string, deger: string) => {
-    const { error } = await supabase.from("site_ayarlari").upsert({ anahtar, deger }, { onConflict: "anahtar" });
+    const { error } = await adminYaz("site_ayarlari", "upsert", { veri: { anahtar, deger }, onConflict: "anahtar" });
     if (error) { goster("❌ " + error.message); return; }
     goster("✅ Kaydedildi");
   };
@@ -631,7 +633,7 @@ export default function Admin() {
   const stokInlineKaydet = async () => {
     if (!stokInline) return;
     const si = stokInline;
-    await supabase.from("urunler").update({ stok: parseInt(si.deger) || 0 }).eq("id", si.id);
+    await adminYaz("urunler", "update", { veri: { stok: parseInt(si.deger) || 0 }, filtre: { id: si.id } });
     setStokInline(null);
     stokTakibiYukle(stokFiltreTip);
     goster("✅ Stok güncellendi");

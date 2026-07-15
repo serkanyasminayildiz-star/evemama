@@ -1,6 +1,6 @@
 "use client";
 import type { CSSProperties } from "react";
-import { supabase } from "../../../lib/supabase";
+import { adminYaz } from "../adminYaz";
 
 type Kupon = {
   id: number | string;
@@ -67,8 +67,8 @@ export default function Kuponlar({ yeniKupon, setYeniKupon, kuponlar, kuponEkle,
               <td style={{ padding: "12px" }}><span style={{ background: k.aktif ? "#E8F5E9" : "#FFEBEE", color: k.aktif ? "#2E7D32" : "#C62828", padding: "3px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>{k.aktif ? "Aktif" : "Pasif"}</span></td>
               <td style={{ padding: "12px" }}>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={async () => { await supabase.from("kuponlar").update({ aktif: !k.aktif }).eq("id", k.id); kuponlariYukle(); goster("✅ Güncellendi"); }} style={{ background: "#FDF6EE", border: "2px solid #E8D5B7", borderRadius: 8, padding: "5px 10px", fontSize: 11, cursor: "pointer", color: "#5C3D2E" }}>{k.aktif ? "Pasife Al" : "Aktife Al"}</button>
-                  <button onClick={async () => { await supabase.from("kuponlar").delete().eq("id", k.id); kuponlariYukle(); goster("✅ Silindi"); }} style={{ background: "#FFEBEE", border: "none", borderRadius: 8, padding: "5px 9px", fontSize: 13, cursor: "pointer", color: "#C62828" }}>🗑️</button>
+                  <button onClick={async () => { await adminYaz("kuponlar", "update", { veri: { aktif: !k.aktif }, filtre: { id: k.id } }); kuponlariYukle(); goster("✅ Güncellendi"); }} style={{ background: "#FDF6EE", border: "2px solid #E8D5B7", borderRadius: 8, padding: "5px 10px", fontSize: 11, cursor: "pointer", color: "#5C3D2E" }}>{k.aktif ? "Pasife Al" : "Aktife Al"}</button>
+                  <button onClick={async () => { await adminYaz("kuponlar", "delete", { filtre: { id: k.id } }); kuponlariYukle(); goster("✅ Silindi"); }} style={{ background: "#FFEBEE", border: "none", borderRadius: 8, padding: "5px 9px", fontSize: 13, cursor: "pointer", color: "#C62828" }}>🗑️</button>
                 </div>
               </td>
             </tr>)}

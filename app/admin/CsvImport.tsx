@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import { supabase } from "../../lib/supabase";
+import { adminYaz } from "./adminYaz";
 
 type Satir = { [key: string]: string };
 
@@ -89,7 +90,7 @@ export default function CsvImport({ acik, onKapat, onTamamlandi }: Props) {
 
     if (onceSil) {
       logEkle("🗑️  Mevcut ürünler siliniyor...");
-      const { error } = await supabase.from("urunler").delete().neq("id", 0);
+      const { error } = await adminYaz("urunler", "delete_hepsi");
       if (error) { logEkle(`❌ Silme hatası: ${error.message}`); setYukleniyor(false); return; }
       logEkle("✅ Mevcut ürünler silindi\n");
     }
@@ -121,9 +122,10 @@ export default function CsvImport({ acik, onKapat, onTamamlandi }: Props) {
           const mev = markaMap.get(mAd.toLowerCase());
           if (mev) markaId = mev;
           else {
-            const { data, error } = await supabase.from("markalar").insert({ ad: mAd, slug: slugUret(mAd), aktif: true }).select("id").single();
-            if (error) throw new Error(`Marka: ${error.message}`);
-            markaId = data.id; markaMap.set(mAd.toLowerCase(), data.id); yeniM++;
+            const { data: mData, error } = await adminYaz("markalar", "insert", { veri: { ad: mAd, slug: slugUret(mAd), aktif: true } });
+            const mId = (mData?.[0] as { id?: number } | undefined)?.id;
+            if (error || !mId) throw new Error(`Marka: ${error?.message || "id dönmedi"}`);
+            markaId = mId; markaMap.set(mAd.toLowerCase(), mId); yeniM++;
             logEkle(`   ➕ Marka: ${mAd}`);
           }
         }
@@ -141,9 +143,10 @@ export default function CsvImport({ acik, onKapat, onTamamlandi }: Props) {
             if (mev) parentId = mev;
             else {
               const kSlug: string = slugUret(parca) + (parentId ? `-${parentId}` : "");
-              const { data, error }: { data: { id: number } | null; error: { message: string } | null } = await supabase.from("kategoriler").insert({ ad: parca, slug: kSlug, ust_kategori_id: parentId, aktif: true, sira: 0 }).select("id").single();
-              if (error) throw new Error(`Kategori: ${error.message}`);
-              parentId = data!.id; katMap.set(key, data!.id); yeniK++;
+              const { data: kData, error } = await adminYaz("kategoriler", "insert", { veri: { ad: parca, slug: kSlug, ust_kategori_id: parentId, aktif: true, sira: 0 } });
+              const kId = (kData?.[0] as { id?: number } | undefined)?.id;
+              if (error || !kId) throw new Error(`Kategori: ${error?.message || "id dönmedi"}`);
+              parentId = kId; katMap.set(key, kId); yeniK++;
               logEkle(`   ➕ Kategori: ${parts.slice(0, p+1).join(" > ")}`);
             }
           }
@@ -156,14 +159,14 @@ export default function CsvImport({ acik, onKapat, onTamamlandi }: Props) {
         const sal = satir["Sale Price"] ? parseFloat(satir["Sale Price"]) : null;
         const slug = slugUret(ad) + "-" + Date.now() + "-" + idx;
 
-        const { error } = await supabase.from("urunler").insert({
+        const { error } = await adminYaz("urunler", "insert", { veri: {
           ad, slug, fiyat: reg,
           indirimli_fiyat: sal && sal !== reg ? sal : null,
           stok, resim_url: satir["Image URL"] || null,
           aciklama: satir["Content"] || null,
           kisa_aciklama: satir["Short Description"] || null,
           marka_id: markaId, kategori_id: kategoriId, aktif: true,
-        });
+        } });
         if (error) throw new Error(error.message);
         basarili++;
         if ((idx+1) % 20 === 0) logEkle(`✓ ${idx+1}/${satirlar.length} (başarılı:${basarili}, hata:${hatali})`);
