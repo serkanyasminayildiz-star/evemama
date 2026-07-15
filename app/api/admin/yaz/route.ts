@@ -9,7 +9,7 @@ import { createClient } from "@supabase/supabase-js";
 const ADMIN_SIFRE = "evemama2025";
 const noStore = { "Cache-Control": "no-store" };
 
-const TABLOLAR = ["urunler", "kategoriler", "markalar", "kuponlar", "blog_sorular", "site_ayarlari"] as const;
+const TABLOLAR = ["urunler", "kategoriler", "markalar", "kuponlar", "blog_sorular", "site_ayarlari", "abonelikler"] as const;
 type Tablo = (typeof TABLOLAR)[number];
 const ISLEMLER = ["insert", "update", "delete", "upsert", "delete_hepsi", "select"] as const;
 type Islem = (typeof ISLEMLER)[number];

@@ -9,7 +9,7 @@ export type AdminYazSonuc = {
 };
 
 export async function adminYaz(
-  tablo: "urunler" | "kategoriler" | "markalar" | "kuponlar" | "blog_sorular" | "site_ayarlari",
+  tablo: "urunler" | "kategoriler" | "markalar" | "kuponlar" | "blog_sorular" | "site_ayarlari" | "abonelikler",
   islem: "select" | "insert" | "update" | "delete" | "upsert" | "delete_hepsi",
   ayrinti?: {
     veri?: Record<string, unknown> | Record<string, unknown>[];

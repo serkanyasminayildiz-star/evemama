@@ -12,6 +12,7 @@ import Markalar from "./components/Markalar";
 import Kategoriler from "./components/Kategoriler";
 import Blog from "./components/Blog";
 import Uyeler from "./components/Uyeler";
+import Abonelikler from "./components/Abonelikler";
 import TerkEdilen from "./components/TerkEdilen";
 import BasarisizOdemeler from "./components/BasarisizOdemeler";
 import Kumbara from "./components/Kumbara";
@@ -669,6 +670,7 @@ export default function Admin() {
     { id: "basarisiz-odemeler", icon: "❌", ad: "Başarısız Ödemeler" },
     { id: "kumbara", icon: "🐾", ad: "Sokak Dostları" },
     { id: "uyeler", icon: "👤", ad: "Üyeler" },
+    { id: "abonelikler", icon: "🔄", ad: "Abonelikler" },
     { id: "kategoriler", icon: "📁", ad: "Kategoriler" },
     { id: "markalar", icon: "🏷️", ad: "Markalar" },
     { id: "kuponlar", icon: "🎟️", ad: "Kuponlar" },
@@ -1720,6 +1722,11 @@ export default function Admin() {
 
         {aktifSayfa === "uyeler" && (
           <Uyeler kuponlar={kuponlar} goster={goster} />
+        )}
+
+        {/* ── ABONELİKLER ──────────────────────────────────────────────────── */}
+        {aktifSayfa === "abonelikler" && (
+          <Abonelikler goster={goster} />
         )}
 
         {aktifSayfa === "terk-edilen" && (
