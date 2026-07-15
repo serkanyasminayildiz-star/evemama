@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
     const eldenToplam = Math.max(0, hesap.genelToplam - hesap.kargo); // kargo yok
     const teslim = teslimBilgisi();
     const siparisNo = "EVE" + Date.now().toString().slice(-8);
-    const { error: eldenErr } = await supabase.from("siparisler").insert({
+    const { error: eldenErr } = await supabaseAdmin.from("siparisler").insert({
       siparis_no: siparisNo,
       durum: "beklemede",
       odeme_yontemi: "elden",
@@ -221,7 +221,7 @@ export async function POST(req: NextRequest) {
   // işaretlenir (kart akışındaki gibi). Tutar SUNUCUDA hesaplandı (hesap.genelToplam).
   if (body.yontem === "havale") {
     const siparisNo = "EVE" + Date.now().toString().slice(-8);
-    const { error: havaleErr } = await supabase.from("siparisler").insert({
+    const { error: havaleErr } = await supabaseAdmin.from("siparisler").insert({
       siparis_no: siparisNo,
       durum: "beklemede",
       odeme_yontemi: "havale",
@@ -324,7 +324,7 @@ export async function POST(req: NextRequest) {
 
     // Token ile birlikte müşteri bilgilerini geçici olarak kaydet
     if (data.token) {
-      await supabase.from("odeme_gecici").upsert({
+      await supabaseAdmin.from("odeme_gecici").upsert({
         token: data.token,
         ad: buyer.name,
         soyad: buyer.surname,

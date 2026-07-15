@@ -83,14 +83,14 @@ export async function POST(req: NextRequest) {
       const siparisNo = "EVE" + Date.now().toString().slice(-8);
 
       // Geçici tablodan müşteri bilgilerini al
-      const { data: gecici } = await supabase
+      const { data: gecici } = await supabaseAdmin
         .from("odeme_gecici")
         .select("*")
         .eq("token", token)
         .single();
 
       // Siparişi kaydet
-      const { error } = await supabase.from("siparisler").insert({
+      const { error } = await supabaseAdmin.from("siparisler").insert({
         siparis_no: siparisNo,
         durum: "hazirlaniyor",
         odeme_yontemi: "kredi_karti",
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       } else {
         console.log("[odeme/sonuc] siparis kaydedildi:", siparisNo);
         // Geçici kaydı sil
-        await supabase.from("odeme_gecici").delete().eq("token", token);
+        await supabaseAdmin.from("odeme_gecici").delete().eq("token", token);
 
         // STOK DÜŞ — satılan her ürünün stoğunu adedi kadar azalt. Bu ana kadar
         // HİÇ yapılmıyordu (satışta stok düşmüyordu). gecici DB'den silindiği için

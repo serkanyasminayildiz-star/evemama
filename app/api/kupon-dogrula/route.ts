@@ -5,9 +5,12 @@ import { createClient } from "@supabase/supabase-js";
 // Müşterinin sepet/ödemede girdiği kupon kodunu doğrular ve indirim tutarını
 // döner (GÖSTERİM için). Gerçek indirim odeme/route.ts'te sunucuda yeniden
 // doğrulanıp uygulanır — buradan dönen değere ödeme anında güvenilmez.
+// service_role tercih edilir (kuponlar tablosu RLS ile API'den kapatılacak);
+// lokalde service key yoksa anon'a düşer.
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { auth: { persistSession: false, autoRefreshToken: false } },
 );
 
 // Bir kuponun sepete uygulanabilirliğini ve indirim tutarını hesaplar.
