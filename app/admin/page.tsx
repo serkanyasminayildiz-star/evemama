@@ -230,11 +230,33 @@ export default function Admin() {
     setYukleniyor(false);
   };
 
+  // RLS Faz 2: siparişler artık server API'den (service_role) gelir — anon key
+  // siparisler tablosunu göremez (müşteri PII'sı tarayıcı anahtarıyla erişilemez).
   const siparisleriYukle = async (durumFiltre = "") => {
-    let q = supabase.from("siparisler").select("*").order("created_at", { ascending: false }).limit(200);
-    if (durumFiltre) q = q.eq("durum", durumFiltre);
-    const { data } = await q;
-    setSiparisler(data || []);
+    try {
+      const r = await fetch(`/api/admin/siparisler${durumFiltre ? `?durum=${encodeURIComponent(durumFiltre)}` : ""}`, {
+        headers: { Authorization: `Bearer ${ADMIN_SIFRE}` },
+      });
+      const d = await r.json();
+      setSiparisler(d.siparisler || []);
+    } catch {
+      setSiparisler([]);
+      goster("❌ Siparişler yüklenemedi");
+    }
+  };
+
+  // Sipariş alan güncellemeleri (durum/ödeme/kargo takip) — server API üzerinden.
+  const siparisGuncelle = async (id: number, degisiklik: Record<string, string>): Promise<boolean> => {
+    try {
+      const r = await fetch("/api/admin/siparisler", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` },
+        body: JSON.stringify({ id, degisiklik }),
+      });
+      return r.ok;
+    } catch {
+      return false;
+    }
   };
 
   // ── SİPARİŞ KALEMLERİ ──────────────────────────────────────────────────
@@ -286,16 +308,16 @@ export default function Admin() {
   };
 
   const istatistikleriYukle = async () => {
-    const bugunBaslangic = new Date(); bugunBaslangic.setHours(0, 0, 0, 0);
-    const [{ count: uc }, { count: sc }, { count: kc }, { count: bc }, { count: bks }, { count: bgs }] = await Promise.all([
+    // Sipariş sayıları server API'den (siparisler RLS'li — anon sayamaz);
+    // katalog sayıları şimdilik client (Faz 3'te taşınacak).
+    const [{ count: uc }, { count: kc }, { count: bc }, sayilar] = await Promise.all([
       supabase.from("urunler").select("*", { count: "exact", head: true }),
-      supabase.from("siparisler").select("*", { count: "exact", head: true }),
       supabase.from("kategoriler").select("*", { count: "exact", head: true }),
       supabase.from("blog_sorular").select("*", { count: "exact", head: true }).eq("onaylandi", false),
-      supabase.from("siparisler").select("*", { count: "exact", head: true }).eq("durum", "beklemede"),
-      supabase.from("siparisler").select("*", { count: "exact", head: true }).gte("created_at", bugunBaslangic.toISOString()),
+      fetch("/api/admin/siparisler?sayilar=1", { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } })
+        .then(r => r.json()).catch(() => ({ toplam: 0, bekleyen: 0, bugun: 0 })),
     ]);
-    setIstatistikler({ urunler: uc || 0, siparisler: sc || 0, kategoriler: kc || 0, bekleyenSoru: bc || 0, bekleyen_siparis: bks || 0, bugun_siparis: bgs || 0 });
+    setIstatistikler({ urunler: uc || 0, siparisler: sayilar.toplam || 0, kategoriler: kc || 0, bekleyenSoru: bc || 0, bekleyen_siparis: sayilar.bekleyen || 0, bugun_siparis: sayilar.bugun || 0 });
   };
 
   const handleGiris = () => {
@@ -1498,7 +1520,7 @@ export default function Admin() {
                           <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.6, marginBottom: 6, textTransform: "uppercase" }}>Kargo Takip No</div>
                           <input type="text" autoComplete="off" placeholder="Takip numarası girin..."
                             defaultValue={sp.kargo_takip || ""}
-                            onBlur={async e => { if (e.target.value !== sp.kargo_takip) { await supabase.from("siparisler").update({ kargo_takip: e.target.value }).eq("id", sp.id); goster("✅ Takip no kaydedildi"); } }}
+                            onBlur={async e => { if (e.target.value !== sp.kargo_takip) { const ok = await siparisGuncelle(sp.id, { kargo_takip: e.target.value }); goster(ok ? "✅ Takip no kaydedildi" : "❌ Takip no kaydedilemedi"); } }}
                             style={{ width: "100%", padding: "8px 12px", border: "2px solid #E8D5B7", borderRadius: 8, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const, background: "white", color: "#2C1A0E" }} />
                         </div>
                       </div>
@@ -1570,7 +1592,7 @@ export default function Admin() {
 
                       {/* Durum güncelleme + Baskı */}
                       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                        <select value={sp.durum || "beklemede"} onChange={async e => { await supabase.from("siparisler").update({ durum: e.target.value }).eq("id", sp.id); siparisleriYukle(siparisDurumFiltre); goster("✅ Sipariş durumu güncellendi"); }} style={fltSelect}>
+                        <select value={sp.durum || "beklemede"} onChange={async e => { const ok = await siparisGuncelle(sp.id, { durum: e.target.value }); siparisleriYukle(siparisDurumFiltre); goster(ok ? "✅ Sipariş durumu güncellendi" : "❌ Durum güncellenemedi"); }} style={fltSelect}>
                           <option value="beklemede">⏳ Beklemede</option>
                           <option value="hazirlaniyor">🔧 Hazırlanıyor</option>
                           <option value="kargoda">🚚 Kargoda</option>
@@ -1587,7 +1609,7 @@ export default function Admin() {
                             else { goster("❌ Ödeme onaylanamadı"); }
                             return;
                           }
-                          await supabase.from("siparisler").update({ odeme_durumu: yeni }).eq("id", sp.id); siparisleriYukle(siparisDurumFiltre); goster("✅ Ödeme durumu güncellendi");
+                          const ok = await siparisGuncelle(sp.id, { odeme_durumu: yeni }); siparisleriYukle(siparisDurumFiltre); goster(ok ? "✅ Ödeme durumu güncellendi" : "❌ Ödeme durumu güncellenemedi");
                         }} style={fltSelect}>
                           <option value="beklemede">⏳ Ödeme Bekliyor</option>
                           <option value="odendi">💳 Ödendi</option>
