@@ -946,6 +946,15 @@ export default function Admin() {
       {/* ANA İÇERİK */}
       <div style={{ marginLeft: mobil ? 0 : 220, flex: 1, padding: mobil ? "66px 14px 60px" : "28px 28px 60px", minWidth: 0 }}>
 
+        {/* Bakım modu açıkken kalıcı uyarı — site kapalı unutulmasın */}
+        {siteAyarlari.bakim_modu === "true" && (
+          <div onClick={() => setAktifSayfa("ayarlar")}
+            style={{ background: "#C62828", color: "white", borderRadius: 14, padding: "13px 18px", marginBottom: 18, fontSize: 13.5, fontWeight: 700, cursor: "pointer", display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
+            <span>🔴 SİTE ŞU AN BAKIMDA — ziyaretçiler alışveriş yapamıyor</span>
+            <span style={{ textDecoration: "underline", opacity: 0.9 }}>Site Ayarları&apos;ndan aç →</span>
+          </div>
+        )}
+
         {/* ── DASHBOARD ────────────────────────────────────────────────────── */}
         {aktifSayfa === "dashboard" && (
           <div>

@@ -20,9 +20,34 @@ export default function SiteAyarlari({ siteAyarlari, setSiteAyarlari, siteAyarKa
     { baslik: "📞 İletişim", alanlar: [{ key: "whatsapp_no", label: "WhatsApp No", tip: "text" as const }, { key: "site_email", label: "E-posta", tip: "email" as const }] },
   ];
 
+  // Bakım modu — bayrak site_ayarlari.bakim_modu; middleware bunu okur (~15 sn).
+  const bakimAcik = siteAyarlari["bakim_modu"] === "true";
+  const bakimDegistir = async () => {
+    const yeni = !bakimAcik;
+    if (yeni && !window.confirm("Site ZİYARETÇİLERE KAPANACAK.\n\nHerkes bakım sayfasını görecek; sepet ve ödeme çalışmayacak.\nAdmin paneli açık kalır (stok girişi yapabilirsin).\n\nDevam edilsin mi?")) return;
+    if (!yeni && !window.confirm("Site yeniden ZİYARETE AÇILACAK.\n\nStok girişini bitirdiğine emin misin?")) return;
+    setSiteAyarlari({ ...siteAyarlari, bakim_modu: yeni ? "true" : "false" });
+    await siteAyarKaydet("bakim_modu", yeni ? "true" : "false");
+  };
+
   return (
     <div>
       <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 20 }}>Site Ayarları</h1>
+
+      {/* BAKIM MODU — en üstte, durumu renkten anlaşılır */}
+      <div style={{ background: bakimAcik ? "#FFEBEE" : "white", border: `2px solid ${bakimAcik ? "#C62828" : "#E8D5B7"}`, borderRadius: 18, padding: 24, marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
+        <h2 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: bakimAcik ? "#C62828" : "#2C1A0E", marginBottom: 8 }}>
+          {bakimAcik ? "🔴 Site ŞU AN BAKIMDA — ziyaretçilere kapalı" : "🟢 Site yayında — ziyaretçilere açık"}
+        </h2>
+        <p style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.7, margin: "0 0 16px" }}>
+          Bakım modunda tüm ziyaretçiler bakım sayfasını görür (sepet/ödeme kapalı). <strong>Admin paneli ve siparişler açık kalır</strong> — stok girişini rahatça yapabilirsin. Değişiklik ~15 saniye içinde etkili olur.
+        </p>
+        <button onClick={bakimDegistir}
+          style={{ ...btn(bakimAcik ? "#8BAF8E" : "#C62828"), padding: "13px 26px", fontSize: 14 }}>
+          {bakimAcik ? "🟢 Siteyi Yeniden Aç" : "🔴 Siteyi Bakıma Al"}
+        </button>
+      </div>
+
       {bolumler.map((bolum, bi) => (
         <div key={bi} style={{ background: "white", borderRadius: 18, padding: 24, marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
           <h2 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", marginBottom: 16 }}>{bolum.baslik}</h2>
