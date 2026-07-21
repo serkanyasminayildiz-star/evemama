@@ -129,6 +129,7 @@ export default function Admin() {
   const [topluIslem, setTopluIslem] = useState({ tip: "fiyat_yuzde", deger: "", etiket: "" });
   const [yeniUrunAcik, setYeniUrunAcik] = useState(false);
   const [csvImportAcik, setCsvImportAcik] = useState(false);
+  const [bezosCalisiyor, setBezosCalisiyor] = useState(false);
 
   // Stok Takibi
   const [stokIstatistik, setStokIstatistik] = useState({ stok_yok: 0, kritik: 0, dusuk: 0, toplam_aktif: 0 });
@@ -1033,7 +1034,25 @@ export default function Admin() {
                 Ürün Yönetimi
                 <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.5, marginLeft: 10 }}>{toplamUrun} ürün{filtrelerAktif ? " (filtrelenmiş)" : ""}</span>
               </h1>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={async () => {
+                  if (bezosCalisiyor) return;
+                  if (!window.confirm("Bezos tedarikçi feed'inden FİYAT ve STOK güncellenecek.\n\n• Bezos'tan gelen (barkodlu) ürünler güncellenir\n• Senin kendi ürünlerine DOKUNULMAZ\n• Feed'de kalmayan ürünün stoğu 0 yapılır (silinmez)\n\nDevam? (~30 sn sürer)")) return;
+                  setBezosCalisiyor(true);
+                  goster("⏳ Tedarikçi feed'i okunuyor (~30 sn)...");
+                  try {
+                    const r = await fetch("/api/cron/bezos-sync", { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } });
+                    const d = await r.json();
+                    if (d.ok) {
+                      const g = d.guncelleme;
+                      goster(`✅ Senkron bitti — fiyat:${g.fiyat} stok:${g.stok} stok-sıfırlanan:${g.stokSifirlandi} yeni-ürün:${g.yeniUrun} (${d.saniye}sn)`);
+                      urunleriYukle(sayfaNo, aramaMetni, filtreler);
+                    } else { goster(`❌ ${d.error || "senkron başarısız"}`); }
+                  } catch { goster("❌ Senkron sırasında bağlantı hatası"); }
+                  setBezosCalisiyor(false);
+                }} disabled={bezosCalisiyor} style={btn(bezosCalisiyor ? "#C9B79C" : "#8BAF8E")}>
+                  {bezosCalisiyor ? "⏳ Senkronlanıyor..." : "🔄 Tedarikçi Senkronu"}
+                </button>
                 <button onClick={() => setCsvImportAcik(true)} style={btn("#5C3D2E")}>📥 CSV Yükle</button>
                 <button onClick={() => setYeniUrunAcik(!yeniUrunAcik)} style={btn(yeniUrunAcik ? "#888" : "#E8845A")}>
                   {yeniUrunAcik ? "✕ Kapat" : "+ Yeni Ürün Ekle"}

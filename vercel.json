@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/cron/replenishment", "schedule": "0 9 * * *" }
+    { "path": "/api/cron/replenishment", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/bezos-sync", "schedule": "0 6 * * *" }
   ]
 }
