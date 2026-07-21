@@ -15,6 +15,15 @@ const nextConfig: NextConfig = {
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      {
+        // platincdn.com — bezos tedarikci feed'inden gelen urun gorselleri
+        // (21 Tem 2026 ice aktarim). Bu host allowlist'te olmadigi icin
+        // next/image tum bezos urunlerinin gorselini engelliyordu (admin
+        // listesinde bos kareler). Gorseller kucuk (~11 KB ortalama).
+        protocol: "https",
+        hostname: "platincdn.com",
+        pathname: "/**",
+      },
     ],
     // Modern formatlar — Next/Image otomatik AVIF/WebP uretir, browser
     // accept header'ina gore uygun olani sunulur. Eski browser'larda
