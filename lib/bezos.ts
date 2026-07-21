@@ -77,8 +77,10 @@ export async function bezosPetshopCek(
         if (!blok.includes("Petshop Ürünleri")) { if (bulundu) bosSayac++; continue; }
         bulundu = true; bosSayac = 0;
         const barkod = alanCek(blok, "barkod");
+        if (!barkod) continue;
+        // alis=0 olan ürünler de DÖNER (senkron bunları pasife alır) — atlarsak
+        // "feed'de yok" sanılıp yalnız stokları sıfırlanır, ₺0 fiyat vitrinde kalırdı.
         const alis = sayi(alanCek(blok, "alis_fiyat"));
-        if (!barkod || alis <= 0) continue; // bozuk satır → atla (fiyatı 0 yazmayalım)
         urunler.push({ barkod, isim: alanCek(blok, "isim"), alis, stok: parseInt(alanCek(blok, "stok")) || 0 });
       }
 

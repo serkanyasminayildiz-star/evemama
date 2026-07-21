@@ -50,10 +50,10 @@ export async function GET(req: NextRequest) {
     // 2) Bizdeki bezos ürünleri (barkod dolu olanlar).
     const sb = adminClient();
     const { data: mevcut, error } = await sb
-      .from("urunler").select("id, ad, barkod, fiyat, stok").not("barkod", "is", null).limit(5000);
+      .from("urunler").select("id, ad, barkod, fiyat, stok, aktif").not("barkod", "is", null).limit(5000);
     if (error) throw error;
 
-    const rapor = { fiyat: 0, stok: 0, stokSifirlandi: 0, atlanan: 0, yeniUrun: 0, hata: 0 };
+    const rapor = { fiyat: 0, stok: 0, stokSifirlandi: 0, atlanan: 0, yeniUrun: 0, hata: 0, fiyatsizPasif: 0, geriAcildi: 0 };
     const detay: string[] = [];
     const bizdeki = new Set<string>();
 
@@ -69,7 +69,19 @@ export async function GET(req: NextRequest) {
       if (!barkod) continue;
       bizdeki.add(barkod);
       const f = feed.get(barkod);
-      const guncelle: Record<string, number> = {};
+      const guncelle: Record<string, number | boolean> = {};
+
+      // 🚫 FİYATSIZ ÜRÜN KORUMASI: tedarikçi alış fiyatı vermemişse (alis=0)
+      // satış fiyatı hesaplanamaz → ₺0 ürün vitrinde SATILABİLİR olurdu.
+      // Pasife al; fiyat gelince aşağıdaki dalda otomatik geri açılır.
+      if (f && f.alis <= 0) {
+        if (p.aktif !== false) { guncelle.aktif = false; rapor.fiyatsizPasif++; }
+        if (Object.keys(guncelle).length && !dry) {
+          const { error: e } = await sb.from("urunler").update(guncelle).eq("id", p.id);
+          if (e) { rapor.hata++; detay.push(`❌ ${p.ad?.slice(0, 40)}: ${e.message}`); }
+        }
+        continue;
+      }
 
       if (!f) {
         // Feed'de yok → tedarikçide kalmamış. Silme, stoğu sıfırla.
@@ -89,6 +101,8 @@ export async function GET(req: NextRequest) {
           }
         }
         if (Number(p.stok) !== f.stok) { guncelle.stok = f.stok; rapor.stok++; }
+        // Fiyatsızlık nedeniyle pasife alınmıştı, artık fiyat var → geri aç.
+        if (p.aktif === false && Number(p.fiyat) === 0) { guncelle.aktif = true; rapor.geriAcildi++; }
       }
 
       if (Object.keys(guncelle).length && !dry) {
