@@ -22,12 +22,35 @@ export const KARGO = {
   VARSAYILAN_URUN_KG: 1, // adında ağırlık okunamayan ürün için varsayım
 } as const;
 
-/** Ürün adından ağırlık (kg): "12 kg" / "12kg" / "1,5 Kg" / "400 gr". Okunamazsa varsayılan. */
+/** Ürün adındaki birimi kg'a çevirir. Lt ≈ 1 kg/L (bentonit kedi kumu/mama yoğunluğu). */
+function birimKg(miktar: number, birim: string): number {
+  const b = birim.toLowerCase();
+  if (b === "gr" || b === "g" || b === "ml") return miktar / 1000;
+  return miktar; // kg, lt, l
+}
+
+/** Ürün adından ağırlık (kg): "12 kg", "1,5 Kg", "400 gr", "10 Lt", "250 Ml"
+ *  ve ÇARPANLI paketler: "2x10 Kg" → 20, "9x3,6 Lt" → 32,4, "6 x 60 Gr" → 0,36.
+ *
+ *  Ürün ağırlığı OLMAYAN sayılar elenir (yoksa kargo saçmalıyordu):
+ *   • hayvan ağırlık aralığı: "Deri Damlası 10-20 Kg" → ürün 8 ml, 20 kg değil
+ *   • debi/akış: "Akvaryum Filtresi 1200 Lt/h" → 1200 kg sanılıp ₺24.050 kargo çıkıyordu
+ *  Güvenlik tavanı MAKS_KG: ayrıştırma hatası müşteriye fahiş kargo yazmasın.
+ *  Okunamazsa KARGO.VARSAYILAN_URUN_KG. */
+const MAKS_KG = 40;
 export function urunAgirligiKg(urunAdi: string): number {
-  const kg = urunAdi.match(/(\d+[.,]?\d*)\s*[Kk][Gg]/);
-  if (kg) return parseFloat(kg[1].replace(",", "."));
-  const gr = urunAdi.match(/(\d+[.,]?\d*)\s*[Gg][Rr]/);
-  if (gr) return parseFloat(gr[1].replace(",", ".")) / 1000;
+  const temiz = String(urunAdi || "")
+    .replace(/\d+\s*[-–]\s*\d+\s*(kg|g)\b/gi, " ")
+    .replace(/\d+[.,]?\d*\s*(lt|l)\s*\/\s*(h|s|saat|dk|dak)/gi, " ");
+  const sinirla = (kg: number) => Math.min(MAKS_KG, Math.max(0.01, kg));
+
+  const carpan = temiz.match(/(\d+)\s*[xX*]\s*(\d+[.,]?\d*)\s*(kg|gr|g|lt|l|ml)\b/i);
+  if (carpan) {
+    return sinirla((parseInt(carpan[1]) || 1) * birimKg(parseFloat(carpan[2].replace(",", ".")), carpan[3]));
+  }
+  const tek = temiz.match(/(\d+[.,]?\d*)\s*(kg|gr|lt|ml)\b/i);
+  if (tek) return sinirla(birimKg(parseFloat(tek[1].replace(",", ".")), tek[2]));
+
   return KARGO.VARSAYILAN_URUN_KG;
 }
 
