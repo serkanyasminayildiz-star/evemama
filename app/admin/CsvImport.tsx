@@ -153,8 +153,12 @@ export default function CsvImport({ acik, onKapat, onTamamlandi }: Props) {
           kategoriId = parentId;
         }
 
+        // Stok: "Stok" kolonu varsa GERÇEK adet (tedarikçi feed'i), yoksa eski
+        // davranış (Stock Status: instock → 10). Barkod: varsa kaydedilir —
+        // ileride tedarikçiden fiyat/stok güncellemesi için eşleştirme anahtarı.
         const ss = (satir["Stock Status"] || "").toLowerCase().trim();
-        const stok = ss === "instock" ? 10 : 0;
+        const stokKolon = (satir["Stok"] || "").trim();
+        const stok = stokKolon !== "" ? Math.max(0, parseInt(stokKolon) || 0) : (ss === "instock" ? 10 : 0);
         const reg = parseFloat(satir["Regular Price"] || "0") || 0;
         const sal = satir["Sale Price"] ? parseFloat(satir["Sale Price"]) : null;
         const slug = slugUret(ad) + "-" + Date.now() + "-" + idx;
@@ -163,6 +167,7 @@ export default function CsvImport({ acik, onKapat, onTamamlandi }: Props) {
           ad, slug, fiyat: reg,
           indirimli_fiyat: sal && sal !== reg ? sal : null,
           stok, resim_url: satir["Image URL"] || null,
+          barkod: (satir["Barkod"] || "").trim() || null,
           aciklama: satir["Content"] || null,
           kisa_aciklama: satir["Short Description"] || null,
           marka_id: markaId, kategori_id: kategoriId, aktif: true,
@@ -219,7 +224,8 @@ export default function CsvImport({ acik, onKapat, onTamamlandi }: Props) {
                   </label>
                   <div style={{ marginTop: 10, fontSize: 11, color: "#5C3D2E", opacity: 0.65, lineHeight: 1.6 }}>
                     • Markalar ve kategoriler otomatik oluşturulur<br/>
-                    • Stock Status: instock → stok 10, outofstock → stok 0<br/>
+                    • <strong>Stok</strong> kolonu varsa gerçek adet yazılır; yoksa Stock Status (instock → 10)<br/>
+                    • <strong>Barkod</strong> kolonu varsa kaydedilir (tedarikçi eşleştirmesi için)<br/>
                     • Her ürün aktif olarak eklenir<br/>
                     • Bir ürünün birden fazla kategorisi varsa sadece ilki atanır
                   </div>
