@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { bezosPetshopCek, bezosSatisFiyati } from "../../../../lib/bezos";
+import { bezosPetshopCek, bezosSatisFiyati, BEZOS_ATLAMA_SAYFA1, BEZOS_ATLAMA_SAYFA2 } from "../../../../lib/bezos";
 
 // BEZOS FİYAT/STOK SENKRONU — tedarikçi feed'i ile evemama kataloğunu eşitler.
 //
@@ -41,9 +41,13 @@ export async function GET(req: NextRequest) {
   const t0 = Date.now();
 
   try {
-    // 1) Feed'i akışla oku (petshop bloğu bitince erken keser).
-    const s1 = await bezosPetshopCek(0, 30_000);
-    const s2 = await bezosPetshopCek(50_000, 12_000);
+    // 1) Feed'i akışla oku — OFFSET ile petshop kümelerine atlar, blok bitince keser.
+    //    (Vercel'den indirme yereldekinden yavaş; atlama olmadan 60 sn'yi aşıyordu.)
+    //    bosSabir sayfaya göre: sayfa1'de kümeler bitişik (en büyük boşluk 135)
+    //    → 1000 yeter, fazlası boşuna 13 MB indirir. Sayfa2'de 3.397'lik boşluk
+    //    var → 8000 şart (yoksa 74 ürün kaçıyor, "feed'de yok" sanılıp stok sıfırlanır).
+    const s1 = await bezosPetshopCek(BEZOS_ATLAMA_SAYFA1, 22_000, 1000);
+    const s2 = await bezosPetshopCek(BEZOS_ATLAMA_SAYFA2, 18_000, 8000);
     const feed = new Map<string, { alis: number; stok: number; isim: string }>();
     for (const u of [...s1.urunler, ...s2.urunler]) feed.set(u.barkod, u);
 
@@ -61,7 +65,9 @@ export async function GET(req: NextRequest) {
     // altında ürün geldiyse, "feed'de yok → stoğu sıfırla" mantığı TÜM KATALOĞU
     // sıfırlayabilir. Böyle durumda yalnız bulunan ürünler güncellenir.
     const bezosSayisi = (mevcut || []).filter(p => String(p.barkod || "").trim()).length;
-    const feedSaglikli = !s1.sureDoldu && !s2.sureDoldu && feed.size >= bezosSayisi * 0.5;
+    // Eşik 0.9: feed'de katalogdakinden FAZLA ürün olmalı (stoksuzlar da gelir).
+    // Altına düşerse küme kaymış/eksik okunmuş demektir → stok sıfırlama yapılmaz.
+    const feedSaglikli = !s1.sureDoldu && !s2.sureDoldu && feed.size >= bezosSayisi * 0.9;
     if (!feedSaglikli) detay.push(`⚠️ Feed şüpheli (okunan ${feed.size} / katalog ${bezosSayisi}) → stok sıfırlama ATLANDI`);
 
     for (const p of mevcut || []) {

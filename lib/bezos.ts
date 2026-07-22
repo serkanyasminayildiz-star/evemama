@@ -8,6 +8,14 @@
 // FİYAT: feed yalnız alış fiyatı verir (KDV HARİÇ) → satış = alış × 1,20 × 1,35.
 
 export const BEZOS_FEED_URL = "https://www.bezos.com.tr/xml-bayi/?xml=BAY%DD%20XML&B2BXML=1";
+
+// Petshop ürünleri feed'de İKİ KÜMEDE toplanmış (ölçüldü 21 Tem 2026):
+// sayfa1'de 9.001–10.972, sayfa2'de (mutlak) 63.160–68.049. OFFSET ile ölü
+// ön bölgeyi atlarız → indirilen veri 126 MB yerine ~20 MB, süre 90sn → ~20sn.
+// Tedarikçi ürün ekledikçe kümeler KAYAR: bu yüzden marj bırakılır ve senkron
+// beklenenden az ürün bulursa "stok sıfırlama" devre dışı kalır (route'ta).
+export const BEZOS_ATLAMA_SAYFA1 = 8000;
+export const BEZOS_ATLAMA_SAYFA2 = 62_000;
 export const BEZOS_KDV = 1.20;
 export const BEZOS_KAR = 1.35;
 
@@ -41,11 +49,14 @@ function sayi(s: string): number {
  * @param sureButcesiMs  bu süreyi aşarsa okumayı bırakır (sureDoldu=true)
  * @param bosSabir  petshop bulunduktan sonra bu kadar ardışık petshop-dışı
  *                  ürün görülürse blok bitti sayılır ve akış kesilir.
+ *                  ÖLÇÜLDÜ: sayfa1'de kümeler bitişik (en büyük boşluk 135),
+ *                  sayfa2'de 3.397'lik boşluk VAR → 3000'lik eski değer erken
+ *                  kesip 74 ürünü kaçırıyordu. 8000 = ölçülen boşluğun 2 katı.
  */
 export async function bezosPetshopCek(
   offset = 0,
   sureButcesiMs = 40_000,
-  bosSabir = 3000,
+  bosSabir = 8000,
 ): Promise<BezosCekimSonuc> {
   const t0 = Date.now();
   const url = offset > 0 ? `${BEZOS_FEED_URL}&OFFSET=${offset}` : BEZOS_FEED_URL;
