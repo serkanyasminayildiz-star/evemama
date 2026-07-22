@@ -46,16 +46,26 @@ export async function GET(req: NextRequest) {
     //    bosSabir sayfaya göre: sayfa1'de kümeler bitişik (en büyük boşluk 135)
     //    → 1000 yeter, fazlası boşuna 13 MB indirir. Sayfa2'de 3.397'lik boşluk
     //    var → 8000 şart (yoksa 74 ürün kaçıyor, "feed'de yok" sanılıp stok sıfırlanır).
-    const s1 = await bezosPetshopCek(BEZOS_ATLAMA_SAYFA1, 22_000, 1000);
-    const s2 = await bezosPetshopCek(BEZOS_ATLAMA_SAYFA2, 18_000, 8000);
+    //    Vercel'de indirme yerelden ~2 kat yavaş → bütçeler ona göre.
+    const s1 = await bezosPetshopCek(BEZOS_ATLAMA_SAYFA1, 16_000, 1000);
+    const s2 = await bezosPetshopCek(BEZOS_ATLAMA_SAYFA2, 28_000, 8000);
     const feed = new Map<string, { alis: number; stok: number; isim: string }>();
     for (const u of [...s1.urunler, ...s2.urunler]) feed.set(u.barkod, u);
 
     // 2) Bizdeki bezos ürünleri (barkod dolu olanlar).
     const sb = adminClient();
-    const { data: mevcut, error } = await sb
-      .from("urunler").select("id, ad, barkod, fiyat, stok, aktif").not("barkod", "is", null).limit(5000);
-    if (error) throw error;
+    // SAYFALAMA ŞART: Supabase/PostgREST varsayılanı en fazla 1000 satır döner —
+    // .limit(5000) YOK SAYILIR. Sayfalamadan 1452 ürünün 452'si hiç işlenmiyordu.
+    type UrunSatir = { id: number; ad: string | null; barkod: string | null; fiyat: number | null; stok: number | null; aktif: boolean | null };
+    const mevcut: UrunSatir[] = [];
+    for (let bas = 0; bas < 20000; bas += 1000) {
+      const { data, error } = await sb
+        .from("urunler").select("id, ad, barkod, fiyat, stok, aktif")
+        .not("barkod", "is", null).order("id", { ascending: true }).range(bas, bas + 999);
+      if (error) throw error;
+      mevcut.push(...((data || []) as UrunSatir[]));
+      if (!data || data.length < 1000) break;
+    }
 
     const rapor = { fiyat: 0, stok: 0, stokSifirlandi: 0, atlanan: 0, yeniUrun: 0, hata: 0, fiyatsizPasif: 0, geriAcildi: 0 };
     const detay: string[] = [];
