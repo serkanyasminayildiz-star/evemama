@@ -1242,8 +1242,11 @@ export default function Admin() {
                             : <div style={{ width: 44, height: 44, background: "#FDF6EE", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🐾</div>}
                         </td>
                         <td style={{ padding: "8px 10px", maxWidth: 220 }}>
-                          <Link href={`/urun/${urun.slug}`} target="_blank" style={{ fontWeight: 600, color: "#2C1A0E", lineHeight: 1.3, textDecoration: "none", display: "block" }} title="Ürün sayfasını aç">
-                            {urun.ad?.substring(0, 48)}{urun.ad?.length > 48 ? "…" : ""}
+                          {/* TAM AD gösterilir (kısaltma YOK): "…12 Adet", "…2x10 Kg" gibi
+                              paket bilgisi adın SONUNDA olduğu için kısaltmak fiyatı
+                              anlamsız gösteriyordu (₺5.010'luk "konserve" aslında 24'lü koli). */}
+                          <Link href={`/urun/${urun.slug}`} target="_blank" style={{ fontWeight: 600, color: "#2C1A0E", lineHeight: 1.35, textDecoration: "none", display: "block", wordBreak: "break-word" }} title={urun.ad || "Ürün sayfasını aç"}>
+                            {urun.ad}
                           </Link>
                           <div style={{ fontSize: 10, opacity: 0.35, marginTop: 2 }}>ID:{urun.id}</div>
                         </td>
@@ -1432,7 +1435,7 @@ export default function Admin() {
                             : <div style={{ width: 44, height: 44, background: "#FDF6EE", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🐾</div>}
                         </td>
                         <td style={{ padding: "8px 12px" }}>
-                          <div style={{ fontWeight: 600, color: "#2C1A0E" }}>{urun.ad?.substring(0, 50)}{urun.ad?.length > 50 ? "…" : ""}</div>
+                          <div style={{ fontWeight: 600, color: "#2C1A0E", lineHeight: 1.35, wordBreak: "break-word" }} title={urun.ad || ""}>{urun.ad}</div>
                           <div style={{ fontSize: 10, opacity: 0.4, marginTop: 2 }}>ID:{urun.id}</div>
                         </td>
                         <td style={{ padding: "8px 12px", fontSize: 12, opacity: 0.6 }}>{urun.kategoriler?.ad || "—"}</td>
