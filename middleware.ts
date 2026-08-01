@@ -56,7 +56,11 @@ export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
   url.pathname = "/bakim";
   url.search = "";
-  return NextResponse.redirect(url, 307);
+  const yon = NextResponse.redirect(url, 307);
+  // Bu yönlendirme ASLA önbelleğe alınmamalı: CDN/tarayıcı cache'lerse bakım
+  // bitse bile ziyaretçi günlerce bakım sayfasında kalır (age 9 gün vakası).
+  yon.headers.set("Cache-Control", "no-store, must-revalidate");
+  return yon;
 }
 
 export const config = {

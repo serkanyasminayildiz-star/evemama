@@ -4,6 +4,12 @@
 
 import AnaSayfaClient from "./AnaSayfaClient";
 
+// Ana sayfa süresiz statik prerender ediliyordu → Vercel CDN'de günlerce (age
+// 9 gün ölçüldü) bayat kabuk servis edip "hâlâ bakımda/eski görünüyor" hissi
+// yaratıyordu. 5 dk'da bir yeniden üret: statik hızı korunur ama içerik tazelenir.
+// (Ürün verisi zaten client'ta çekiliyor; bu yalnız statik kabuğu tazeler.)
+export const revalidate = 300;
+
 export const metadata = {
   title: "evemama.net — Evcil Dostunuzun Dükkânı",
   description: "Royal Canin, Acana, Pro Plan ve yüzlerce markada kedi köpek maması, ödüllü mama, aksesuar. Hızlı kargo, güvenli ödeme. 1000₺ üzeri ücretsiz kargo.",
