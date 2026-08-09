@@ -12,8 +12,21 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-function xmlEscape(str: string): string {
+// Bazı kayıtlar veritabanına ZATEN HTML-kaçışlı girilmiş (ör. markalar tablosunda
+// "N&amp;D (Naturel&amp;delicious)"). Bunları tekrar kaçırmak ÇİFT KAÇIŞ üretiyordu
+// → Google Shopping'de marka "N&amp;amp;D" olarak bozuk görünüyordu. Önce çöz, sonra kaçır.
+function entityCoz(str: string): string {
   return (str || "")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&apos;|&#39;/gi, "'")
+    .replace(/&nbsp;/gi, " ");
+}
+
+function xmlEscape(str: string): string {
+  return entityCoz(str || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
