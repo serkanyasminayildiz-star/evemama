@@ -121,17 +121,37 @@ export async function GET() {
   // Merchant urunun feed'den kaybolmasini 30 gun gecikme ile islerken
   // o sure boyunca eski "in stock" degerini gosterir → admin panelde
   // stoku 0 yapilan urun Merchant'ta hala "stokta var" gozukur.
-  const { data: urunler } = await supabase
-    .from("urunler")
-    .select("*, kategoriler(ad), markalar(ad)")
-    .eq("aktif", true)
-    .gt("fiyat", 0)
-    .limit(1000);
+  // SAYFALAMA ŞART: Supabase/PostgREST varsayılanı en fazla 1000 satır döner ve
+  // .limit(1000) bunu AŞAMAZ. Katalog 2.120 aktif ürüne çıkınca feed'de yalnız
+  // 1.000 ürün kalmıştı → 1.120 ürün Google Merchant'a HİÇ gitmiyordu (Shopping
+  // gösterim havuzu yarıya düştü, kampanya günlük bütçesini harcayamıyordu).
+  type UrunSatir = {
+    id: number; ad: string; slug: string;
+    fiyat: number | string; indirimli_fiyat: number | string | null;
+    stok: number | string | null; gtin: string | null;
+    resim_url: string | null; resimler: string[] | null; oncelikli: boolean | null;
+    kategoriler: { ad: string } | null; markalar: { ad: string } | null;
+  };
+  const urunler: UrunSatir[] = [];
+  for (let bas = 0; bas < 20000; bas += 1000) {
+    const { data, error } = await supabase
+      .from("urunler")
+      .select("*, kategoriler(ad), markalar(ad)")
+      .eq("aktif", true)
+      .gt("fiyat", 0)
+      .order("id", { ascending: true })
+      .range(bas, bas + 999);
+    if (error) { console.error("[urunler.xml] sayfa okunamadi:", bas, error.message); break; }
+    urunler.push(...((data || []) as UrunSatir[]));
+    if (!data || data.length < 1000) break;
+  }
 
   const entries = (urunler || []).map(u => {
-    const fiyat = parseFloat(u.indirimli_fiyat || u.fiyat || 0);
-    const normalFiyat = parseFloat(u.fiyat || 0);
-    const stokSayisi = parseInt(u.stok ?? 0);
+    // String() sarma: Supabase sayısal kolonları number döner, parseFloat string
+    // bekler (eski kodda tip 'any' olduğu için derleyici görmüyordu). Runtime AYNI.
+    const fiyat = parseFloat(String(u.indirimli_fiyat || u.fiyat || 0));
+    const normalFiyat = parseFloat(String(u.fiyat || 0));
+    const stokSayisi = parseInt(String(u.stok ?? 0));
     const availability = stokSayisi > 0 ? "in stock" : "out of stock";
 
     // custom_label_0 = "oncelikli" → Google Ads Shopping kampanyasinda
