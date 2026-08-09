@@ -11,10 +11,22 @@ const BASE = "https://www.evemama.net";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dinamik: aktif urunler + aktif kategoriler.
-  const [{ data: urunler }, { data: kategoriler }] = await Promise.all([
-    supabase.from("urunler").select("slug, updated_at").eq("aktif", true).gt("fiyat", 0).limit(1000),
-    supabase.from("kategoriler").select("slug").eq("aktif", true),
-  ]);
+  // SAYFALAMA ŞART: PostgREST max 1000 satır döner, .limit(1000) aşamaz.
+  // Katalog 2.120 ürüne çıkınca sitemap'te 1.120 ürün EKSİKti → Google o
+  // ürünleri organik aramada indeksleyemiyordu.
+  type UrunSatir = { slug: string; updated_at: string | null };
+  const urunler: UrunSatir[] = [];
+  for (let bas = 0; bas < 20000; bas += 1000) {
+    const { data, error } = await supabase
+      .from("urunler").select("slug, updated_at")
+      .eq("aktif", true).gt("fiyat", 0)
+      .order("id", { ascending: true })
+      .range(bas, bas + 999);
+    if (error) { console.error("[sitemap] sayfa okunamadi:", bas, error.message); break; }
+    urunler.push(...((data || []) as UrunSatir[]));
+    if (!data || data.length < 1000) break;
+  }
+  const { data: kategoriler } = await supabase.from("kategoriler").select("slug").eq("aktif", true);
 
   const now = new Date();
 

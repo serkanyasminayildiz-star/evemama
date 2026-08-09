@@ -94,18 +94,38 @@ export async function GET() {
   // Stoku 0 olanlari da feed'de tut → Google Merchant'ta history korunur,
   // sadece availability "out of stock" gosterilir. Stok 0 -> feed'den
   // cikinca Merchant 30 gun "in stock" cache'ler, yanlis bilgi yansir.
-  const { data: urunler } = await supabase
-    .from("urunler")
-    .select("*, kategoriler(ad), markalar(ad)")
-    .eq("aktif", true)
-    .gt("fiyat", 0)
-    .limit(1000);
+  // SAYFALAMA ŞART: PostgREST varsayılanı max 1000 satır ve .limit(1000) bunu
+  // AŞAMAZ (urunler.xml'de aynı tuzak yaşandı). Katalog 2.120 ürüne çıkınca bu
+  // feed 1.000'de kilitlenmişti → Merchant/Cimri eksik ürün görüyordu.
+  type UrunSatir = {
+    id: number; ad: string; slug: string;
+    fiyat: number | string; indirimli_fiyat: number | string | null;
+    stok: number | string | null; gtin: string | null; barkod?: string | null;
+    resim_url: string | null; resimler: string[] | null; oncelikli: boolean | null;
+    kisa_aciklama?: string; aciklama?: string;
+    kategoriler: { ad: string } | null; markalar: { ad: string } | null;
+  };
+  const urunler: UrunSatir[] = [];
+  for (let bas = 0; bas < 20000; bas += 1000) {
+    const { data, error } = await supabase
+      .from("urunler")
+      .select("*, kategoriler(ad), markalar(ad)")
+      .eq("aktif", true)
+      .gt("fiyat", 0)
+      .order("id", { ascending: true })
+      .range(bas, bas + 999);
+    if (error) { console.error("[cimri.xml] sayfa okunamadi:", bas, error.message); break; }
+    urunler.push(...((data || []) as UrunSatir[]));
+    if (!data || data.length < 1000) break;
+  }
 
   const items = (urunler || []).map(u => {
-    const normalFiyat = parseFloat(u.fiyat || 0);
-    const indirimli = parseFloat(u.indirimli_fiyat || 0);
+    // String() sarma: Supabase sayısal kolonu number döner, parseFloat string
+    // bekler (tip önceden 'any' olduğu için derleyici görmüyordu). Runtime AYNI.
+    const normalFiyat = parseFloat(String(u.fiyat || 0));
+    const indirimli = parseFloat(String(u.indirimli_fiyat || 0));
     const hasDiscount = indirimli > 0 && indirimli < normalFiyat;
-    const stokSayisi = parseInt(u.stok ?? 0);
+    const stokSayisi = parseInt(String(u.stok ?? 0));
     const availability = stokSayisi > 0 ? "in stock" : "out of stock";
 
     if (normalFiyat <= 0) return "";
