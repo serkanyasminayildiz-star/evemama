@@ -744,7 +744,7 @@ export default function AnaSayfaClient() {
             <div style={{ fontFamily: "Georgia,serif", fontSize: 28, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>
               🎁 Kayıt ol, <em style={{ color: "#E8845A" }}>kampanyaları kaçırma!</em>
             </div>
-            <div style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.65, lineHeight: 1.6 }}>İlk siparişinde %10 indirim + özel fırsatlar sana özel gelsin.</div>
+            <div style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.65, lineHeight: 1.6 }}>Kampanyalardan ilk sen haberdar ol, özel fırsatlar sana özel gelsin.</div>
           </div>
           {newsletterOk ? (
             <div style={{ background: "#8BAF8E", color: "white", borderRadius: 50, padding: "16px 32px", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap" }}>✅ Teşekkürler, kayıt oldunuz!</div>

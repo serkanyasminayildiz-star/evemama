@@ -5,14 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import type { User } from "@supabase/supabase-js";
-import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
+import { KARGO, TUTAR_INDIRIMI, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
 import { clarityEvent, claritySet } from "../../lib/clarity";
 
 export default function Sepet() {
   const { items, removeItem, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
   const [silindi, setSilindi] = useState<number | null>(null);
   const [eklendi, setEklendi] = useState<number | null>(null);
-  const [ilkSiparisIndirimi, setIlkSiparisIndirimi] = useState(false);
   const [kullanici, setKullanici] = useState<User | null>(null);
   const [bonus, setBonus] = useState<{ tutar: number; min_sepet: number } | null>(null);
   const [kuponKodu, setKuponKodu] = useState("");
@@ -20,27 +19,12 @@ export default function Sepet() {
   const [kuponMesaj, setKuponMesaj] = useState("");
   const [kuponYukleniyor, setKuponYukleniyor] = useState(false);
 
+  // Üyelik durumu (sadakat bonusu gösterimi + kargo teşviki için).
   useEffect(() => {
-    const kontrol = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setKullanici(user);
-        if (user && totalPrice >= ILK_SIPARIS.MIN_SEPET) {
-          const { count, error } = await supabase
-            .from("siparisler")
-            .select("*", { count: "exact", head: true })
-            .eq("email", user.email);
-          if (error) throw error;
-          if (count === 0) setIlkSiparisIndirimi(true);
-        }
-      } catch (err) {
-        console.error("[sepet] ilk siparis kontrolu:", err);
-        // Indirim hesaplanmazsa sayfa calismaya devam eder (toast'a gerek yok,
-        // kullanici farketmez — sadece "ilk siparis indirimi" gosterilmez).
-      }
-    };
-    kontrol();
-  }, [totalPrice]);
+    supabase.auth.getUser()
+      .then(({ data: { user } }) => setKullanici(user))
+      .catch(err => console.error("[sepet] kullanici kontrolu:", err));
+  }, []);
 
   // Sadakat bonusu — üye giriş yapmışsa geçerli bonusunu çek (gösterim için;
   // gerçek indirim ödeme adımında sunucuda yeniden doğrulanır).
@@ -108,7 +92,6 @@ export default function Sepet() {
   const hesap = hesaplaIndirim({
     sepetTutari: totalPrice,
     toplamAgirlikKg: sepetAgirligiKg(items),
-    ilkSiparis: ilkSiparisIndirimi,
     bonusTutar: bonusUygulanabilir ? bonus!.tutar : 0,
     kuponIndirimi: uygulananKupon ? uygulananKupon.indirim : 0,
   });
@@ -117,12 +100,10 @@ export default function Sepet() {
   const indirimMiktari = hesap.indirimMiktari;
   const indirimAciklama = totalPrice >= TUTAR_INDIRIMI.ESIK_2 ? "10.000₺ üzeri alışveriş indirimi 🎉" : totalPrice >= TUTAR_INDIRIMI.ESIK_1 ? "5.000₺ üzeri alışveriş indirimi 🎁" : "";
 
-  // Teşvik, o eşikte görülecek TOPLAM indirimi gösterir (yalnız tutar tier'ı
-  // değil): eşikteki tutar indirimine, halihazırda geçerli ek otomatik indirimler
-  // (ilk sipariş + sadakat bonusu harcaması) eklenir — bunlar eşik üstünde de
-  // geçerli kalır. Örn. ilk sipariş indirimi olan üye 5000₺'de 200+200=400₺ görür.
-  // (ilk sipariş ve bonus harcaması birbirini dışlar; formül yine de güvenle toplar.)
-  const ekOtomatikIndirim = hesap.ilkSiparisIndirimi + hesap.bonusIndirimi;
+  // Teşvik, o eşikte görülecek TOPLAM indirimi gösterir: eşikteki tutar
+  // indirimine, halihazırda geçerli sadakat bonusu harcaması eklenir (eşik
+  // üstünde de geçerli kalır).
+  const ekOtomatikIndirim = hesap.bonusIndirimi;
   const sonrakiIndirim = totalPrice < TUTAR_INDIRIMI.ESIK_1
     ? { hedef: TUTAR_INDIRIMI.ESIK_1, indirim: TUTAR_INDIRIMI.INDIRIM_1 + ekOtomatikIndirim, kalan: TUTAR_INDIRIMI.ESIK_1 - totalPrice }
     : totalPrice < TUTAR_INDIRIMI.ESIK_2
@@ -229,15 +210,6 @@ export default function Sepet() {
         </div>
       )}
 
-      {/* İlk sipariş indirimi bildirimi - giriş yapılmamışsa */}
-      {!kullanici && totalPrice >= ILK_SIPARIS.MIN_SEPET && (
-        <div style={{ background: "linear-gradient(135deg,#FFF5F0,#FFE8D5)", padding: "12px 24px", textAlign: "center" }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#5C3D2E", marginBottom: 6 }}>
-            🎁 İlk siparişinize <strong style={{ color: "#E8845A" }}>200₺ indirim</strong> kazanmak için
-            <Link href="/giris?returnUrl=/sepet" style={{ color: "#E8845A", fontWeight: 700, marginLeft: 6, textDecoration: "none" }}>giriş yapın →</Link>
-          </div>
-        </div>
-      )}
 
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "16px" }}>
 
@@ -315,13 +287,6 @@ export default function Sepet() {
             </div>
           )}
 
-          {!kuponKazandi && ilkSiparisIndirimi && (
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 14 }}>
-              <span style={{ color: "#2E7D32", fontWeight: 600 }}>🎉 İlk sipariş indirimi</span>
-              <span style={{ color: "#2E7D32", fontWeight: 700 }}>−₺200.00</span>
-            </div>
-          )}
-
           {!kuponKazandi && bonusUygulanabilir && (
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 14 }}>
               <span style={{ color: "#2E7D32", fontWeight: 600 }}>🎁 Sadakat bonusu</span>
@@ -379,11 +344,6 @@ export default function Sepet() {
             </div>
           )}
 
-          {!kullanici && totalPrice >= ILK_SIPARIS.MIN_SEPET && (
-            <div style={{ background: "#FFF5F0", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#5C3D2E", textAlign: "center", border: "1.5px dashed #E8845A" }}>
-              🎁 İlk siparişinize <strong>200₺ indirim</strong> için <Link href="/giris?returnUrl=/sepet" style={{ color: "#E8845A", fontWeight: 700 }}>giriş yapın →</Link>
-            </div>
-          )}
 
           {/* Sadakat bonusu KAZANMA — bu sipariş, BİR SONRAKİ alışveriş için. Bu
               siparişe uygulanan indirimlerden (yukarıdaki yeşil satırlar) GÖRSEL

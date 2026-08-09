@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
-import { ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../../lib/indirim";
+import { SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../../lib/indirim";
 import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../../lib/eldenTeslimat";
 import { sendHavaleTalimatMaili, sendEldenTeslimMaili } from "../../../lib/email";
 
@@ -92,21 +92,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // İlk sipariş 200 TL indirimi — SADECE giriş yapmış (üye) ve bu hesapla hiç
-  // siparişi olmayan müşteriye. Üye olmayan / 2. siparişini veren ALAMAZ.
-  let ilkSiparisHak = false;
-  if (uyeEmail && basketTotal >= ILK_SIPARIS.MIN_SEPET) {
-    try {
-      const { count } = await supabase
-        .from("siparisler")
-        .select("*", { count: "exact", head: true })
-        .eq("email", uyeEmail);
-      if (count === 0) ilkSiparisHak = true;
-    } catch (e) {
-      console.error("[odeme] ilk siparis dogrulama:", e);
-    }
-  }
-
   // Sadakat bonusu — üyenin geçerli (kullanılmamış, süresi geçmemiş) bonusu
   // varsa ve sepet bonusun min_sepet'ini karşılıyorsa ödenecek tutardan düşülür.
   // SUNUCUDA doğrulanır; hangi bonusun harcandığı odeme_gecici'ye yazılır,
@@ -150,7 +135,7 @@ export async function POST(req: NextRequest) {
 
   // TEK KAYNAK indirim hesabı — client (sepet/odeme) ile AYNI saf fonksiyon.
   // EN AVANTAJLISI (kupon vs otomatik üst üste binmez) ve genelToplam burada.
-  const hesap = hesaplaIndirim({ sepetTutari: basketTotal, toplamAgirlikKg: sepetAgirligiKg(items), ilkSiparis: ilkSiparisHak, bonusTutar, kuponIndirimi });
+  const hesap = hesaplaIndirim({ sepetTutari: basketTotal, toplamAgirlikKg: sepetAgirligiKg(items), bonusTutar, kuponIndirimi });
 
   // Kupon kazandıysa kupon harcanır (kod işaretlenir); değilse bonus (varsa)
   // harcanır. Hangisi → odeme_gecici'ye yazılır, odeme/sonuc'ta işaretlenir.

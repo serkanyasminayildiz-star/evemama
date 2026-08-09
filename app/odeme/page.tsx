@@ -3,7 +3,7 @@ import { useState, useEffect, type ChangeEvent } from "react";
 import Link from "next/link";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
-import { KARGO, TUTAR_INDIRIMI, ILK_SIPARIS, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
+import { KARGO, TUTAR_INDIRIMI, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
 import { HAVALE_HESAP } from "../../lib/havale";
 import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../lib/eldenTeslimat";
 import { clarityEvent, claritySet } from "../../lib/clarity";
@@ -16,7 +16,6 @@ export default function Odeme() {
   const [sozlesme, setSozlesme] = useState(false);
   const [aydinlatma, setAydinlatma] = useState(false);
   const [hata, setHata] = useState("");
-  const [ilkSiparisIndirimi, setIlkSiparisIndirimi] = useState(false);
   const [uye, setUye] = useState(false);
   const [bonus, setBonus] = useState<{ tutar: number; min_sepet: number } | null>(null);
   const [kuponKodu, setKuponKodu] = useState("");
@@ -30,28 +29,12 @@ export default function Odeme() {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Ilk siparis indirimi kontrolu — sepet sayfasiyla AYNI mantik.
-  // Bu kontrol yapilmazsa sepette gosterilen indirim odeme sayfasinda
-  // kaybolur, musteri ucret farkini gorup odemeden vazgeciyor.
+  // Üyelik durumu (sadakat bonusu + kargo teşviki gösterimi için).
   useEffect(() => {
-    const kontrol = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUye(!!user);
-        if (user && totalPrice >= ILK_SIPARIS.MIN_SEPET) {
-          const { count, error } = await supabase
-            .from("siparisler")
-            .select("*", { count: "exact", head: true })
-            .eq("email", user.email);
-          if (error) throw error;
-          if (count === 0) setIlkSiparisIndirimi(true);
-        }
-      } catch (err) {
-        console.error("[odeme] ilk siparis kontrolu:", err);
-      }
-    };
-    kontrol();
-  }, [totalPrice]);
+    supabase.auth.getUser()
+      .then(({ data: { user } }) => setUye(!!user))
+      .catch(err => console.error("[odeme] uye kontrolu:", err));
+  }, []);
 
   // Sadakat bonusu — üye giriş yapmışsa geçerli bonusu (gösterim için;
   // gerçek indirim handleOde'de sunucuda doğrulanır).
@@ -115,7 +98,6 @@ export default function Odeme() {
   const hesap = hesaplaIndirim({
     sepetTutari: totalPrice,
     toplamAgirlikKg: sepetAgirligiKg(items),
-    ilkSiparis: ilkSiparisIndirimi,
     bonusTutar: bonusUygulanabilir ? bonus!.tutar : 0,
     kuponIndirimi: uygulananKupon ? uygulananKupon.indirim : 0,
   });
@@ -125,7 +107,7 @@ export default function Odeme() {
   const indirimAciklama = totalPrice >= TUTAR_INDIRIMI.ESIK_2 ? "10.000₺ üzeri indirim" : totalPrice >= TUTAR_INDIRIMI.ESIK_1 ? "5.000₺ üzeri indirim" : "";
   const indirimEtiketleri = kuponKazandi
     ? `Kupon ${uygulananKupon!.kod}`
-    : [indirimAciklama, ilkSiparisIndirimi ? "İlk sipariş" : "", bonusUygulanabilir ? "Sadakat bonusu" : ""].filter(Boolean).join(" + ");
+    : [indirimAciklama, bonusUygulanabilir ? "Sadakat bonusu" : ""].filter(Boolean).join(" + ");
   const genelToplam = hesap.genelToplam;
 
   // İzmir elden teslimat: il=İzmir + kapsam ilçesi + sepet ≥ MIN_SEPET ise seçenek
