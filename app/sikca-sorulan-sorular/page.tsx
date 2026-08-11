@@ -18,7 +18,7 @@ const sorular = [
   ]},
   { kategori: "İadeler & Geri Ödemeler", items: [
     { soru: "Geri ödemem nerede?", cevap: "İade onaylandıktan sonra ödeme yönteminize göre 3-14 iş günü içinde geri ödeme yapılır. Kredi kartı iadeleri bankanıza bağlı olarak 2-3 haftayı bulabilir." },
-    { soru: "Siparişimi nasıl iade edebilirim?", cevap: "Ürünü teslim aldıktan sonraki 14 gün içinde info@evemama.net adresine iade talebinizi iletebilirsiniz. Onay sonrası ürünü Akın Simav Mah. Mithatpaşa Cad. No:446 Konak/İzmir adresine gönderebilirsiniz." },
+    { soru: "Siparişimi nasıl iade edebilirim?", cevap: "Ürünü teslim aldıktan sonraki 14 gün içinde info@evemama.net adresine iade talebinizi iletebilirsiniz. Onay sonrası ürünü Atilla Mah. No: 32/B Konak/İzmir adresine gönderebilirsiniz." },
     { soru: "İade politikası nedir?", cevap: "Ürünü teslim aldıktan sonraki 14 gün içinde, kullanılmamış ve orijinal ambalajında olmak koşuluyla iade edebilirsiniz. Detaylar için İade Politikası sayfamızı inceleyebilirsiniz." },
   ]},
   { kategori: "Kargo & Takip", items: [

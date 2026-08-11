@@ -18,11 +18,11 @@ export default function KVKK() {
 
         <div style={{ background: "white", borderRadius: 24, padding: "40px 48px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
           <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8, marginBottom: 24 }}>
-            6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;) ve ilgili mevzuatlar kapsamında, kişisel verileriniz veri sorumlusu sıfatıyla <strong>Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi</strong> tarafından işlenmektedir.
+            6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;) ve ilgili mevzuatlar kapsamında, kişisel verileriniz veri sorumlusu sıfatıyla <strong>TNB Pet Mama ve Aksesuarları İthalat İhracat Limited Şirketi</strong> tarafından işlenmektedir.
           </p>
 
           {[
-            { baslik: "Veri Sorumlusu", icerik: "Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi\nAkın Simav Mahallesi Mithatpaşa Caddesi No: 446 KONAK/İZMİR\nVergi No: 9381208717" },
+            { baslik: "Veri Sorumlusu", icerik: "TNB Pet Mama ve Aksesuarları İthalat İhracat Limited Şirketi\nAtilla Mahallesi No: 32/B KONAK/İZMİR\nVergi No: 9381208717" },
             { baslik: "Kişisel Verilerin İşlenme Amaçları", icerik: "Kişisel verileriniz; hizmetlerimizin sunulabilmesi, iletişim faaliyetlerinin yürütülmesi, talep ve şikayetlerin değerlendirilmesi, yasal yükümlülüklerin yerine getirilmesi, hukuki ve ticari güvenliğin sağlanması, iş süreçlerinin yürütülmesi ve denetimi amacıyla işlenmektedir." },
             { baslik: "Toplanan Kişisel Veriler", icerik: "Kimlik bilgileri (ad, soyad, T.C. kimlik numarası), iletişim bilgileri (telefon, e-posta, adres), işlem güvenliği verileri ve diğer işlenen kişisel veriler." },
             { baslik: "Veri Toplama Yöntemi ve Hukuki Sebebi", icerik: "Kişisel verileriniz, sözlü, yazılı veya elektronik ortamda; telefon, e-posta, web sitesi formları, sözleşmeler ve diğer kanallar aracılığıyla, KVKK'nın 5. ve 6. maddelerine dayanılarak toplanmaktadır." },

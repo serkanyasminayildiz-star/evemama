@@ -775,9 +775,9 @@ export default function AnaSayfaClient() {
               <div style={{ fontFamily: "Georgia,serif", fontSize: 22, fontWeight: 700, color: "#FDF6EE", marginBottom: 12 }}>evemama<span style={{ color: "#E8845A", fontStyle: "italic" }}>.net</span></div>
               <p style={{ fontSize: 12, color: "#FDF6EE", opacity: 0.4, lineHeight: 1.8, maxWidth: 260 }}>
                 Evcil dostlarınız için en kaliteli ürünleri en uygun fiyatlarla sunuyoruz.<br /><br />
-                <strong style={{ opacity: 0.7, fontSize: 11 }}>Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi</strong><br />
+                <strong style={{ opacity: 0.7, fontSize: 11 }}>TNB Pet Mama ve Aksesuarları İthalat İhracat Limited Şirketi</strong><br />
                 Vergi No: 9381208717 — Konak V.D.<br />
-                Akın Simav Mah. Mithatpaşa Cad. No:446 Konak / İzmir<br />
+                Atilla Mah. No: 32/B Konak / İzmir<br />
                 📞 0552 090 80 01<br />
                 <span style={{ fontSize: 11, opacity: 0.7, display: "inline-block", margin: "2px 0" }}>Pazartesi–Cuma 09:00–17:00 arası arayabilirsiniz; harici saatlerde telefona cevap verilememektedir.</span><br />
                 ✉️ info@evemama.net

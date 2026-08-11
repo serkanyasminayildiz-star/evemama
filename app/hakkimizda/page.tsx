@@ -40,7 +40,7 @@ export default function Hakkimizda() {
         <div style={{ background: "white", borderRadius: 24, padding: "40px", marginBottom: 24, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
           <h2 style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 700, color: "#5C3D2E", marginBottom: 20 }}>Biz Kimiz?</h2>
           <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8, marginBottom: 16 }}>
-            Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi bünyesinde faaliyet gösteren EVEmama.net, kedi ve köpek başta olmak üzere tüm evcil dostlarımız için mama, bakım ve aksesuar ürünlerini titizlikle seçerek müşterilerine ulaştırmaktadır.
+            TNB Pet Mama ve Aksesuarları İthalat İhracat Limited Şirketi bünyesinde faaliyet gösteren EVEmama.net, kedi ve köpek başta olmak üzere tüm evcil dostlarımız için mama, bakım ve aksesuar ürünlerini titizlikle seçerek müşterilerine ulaştırmaktadır.
           </p>
           <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.8 }}>
             Hayvansever bir ekip olarak, patili dostlarımızın yalnızca beslenme değil, bakım, sağlık ve mutluluk ihtiyaçlarını da önemsiyoruz. Bu doğrultuda hem bireysel evcil hayvan sahiplerine hem de sokak hayvanlarına yönelik sosyal sorumluluk projelerinde yer almayı ve bu alanda sürdürülebilir katkılar sağlamayı hedefliyoruz.
@@ -84,11 +84,11 @@ export default function Hakkimizda() {
           <h2 style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 700, color: "white", marginBottom: 24 }}>Firma Bilgileri</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
             {[
-              { label: "Ticaret Ünvanı", value: "Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi" },
+              { label: "Ticaret Ünvanı", value: "TNB Pet Mama ve Aksesuarları İthalat İhracat Limited Şirketi" },
               { label: "Vergi Dairesi / No", value: "Konak / 9381208717" },
               { label: "Mersis No", value: "0938120871700001" },
               { label: "Ticaret Sicil No", value: "233886" },
-              { label: "Adres", value: "Akın Simav Mahallesi Mithatpaşa Caddesi No: 446 KONAK/İZMİR" },
+              { label: "Adres", value: "Atilla Mahallesi No: 32/B KONAK/İZMİR" },
               { label: "Telefon", value: "+90 552 090 80 01" },
               { label: "E-Posta", value: "info@evemama.net" },
             ].map((item, i) => (

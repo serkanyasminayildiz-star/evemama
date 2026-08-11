@@ -55,7 +55,7 @@ export default function Iletisim() {
           {[
             { icon: "📞", title: "Müşteri Hizmetleri", value: "+90 552 090 80 01", sub: "Pazartesi–Cuma 09:00–17:00 arası arayabilirsiniz; harici saatlerde telefona cevap verilememektedir." },
             { icon: "📧", title: "E-posta", value: "info@evemama.net", sub: "En geç 24 saat içinde yanıt" },
-            { icon: "📍", title: "Adres", value: "Akın Simav Mah. Mithatpaşa Cad. No:446", sub: "Konak / İzmir" },
+            { icon: "📍", title: "Adres", value: "Atilla Mah. No: 32/B", sub: "Konak / İzmir" },
           ].map((item, i) => (
             <div key={i} style={{ background: "white", borderRadius: 20, padding: "20px 24px", marginBottom: 16, display: "flex", gap: 16, alignItems: "flex-start", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
               <span style={{ fontSize: 28 }}>{item.icon}</span>

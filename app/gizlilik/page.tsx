@@ -33,7 +33,7 @@ export default function Gizlilik() {
           <div style={{ background: "#FFF5F0", borderRadius: 16, padding: "20px 24px", marginTop: 16 }}>
             <h2 style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>8. İletişim</h2>
             <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.7, margin: 0 }}>
-              Veri Sorumlusu: Verivo Teknoloji Yazılım ve Platform Hizmetleri Ticaret Limited Şirketi<br />
+              Veri Sorumlusu: TNB Pet Mama ve Aksesuarları İthalat İhracat Limited Şirketi<br />
               📧 <strong>info@evemama.net</strong>
             </p>
           </div>
