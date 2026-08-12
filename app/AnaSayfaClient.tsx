@@ -645,7 +645,7 @@ export default function AnaSayfaClient() {
             {[
               ["🛡️", "%100 Orijinal & Bandrollü"],
               ["🔐", "Telefonunuzdan Doğrulayın"],
-              ["💰", "Sahteyse 2 Katı İade"],
+              ["💰", "Sahteyse Tam İade"],
               ["🚚", "13:00'a kadar Aynı Gün Kargo"],
             ].map(([icon, t], i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: "#2E7D32" }}>

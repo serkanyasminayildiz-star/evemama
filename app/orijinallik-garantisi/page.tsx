@@ -6,7 +6,7 @@ import Link from "next/link";
 export const metadata = {
   title: "Orijinallik Garantisi — %100 Orijinal, Bandrollü",
   description:
-    "Tüm ürünlerimiz %100 orijinal: resmi ithalatçı bandrollü, faturalı ve markanın kendi sistemiyle doğrulanabilir. Orijinal değilse ürün bedelinin 2 katını iade ediyoruz. Sahte mamayı nasıl ayırt edersiniz?",
+    "Tüm ürünlerimiz %100 orijinal: resmi ithalatçı bandrollü, faturalı ve markanın kendi sistemiyle doğrulanabilir. Orijinalliği kendi telefonunuzdan doğrulayın. Sahte mamayı nasıl ayırt edersiniz?",
   alternates: { canonical: "https://www.evemama.net/orijinallik-garantisi" },
 };
 
@@ -28,28 +28,28 @@ export default function OrijinallikGarantisi() {
           </p>
         </div>
 
-        {/* 2 KAT garanti — sahtecinin veremeyeceği söz */}
+        {/* Söz: doğrulanabilirlik + tam iade (2 kat taahhüdü kaldırıldı, 12 Ağu 2026) */}
         <div style={{ background: "linear-gradient(135deg,#2E7D32,#43A047)", color: "white", borderRadius: 20, padding: "28px 24px", textAlign: "center", marginBottom: 36 }}>
           <div style={{ fontSize: 13, letterSpacing: 1, opacity: 0.9, marginBottom: 6 }}>SÖZÜMÜZ</div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 25, fontWeight: 700, lineHeight: 1.35 }}>Orijinal değilse ürün bedelinin<br /><span style={{ fontSize: 36 }}>2 KATINI</span> iade ederiz</div>
-          <div style={{ fontSize: 14, opacity: 0.92, marginTop: 12, lineHeight: 1.6, maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}>O kadar eminiz ki: ürünü <strong>teslim alırken</strong>, kurye yanındayken hologram + QR ile doğrulayın. Sahte çıkarsa teslim almayın — bedelin 2 katı sizindir. Sahte satan hiçbir mağaza bu sözü veremez.</div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 25, fontWeight: 700, lineHeight: 1.35 }}>Bizim sözümüze güvenmek<br /><span style={{ fontSize: 32 }}>zorunda değilsiniz</span></div>
+          <div style={{ fontSize: 14, opacity: 0.92, marginTop: 12, lineHeight: 1.6, maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}>Ürünü <strong>teslim alırken</strong>, kurye yanındayken hologram + QR&apos;ı <strong>kendi telefonunuzla</strong> doğrulayın. Sahte çıkarsa teslim almayın — ürün bedelini <strong>tam iade</strong> ederiz. Sahte satan bir mağaza, ürününü markanın kendi uygulamasında doğrulatamaz.</div>
         </div>
 
-        {/* Garanti nasıl işliyor — 2 aşamalı: teslimatta 2x (ürün el değiştirmeden),
+        {/* Garanti 2 aşamalı: teslimatta doğrulama (ürün el değiştirmeden) ve
             sonrasında iade+tam iade. Teslimata bağlamak kötü niyetli ürün-değiştirmeyi önler. */}
         <section style={{ marginBottom: 36 }}>
           <h2 style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, marginBottom: 16 }}>Garanti nasıl işliyor?</h2>
           <div style={{ display: "grid", gap: 14 }}>
             <div style={{ background: "white", borderRadius: 16, padding: 18, border: "2px solid #8BAF8E" }}>
-              <div style={{ fontWeight: 700, fontSize: 16, color: "#2E7D32", marginBottom: 6 }}>1) Teslimatta doğrulayın — 2 KAT garanti</div>
-              <p style={{ fontSize: 14, lineHeight: 1.7, opacity: 0.9 }}>Kargoyu teslim alırken, mümkünse kurye yanındayken paketi kontrol edin: bandrol yerinde mi, hologram sağlam mı? Hologramı kaldırıp QR&apos;ı Royal Canin Up ile okutun. <strong>Sahte çıkarsa ürünü teslim almayın</strong> ve bize bildirin — ürün bedelinin <strong>2 katını</strong> iade edelim.</p>
+              <div style={{ fontWeight: 700, fontSize: 16, color: "#2E7D32", marginBottom: 6 }}>1) Teslimatta doğrulayın — en hızlı güvence</div>
+              <p style={{ fontSize: 14, lineHeight: 1.7, opacity: 0.9 }}>Kargoyu teslim alırken, mümkünse kurye yanındayken paketi kontrol edin: bandrol yerinde mi, hologram sağlam mı? Hologramı kaldırıp QR&apos;ı Royal Canin Up ile okutun. <strong>Sahte çıkarsa ürünü teslim almayın</strong> ve bize bildirin — ödediğiniz tutarı <strong>tam iade</strong> edelim, kargo ücreti dahil.</p>
             </div>
             <div style={{ background: "white", borderRadius: 16, padding: 18, border: "1px solid #E8D5B7" }}>
               <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>2) Teslimat sonrası — iade + tam para iadesi</div>
               <p style={{ fontSize: 14, lineHeight: 1.7, opacity: 0.9 }}>Ürünü aldıktan sonra orijinalliğinden şüphe duyarsanız, <strong>açılmamış</strong> ürünü bize iade edin; inceleyelim. Gerçekten orijinal değilse ürün bedelini <strong>tam iade</strong> edelim.</p>
             </div>
           </div>
-          <p style={{ fontSize: 12.5, opacity: 0.7, marginTop: 12, lineHeight: 1.6 }}>2 kat güvence, teslimat anındaki doğrulama içindir — bu hem size en hızlı güvenceyi verir hem de ürün el değiştirdikten sonra oluşabilecek suistimalleri önler. Her iki durumda da haklıysanız asla mağdur olmazsınız.</p>
+          <p style={{ fontSize: 12.5, opacity: 0.7, marginTop: 12, lineHeight: 1.6 }}>Doğrulamayı teslimat anında yapmanızı öneririz — hem en hızlı çözümdür hem de ürün el değiştirdikten sonra oluşabilecek karışıklıkları önler. Her iki durumda da haklıysanız asla mağdur olmazsınız.</p>
         </section>
 
         {/* Neden orijinal şart — güvenlik */}
