@@ -9,6 +9,12 @@ const supabase = createClient(
 
 const BASE = "https://www.evemama.net";
 
+// Sitemap Next.js'te varsayılan olarak BUILD anında üretilip donuyor → katalog
+// değişince (ör. 1.388 tedarikçi ürünü pasife alındı) sitemap ölü URL'leri
+// listelemeye devam ediyordu; pasif ürün sayfaları 404 döndüğü için Search
+// Console "gönderilen URL bulunamadı" hatası verirdi. Saatte bir tazele.
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dinamik: aktif urunler + aktif kategoriler.
   // SAYFALAMA ŞART: PostgREST max 1000 satır döner, .limit(1000) aşamaz.
