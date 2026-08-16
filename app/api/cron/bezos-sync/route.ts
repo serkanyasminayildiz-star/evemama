@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
       if (!data || data.length < 1000) break;
     }
 
-    const rapor = { fiyat: 0, stok: 0, stokSifirlandi: 0, atlanan: 0, yeniUrun: 0, hata: 0, fiyatsizPasif: 0, geriAcildi: 0 };
+    const rapor = { fiyat: 0, stok: 0, stokSifirlandi: 0, atlanan: 0, yeniUrun: 0, hata: 0, fiyatsizPasif: 0 };
     const detay: string[] = [];
     const bizdeki = new Set<string>();
 
@@ -117,8 +117,10 @@ export async function GET(req: NextRequest) {
           }
         }
         if (Number(p.stok) !== f.stok) { guncelle.stok = f.stok; rapor.stok++; }
-        // Fiyatsızlık nedeniyle pasife alınmıştı, artık fiyat var → geri aç.
-        if (p.aktif === false && Number(p.fiyat) === 0) { guncelle.aktif = true; rapor.geriAcildi++; }
+        // OTOMATİK GERİ AÇMA KALDIRILDI (12 Ağu 2026): bezos ürünleri işletme
+        // kararıyla topluca pasife alındı; senkron bunları kendiliğinden geri
+        // açmamalı. Aktiflik artık YALNIZ admin'den elle yönetilir. (Fiyat/stok
+        // güncellenmeye devam eder → ileride açılırsa veri taze olur.)
       }
 
       if (Object.keys(guncelle).length && !dry) {
