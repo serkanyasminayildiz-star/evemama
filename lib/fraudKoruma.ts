@@ -71,7 +71,11 @@ export function telefonGecerli(ham: string): { gecerli: boolean; sebep?: string 
 // çekimi ve Clarity yurtdışı IP'lerden gelir — engellenirse SEO ve Shopping
 // reklamları ölür. Kapı YALNIZ kartlı ödeme başlatmada uygulanır; yurtdışından
 // gelen kullanıcı havale/EFT ile (peşin, fraud riski sıfır) alışverişe devam eder.
-export const KART_ULKE = "TR";
+// Kartla ödemeye izin verilen ülkeler. Yurtdışındaki Türk müşteriler (Almanya,
+// Hollanda...) Türkiye'ye sipariş verebilir; onlar da kesiliyorsa buraya ülke
+// kodu eklemek yeterli — TEK SATIRLIK genişletme. Karar için Vercel loglarında
+// "[kontrol] yurtdisi checkout" satırlarına bak: hangi ülke, ne sıklıkta.
+export const KART_ULKELERI = ["TR"] as const;
 
 /** Vercel'in coğrafi başlığı. Bilinmiyorsa "" döner → kapı UYGULANMAZ (fail-open). */
 export function ulkeKodu(req: { headers: { get(ad: string): string | null } }): string {
@@ -81,5 +85,5 @@ export function ulkeKodu(req: { headers: { get(ad: string): string | null } }): 
 /** Kartla ödeme bu istek için açık mı? Ülke okunamazsa AÇIK sayılır. */
 export function kartOdemeAcik(req: { headers: { get(ad: string): string | null } }): boolean {
   const ulke = ulkeKodu(req);
-  return ulke === "" || ulke === KART_ULKE;
+  return ulke === "" || (KART_ULKELERI as readonly string[]).includes(ulke);
 }
