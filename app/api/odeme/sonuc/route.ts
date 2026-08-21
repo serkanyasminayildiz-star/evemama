@@ -10,13 +10,10 @@ const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
 const IYZICO_BASE_URL = process.env.IYZICO_BASE_URL || "https://api.iyzipay.com";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://evemama.net";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-// Sadakat bonusu RLS korumalı tabloya (sadakat_bonuslari) yazılır → service_role
-// gerekir. Yoksa anon'a düşer (insert RLS'e takılır, sessizce başarısız olur).
+// ANON İSTEMCİ YOK (bilinçli): bu route'un dokunduğu tabloların HEPSİ RLS
+// korumalı (odeme_gecici, siparisler, urunler, sadakat_bonuslari, kuponlar,
+// basarisiz_odemeler). Anon istemci burada sessiz veri kaybına yol açıyordu —
+// başarısız ödemelerde müşteri bilgisi boş yazılıyordu. Tek istemci: service_role.
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -227,7 +224,12 @@ export async function POST(req: NextRequest) {
       // BAŞARISIZ/YARIM ÖDEME — neden + tutar logla (gelir kaybı ölçümü).
       // Best-effort: log hatası ödeme akışını/redirect'i ASLA bozmasın.
       try {
-        const { data: gecici } = await supabase.from("odeme_gecici").select("*").eq("token", token).maybeSingle();
+        // supabaseAdmin ŞART: odeme_gecici RLS korumalı (14 Tem'de açıldı) →
+        // anon istemci HİÇBİR satır göremez. Bu satır anon kaldığı için başarısız
+        // ödemelerde müşteri bilgisi (ad/e-posta/telefon/sepet/tutar) NULL
+        // yazılıyordu; panelde hepsi "(bilinmiyor) · ₺0" olarak tek satıra
+        // gruplanıyor, kimin ödeyemediği görünmüyordu.
+        const { data: gecici } = await supabaseAdmin.from("odeme_gecici").select("*").eq("token", token).maybeSingle();
         await supabaseAdmin.from("basarisiz_odemeler").insert({
           token,
           email: gecici?.email || null,
