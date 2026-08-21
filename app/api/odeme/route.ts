@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
 import { SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../../lib/indirim";
 import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../../lib/eldenTeslimat";
+import { hizAsildi, istekIp, telefonGecerli, kartOdemeAcik, ulkeKodu } from "../../../lib/fraudKoruma";
 import { sendHavaleTalimatMaili, sendEldenTeslimMaili } from "../../../lib/email";
 
 // Sepet ürünü — client'tan gelen JSON şekli (explicit any yerine).
@@ -55,6 +56,39 @@ function generateAuth(randomString: string, uri: string, body: Record<string, un
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { items, buyer } = body;
+
+  // ── FRAUD KORUMASI (21 Ağu 2026) ──────────────────────────────────────────
+  // Kart deneme saldırısı → bankalar iyzico'ya fraud bildirdi → hesaba zorunlu
+  // 3DS açıldı. Bu üç kapı saldırıyı keser, gerçek müşteriyi etkilemez.
+  const ip = istekIp(req);
+
+  // 1) HIZ LİMİTİ — gerçek müşteri 1-2 kez dener; kart deneyici onlarca kez.
+  if (hizAsildi(`odeme:${ip}`, 4, 15 * 60_000)) {
+    console.warn("[odeme] hiz limiti asildi:", ip);
+    return NextResponse.json(
+      { error: "Çok fazla ödeme denemesi yapıldı. Lütfen birkaç dakika sonra tekrar deneyin." },
+      { status: 429 },
+    );
+  }
+
+  // 2) TELEFON — artık ZORUNLU ve doğrulanıyor (eskiden boş bırakılabiliyordu;
+  //    saldırgan "53252352333" gibi geçersiz numaralarla geçiyordu). Kargo
+  //    teslimatı için de gerekli.
+  const telefonSonuc = telefonGecerli(String(buyer?.phone || ""));
+  if (!telefonSonuc.gecerli) {
+    return NextResponse.json({ error: telefonSonuc.sebep }, { status: 400 });
+  }
+
+  // 3) ÜLKE KAPISI — yalnız KARTLI ödemede. Yurtdışı IP havale/EFT ile devam
+  //    edebilir (peşin ödeme = fraud riski yok). Site geneli IP engeli YOK.
+  const yontem = body.yontem || "kart";
+  if (yontem === "kart" && !kartOdemeAcik(req)) {
+    console.warn("[odeme] yurtdisi IP kart denemesi engellendi:", ip, ulkeKodu(req));
+    return NextResponse.json(
+      { error: "kart-yurtdisi", mesaj: "Yurt dışı bağlantılarda kartla ödeme kapalıdır. Havale/EFT ile siparişinizi tamamlayabilirsiniz." },
+      { status: 403 },
+    );
+  }
 
   const conversationId = Date.now().toString();
   const randomString = generateRandomString();
