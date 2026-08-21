@@ -35,10 +35,22 @@ export function hizAsildi(anahtar: string, limit: number, pencereMs: number): bo
   return false;
 }
 
-/** İstek sahibinin IP'si (Vercel proxy zincirinin ilk hop'u). */
+/**
+ * İstek sahibinin IP'si — hız limitinin anahtarı, bu yüzden TAKLİT EDİLEMEZ
+ * olmalı. Sıralama bilinçli: `x-vercel-*` başlıklarını Vercel edge'i her zaman
+ * kendisi yazar (istemcinin gönderdiği değer ezilir — canlıda doğrulandı),
+ * `x-real-ip` de Vercel tarafından set edilir. `x-forwarded-for` en sonda ve
+ * yalnız SON hop okunur: istemci kendi listesini gönderirse sahte değerler
+ * BAŞA eklenir, gerçek IP sona yazılır — ilk hop'u okumak hız limitini
+ * her istekte farklı sahte IP göndererek atlatmayı mümkün kılardı.
+ */
 export function istekIp(req: { headers: { get(ad: string): string | null } }): string {
-  const xff = req.headers.get("x-forwarded-for") || "";
-  return xff.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "bilinmiyor";
+  const vercelXff = (req.headers.get("x-vercel-forwarded-for") || "").split(",").pop()?.trim();
+  if (vercelXff) return vercelXff;
+  const realIp = (req.headers.get("x-real-ip") || "").trim();
+  if (realIp) return realIp;
+  const xff = (req.headers.get("x-forwarded-for") || "").split(",").pop()?.trim();
+  return xff || "bilinmiyor";
 }
 
 // ── 2) TELEFON DOĞRULAMA (TR cep) ───────────────────────────────────────────
