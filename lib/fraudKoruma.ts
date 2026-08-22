@@ -54,7 +54,9 @@ export function istekIp(req: { headers: { get(ad: string): string | null } }): s
 }
 
 // ── 2) TELEFON DOĞRULAMA (TR cep) ───────────────────────────────────────────
-/** "+90 532 111 22 33", "0532...", "532..." → "5321112233"; çözülemezse "". */
+// Örnekler bilinçli olarak maskeli (XXX): gerçek bir aboneye ait olabilecek
+// numara ne arayüzde ne kodda örnek olarak yazılmaz.
+/** "+90 532 XXX XX XX", "0532...", "532..." → 10 haneli düz numara; çözülemezse "". */
 export function telefonNormalize(ham: string): string {
   let d = String(ham || "").replace(/\D/g, "");
   if (d.startsWith("0090")) d = d.slice(4);
@@ -67,7 +69,7 @@ export function telefonGecerli(ham: string): { gecerli: boolean; sebep?: string 
   const d = telefonNormalize(ham);
   if (!d) return { gecerli: false, sebep: "Telefon numarası gerekli." };
   if (d.length !== 10 || !d.startsWith("5")) {
-    return { gecerli: false, sebep: "Geçerli bir cep telefonu girin (örn. 0532 111 22 33)." };
+    return { gecerli: false, sebep: "Geçerli bir cep telefonu girin (örn. 0532 XXX XX XX)." };
   }
   // Saldırganın kullandığı desenler: 53252352333 / 52352352333 gibi az çeşitli,
   // tekrarlı rakamlar. Gerçek numaralarda en az 3 farklı rakam bulunur.

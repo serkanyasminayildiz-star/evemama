@@ -80,7 +80,7 @@ export default function UyeOl() {
 
         <div style={{ marginBottom: 16 }}>
           <label style={label}>Telefon</label>
-          <input value={telefon} onChange={e => setTelefon(e.target.value)} type="tel" placeholder="0555 123 45 67" style={input} />
+          <input value={telefon} onChange={e => setTelefon(e.target.value)} type="tel" placeholder="0555 XXX XX XX" style={input} />
         </div>
 
         <div style={{ marginBottom: 16 }}>

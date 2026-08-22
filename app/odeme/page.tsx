@@ -269,7 +269,7 @@ export default function Odeme() {
               <input name="surname" placeholder="Soyad *" value={form.surname} onChange={handleChange} style={inputStyle} />
             </div>
             <input name="email" type="email" placeholder="E-posta *" value={form.email} onChange={handleChange} style={inputStyle} />
-            <input name="phone" type="tel" inputMode="numeric" autoComplete="tel" placeholder="Cep Telefonu * (0532 111 22 33)" value={form.phone} onChange={handleChange} style={inputStyle} />
+            <input name="phone" type="tel" inputMode="numeric" autoComplete="tel" placeholder="Cep Telefonu * (0532 XXX XX XX)" value={form.phone} onChange={handleChange} style={inputStyle} />
             <input name="address" placeholder="Adres *" value={form.address} onChange={handleChange} style={inputStyle} />
             <select name="city" value={form.city} onChange={e => setForm({ ...form, city: e.target.value, ilce: "" })} style={{ ...inputStyle, cursor: "pointer" }}>
               <option value="">İl seçin *</option>
