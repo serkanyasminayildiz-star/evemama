@@ -23,11 +23,34 @@ export async function GET(req: NextRequest) {
   try {
     const sb = adminClient();
 
-    const { data: gecici, error } = await sb
-      .from("odeme_gecici")
-      .select("token, ad, soyad, email, telefon, toplam, urunler, created_at")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
+    // SAYFALAMA ŞART: PostgREST tek istekte en fazla 1000 satır döndürür
+    // (.limit(5000) bunu AŞMAZ, sessizce yok sayılır). Sayfalama olmadan
+    // yalnız EN YENİ 1000 satır geliyordu — 21 Ağu'daki kart deneme saldırısı
+    // tek başına 994 satır ürettiği için pencereyi tamamen doldurmuş ve ondan
+    // ÖNCEKİ bütün terk edilmiş sepetler admin panelde görünmez olmuştu.
+    // İkincil sıralama (token) bilinçli: created_at eşitliğinde satır sırası
+    // sayfalar arasında kayarsa kayıt tekrarlanır ya da atlanırdı.
+    const SAYFA = 1000;
+    const TAVAN_SAYFA = 50; // 50.000 satır tavanı — admin sayfası kilitlenmesin
+    type GeciciSatir = {
+      token: string; ad: string | null; soyad: string | null; email: string | null;
+      telefon: string | null; toplam: number | string | null; urunler: unknown; created_at: string;
+    };
+    const gecici: GeciciSatir[] = [];
+    let kesildi = false;
+    for (let s = 0; s < TAVAN_SAYFA; s++) {
+      const { data, error } = await sb
+        .from("odeme_gecici")
+        .select("token, ad, soyad, email, telefon, toplam, urunler, created_at")
+        .order("created_at", { ascending: false })
+        .order("token", { ascending: false })
+        .range(s * SAYFA, s * SAYFA + SAYFA - 1);
+      if (error) throw error;
+      if (!data?.length) break;
+      gecici.push(...(data as GeciciSatir[]));
+      if (data.length < SAYFA) break;
+      if (s === TAVAN_SAYFA - 1) kesildi = true; // sessiz kesme YOK — yanıtta bildirilir
+    }
 
     // Üye mi misafir mi — auth.users e-postaları (service_role varsa)
     const uyeEmails = new Set<string>();
@@ -76,7 +99,10 @@ export async function GET(req: NextRequest) {
     }
 
     const sepetler = Array.from(map.values());
-    return NextResponse.json({ sepetler, toplam: sepetler.length }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      { sepetler, toplam: sepetler.length, denemeSayisi: gecici.length, kesildi },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "terk edilen sepetler alınamadı";
     console.error("[admin/terk-edilen] hata:", e);

@@ -31,6 +31,8 @@ function kuponEtiket(k: Kupon): string {
 
 export default function TerkEdilen({ kuponlar, goster }: { kuponlar: Kupon[]; goster: (m: string) => void }) {
   const [sepetler, setSepetler] = useState<Sepet[]>([]);
+  const [denemeSayisi, setDenemeSayisi] = useState(0);
+  const [kesildi, setKesildi] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [hata, setHata] = useState("");
   const [arama, setArama] = useState("");
@@ -45,7 +47,11 @@ export default function TerkEdilen({ kuponlar, goster }: { kuponlar: Kupon[]; go
       .then((r) => r.json())
       .then((d) => {
         if (d.error) setHata(d.error);
-        else setSepetler(d.sepetler || []);
+        else {
+          setSepetler(d.sepetler || []);
+          setDenemeSayisi(d.denemeSayisi || 0);
+          setKesildi(!!d.kesildi);
+        }
       })
       .catch(() => setHata("Sepetler yüklenemedi"))
       .finally(() => setYukleniyor(false));
@@ -110,9 +116,16 @@ export default function TerkEdilen({ kuponlar, goster }: { kuponlar: Kupon[]; go
       <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: "#5C3D2E", marginBottom: 4 }}>
         Terk Edilen Sepetler <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.6 }}>{sepetler.length} müşteri</span>
       </h1>
-      <p style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.6, marginBottom: 20 }}>
+      <p style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.6, marginBottom: kesildi ? 10 : 20 }}>
         Ödemesini tamamlamamış müşteriler (üye + misafir). Satın almış olanlar listelenmez.
+        {denemeSayisi > 0 && <> Toplam <strong>{denemeSayisi.toLocaleString("tr-TR")}</strong> ödeme denemesi tarandı.</>}
       </p>
+
+      {kesildi && (
+        <div style={{ background: "#FFF8E1", border: "1.5px dashed #F9A825", borderRadius: 12, padding: "10px 14px", fontSize: 12, color: "#5C3D2E", marginBottom: 20 }}>
+          ⚠️ Kayıt sayısı tavana ulaştı — en eski denemeler bu listeye girmemiş olabilir.
+        </div>
+      )}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", background: "white", borderRadius: 16, padding: 16, marginBottom: 18, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
         <input value={arama} onChange={(e) => setArama(e.target.value)} placeholder="🔍 İsim veya e-posta ara..." style={{ ...inputStyle, flex: 1, minWidth: 240 }} />
