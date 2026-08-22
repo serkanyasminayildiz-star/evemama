@@ -13,6 +13,7 @@ type Sepet = {
   tarih: string;
   deneme: number;
   uye: boolean;
+  satinAldi?: boolean;
 };
 type Kupon = {
   id: number | string;
@@ -71,12 +72,16 @@ export default function TerkEdilen({ kuponlar, goster }: { kuponlar: Kupon[]; go
     if (!q) return true;
     return s.email.toLowerCase().includes(q) || (s.ad || "").toLowerCase().includes(q);
   });
-  const tumuSecili = filtreli.length > 0 && filtreli.every((s) => secili.has(s.email));
+  // "Tümünü seç" sonradan sipariş vermiş müşterileri ATLAR — onlara "sepetinizi
+  // unuttunuz" kuponu gitmesi hem yanlış hem utandırıcı olur. Satırları tek tek
+  // seçmek yine mümkün (liste gizlenmiyor, karar yöneticinin).
+  const secilebilir = filtreli.filter((s) => !s.satinAldi);
+  const tumuSecili = secilebilir.length > 0 && secilebilir.every((s) => secili.has(s.email));
 
   const tumunuToggle = () => {
     const ns = new Set(secili);
-    if (tumuSecili) filtreli.forEach((s) => ns.delete(s.email));
-    else filtreli.forEach((s) => ns.add(s.email));
+    if (tumuSecili) secilebilir.forEach((s) => ns.delete(s.email));
+    else secilebilir.forEach((s) => ns.add(s.email));
     setSecili(ns);
   };
   const satirToggle = (email: string) => {
@@ -174,7 +179,10 @@ export default function TerkEdilen({ kuponlar, goster }: { kuponlar: Kupon[]; go
                   </td>
                   <td style={{ padding: "12px" }}>
                     <div style={{ fontWeight: 700, color: "#5C3D2E", fontSize: 14 }}>{s.ad || "—"}</div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: s.uye ? "#2E7D32" : "#8B6F47", marginTop: 2 }}>{s.uye ? "● ÜYE" : "○ Misafir"}</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: s.uye ? "#2E7D32" : "#8B6F47", marginTop: 2 }}>
+                      {s.uye ? "● ÜYE" : "○ Misafir"}
+                      {s.satinAldi && <span style={{ marginLeft: 8, background: "#E8F5E9", color: "#2E7D32", padding: "2px 8px", borderRadius: 50, fontSize: 10 }}>✓ SONRADAN SİPARİŞ VERDİ</span>}
+                    </div>
                   </td>
                   <td style={{ padding: "12px", fontSize: 13, color: "#5C3D2E" }}>{s.email}</td>
                   <td style={{ padding: "12px", fontSize: 12, color: "#5C3D2E", opacity: 0.8, maxWidth: 240 }}>{s.urunOzet || "—"}</td>

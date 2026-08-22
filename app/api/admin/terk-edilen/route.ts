@@ -63,10 +63,32 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // SONRADAN SİPARİŞ VERENLER: odeme_gecici'den silme TOKEN bazlıdır, yani
+    // Nisan'da sepeti terk edip Mayıs'ta ayrı bir oturumda sipariş veren müşteri
+    // eski kaydıyla bu listede kalır. Bu kişilere "sepetinizi unuttunuz" kuponu
+    // gitmesin diye işaretleniyor (listeden ÇIKARILMIYOR — panelde görünür kalsın,
+    // kararı yönetici versin). Aynı 1000 satır tavanı burada da geçerli → sayfalı.
+    const siparisVerenler = new Set<string>();
+    for (let s = 0; s < TAVAN_SAYFA; s++) {
+      const { data, error: sipHata } = await sb
+        .from("siparisler")
+        .select("email")
+        .order("email", { ascending: true })
+        .range(s * SAYFA, s * SAYFA + SAYFA - 1);
+      if (sipHata) { console.error("[terk-edilen] siparis e-postalari:", sipHata); break; }
+      if (!data?.length) break;
+      for (const o of data) {
+        const e = String((o as { email?: string }).email || "").toLowerCase().trim();
+        if (e) siparisVerenler.add(e);
+      }
+      if (data.length < SAYFA) break;
+    }
+
     // E-posta bazlı grupla — aynı kişinin birden çok denemesi tek satır.
     const map = new Map<string, {
       email: string; ad: string; telefon: string; toplam: number;
       urunOzet: string; urunSayisi: number; tarih: string; deneme: number; uye: boolean;
+      satinAldi: boolean;
     }>();
 
     for (const g of gecici || []) {
@@ -92,6 +114,7 @@ export async function GET(req: NextRequest) {
           tarih: g.created_at,
           deneme: 1,
           uye: uyeEmails.has(e),
+          satinAldi: siparisVerenler.has(e),
         });
       } else {
         map.get(e)!.deneme += 1;
