@@ -39,11 +39,12 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
   const [aktifSekme, setAktifSekme] = useState<"aciklama" | "yorumlar">("aciklama");
   const [yeniYorum, setYeniYorum] = useState({ ad: "", puan: 5, yorum: "" });
   const [yorumGonderildi, setYorumGonderildi] = useState(false);
+  // aboneToken aynı zamanda "üye mi" göstergesi (yorum gönderimi de kullanır).
+  // Abonelik yeni kayıtlara kapalı; aşağıdakiler yalnız MEVCUT aboneye kendi
+  // aboneliğini gösterebilmek için duruyor.
   const [aboneToken, setAboneToken] = useState<string | null>(null);
-  const [aboneCadence, setAboneCadence] = useState(28);
   const [aboneCadenceMevcut, setAboneCadenceMevcut] = useState(28);
   const [aboneDurum, setAboneDurum] = useState<"yukleniyor" | "yok" | "var">("yukleniyor");
-  const [aboneIslem, setAboneIslem] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -146,20 +147,6 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
         setTimeout(() => setYorumGonderildi(false), 3000);
       }
     } catch { /* sessiz — yorum gönderilemezse sayfa çalışmaya devam eder */ }
-  };
-
-  const handleAboneOl = async () => {
-    if (!aboneToken || !urun) return;
-    setAboneIslem(true);
-    try {
-      const res = await fetch("/api/abonelik", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${aboneToken}` },
-        body: JSON.stringify({ urun_id: urun.id, urun_adi: urun.ad, urun_slug: urun.slug, cadence_gun: aboneCadence }),
-      });
-      if (res.ok) { setAboneDurum("var"); setAboneCadenceMevcut(aboneCadence); }
-    } catch { /* sessiz — abone olunamazsa sayfa çalışmaya devam eder */ }
-    setAboneIslem(false);
   };
 
   if (yukleniyor) return (
@@ -370,30 +357,25 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
             Sepete Git →
           </Link>
 
-          {/* Abonelik (soft) — opt-in düzenli teslimat + %10 abone indirimi */}
+          {/* PUAN kutusu. Abonelik 24 Ağu 2026'da yeni kayıtlara kapatıldı — yerini
+              "her siparişte %5 puan" aldı. MEVCUT abonelere (12 kişi) kendi
+              aboneliklerini görüp yönetebilmeleri için bilgi satırı gösterilmeye
+              devam eder; yeni abonelik formu kaldırıldı. */}
           {aboneDurum !== "yukleniyor" && (
             <div style={{ marginTop: 16, background: "linear-gradient(135deg,#FFF3D6,#FFE7B0)", border: "1.5px solid #E6B800", borderRadius: 16, padding: "16px 18px" }}>
               {aboneDurum === "var" ? (
                 <div style={{ fontSize: 13.5, color: "#6B4E00", lineHeight: 1.6 }}>
-                  🔄 <strong>Bu ürüne abonesiniz</strong> — her {Math.round(aboneCadenceMevcut / 7)} haftada bir hatırlatma + %10 indirim.{" "}
+                  🔄 <strong>Bu ürüne abonesiniz</strong> — her {Math.round(aboneCadenceMevcut / 7)} haftada bir hatırlatma gönderiyoruz.{" "}
                   <Link href="/aboneliklerim" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>Yönet →</Link>
                 </div>
               ) : (
                 <>
-                  <div style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 700, color: "#6B4E00", marginBottom: 6 }}>🔄 Düzenli al, hep %10 indirim</div>
-                  <div style={{ fontSize: 12.5, color: "#6B4E00", opacity: 0.85, marginBottom: 12, lineHeight: 1.5 }}>Maması bitmeden hatırlatalım, abone fiyatına gönderelim. İstediğiniz an iptal.</div>
-                  {aboneToken ? (
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                      <select value={aboneCadence} onChange={e => setAboneCadence(Number(e.target.value))} style={{ padding: "10px 12px", borderRadius: 10, border: "1.5px solid #E6B800", background: "white", color: "#5C3D2E", fontSize: 13, fontFamily: "inherit", fontWeight: 600 }}>
-                        <option value={14}>2 haftada bir</option>
-                        <option value={28}>4 haftada bir</option>
-                        <option value={42}>6 haftada bir</option>
-                        <option value={56}>8 haftada bir</option>
-                      </select>
-                      <button onClick={handleAboneOl} disabled={aboneIslem} style={{ flex: 1, minWidth: 130, background: aboneIslem ? "#C9B79C" : "#E8845A", color: "white", border: "none", borderRadius: 10, padding: "11px 16px", fontSize: 14, fontWeight: 700, cursor: aboneIslem ? "not-allowed" : "pointer", fontFamily: "inherit" }}>{aboneIslem ? "..." : "Abone Ol"}</button>
-                    </div>
-                  ) : (
-                    <Link href={girisGeri} style={{ display: "inline-block", color: "#E8845A", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Abone olmak için giriş yapın →</Link>
+                  <div style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 700, color: "#6B4E00", marginBottom: 6 }}>🎁 Her siparişte %5 puan</div>
+                  <div style={{ fontSize: 12.5, color: "#6B4E00", opacity: 0.85, lineHeight: 1.5 }}>
+                    Alışverişinizin %5&apos;i puan olarak hesabınıza yüklenir, <strong>bir sonraki siparişinizde</strong> indirim olarak kullanırsınız. Üyelere özeldir.
+                  </div>
+                  {!aboneToken && (
+                    <Link href={girisGeri} style={{ display: "inline-block", marginTop: 10, color: "#E8845A", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>Puan kazanmak için giriş yapın →</Link>
                   )}
                 </>
               )}

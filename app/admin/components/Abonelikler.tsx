@@ -73,7 +73,8 @@ export default function Abonelikler({ goster }: { goster: (m: string) => void })
     <div>
       <h1 style={{ fontFamily: "Georgia,serif", fontSize: 24, fontWeight: 700, color: "#2C1A0E", marginBottom: 6 }}>Abonelikler ({abonelikler.length})</h1>
       <p style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.6, marginBottom: 20 }}>
-        Soft model: otomatik çekim yok — dönemi gelen aboneye ABONE10 kuponlu hatırlatma maili gider, müşteri kendisi sipariş verir.
+        ⚠️ Abonelik <strong>yeni kayıtlara kapatıldı</strong> (24 Ağu 2026) — yerini &quot;her siparişte %5 puan&quot; aldı. Buradaki mevcut abonelikler
+        bilinçli olarak çalışmaya devam ediyor: dönemi gelene ABONE10 kuponlu hatırlatma maili gider. Liste boşaldığında ABONE10 kuponu da kaldırılabilir.
       </p>
 
       {yukleniyor ? (
@@ -81,8 +82,8 @@ export default function Abonelikler({ goster }: { goster: (m: string) => void })
       ) : abonelikler.length === 0 ? (
         <div style={{ background: "white", borderRadius: 18, padding: "48px 24px", textAlign: "center", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
           <div style={{ fontSize: 44, marginBottom: 10 }}>🔄</div>
-          <div style={{ fontFamily: "Georgia,serif", fontSize: 17, color: "#5C3D2E", marginBottom: 6 }}>Henüz abonelik yok</div>
-          <div style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.6 }}>Üyeler ürün sayfasındaki &quot;Abone Ol&quot; kutusundan abonelik başlatabilir (%10 indirim vaadi).</div>
+          <div style={{ fontFamily: "Georgia,serif", fontSize: 17, color: "#5C3D2E", marginBottom: 6 }}>Abonelik kalmadı</div>
+          <div style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.6 }}>Sistem kapatıldı ve mevcut kayıtların hepsi sona erdi. ABONE10 kuponu artık kaldırılabilir.</div>
         </div>
       ) : (
         <>

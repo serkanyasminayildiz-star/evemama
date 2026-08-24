@@ -4,6 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 
 // Soft abonelik: üye bir ürüne "X haftada bir" abone olur. Otomatik tahsilat
 // YOK — her dönem hatırlatma + abone indirimiyle kendi öder (cron gönderir).
+// 24 Ağu 2026: YENİ KAYIT KAPALI (POST 410 döner). Mevcut aboneler için
+// GET (listeleme) ve DELETE (iptal) açık kalır; cron hatırlatmaları sürer.
 // Tablo `abonelikler` RLS korumalı → yalnız service_role erişir; üye kendi
 // aboneliklerini bu API üzerinden (token doğrulanarak) yönetir.
 
@@ -17,9 +19,8 @@ const supabaseAdmin = createClient(
   { auth: { persistSession: false, autoRefreshToken: false } },
 );
 
-const CADENCE_MIN = 14;   // 2 hafta
-const CADENCE_MAX = 84;   // 12 hafta
-const ABONE_INDIRIM = 10; // %
+// CADENCE_MIN/MAX ve ABONE_INDIRIM kaldırıldı: yeni abonelik alınmıyor, mevcut
+// kayıtların periyodu ve indirim yüzdesi satırın kendisinde saklı.
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -35,36 +36,21 @@ async function uyeEmail(req: NextRequest): Promise<string | null> {
   }
 }
 
-// Abone ol / güncelle
-export async function POST(req: NextRequest) {
-  const email = await uyeEmail(req);
-  if (!email) return NextResponse.json({ error: "Abone olmak için giriş yapın." }, { status: 401, headers: NO_STORE });
-
-  let body: { urun_id?: number; urun_adi?: string; urun_slug?: string; cadence_gun?: number } = {};
-  try { body = await req.json(); } catch { /* boş gövde */ }
-  const urunId = Number(body.urun_id);
-  if (!urunId) return NextResponse.json({ error: "urun_id gerekli" }, { status: 400, headers: NO_STORE });
-
-  const cadence = Math.min(Math.max(Number(body.cadence_gun) || 28, CADENCE_MIN), CADENCE_MAX);
-  const sonraki = new Date(Date.now() + cadence * 24 * 60 * 60 * 1000).toISOString();
-
-  try {
-    const { data: mevcut } = await supabaseAdmin
-      .from("abonelikler").select("id").eq("email", email).eq("urun_id", urunId).eq("aktif", true).maybeSingle();
-    if (mevcut) {
-      await supabaseAdmin.from("abonelikler").update({ cadence_gun: cadence, sonraki_tarih: sonraki }).eq("id", mevcut.id);
-    } else {
-      await supabaseAdmin.from("abonelikler").insert({
-        email, urun_id: urunId, urun_adi: body.urun_adi || null, urun_slug: body.urun_slug || null,
-        cadence_gun: cadence, indirim_yuzde: ABONE_INDIRIM, aktif: true, sonraki_tarih: sonraki,
-      });
-    }
-    return NextResponse.json({ ok: true, indirim_yuzde: ABONE_INDIRIM }, { headers: NO_STORE });
-  } catch (e) {
-    console.error("[abonelik] POST hatasi:", e);
-    return NextResponse.json({ error: "abonelik kaydedilemedi" }, { status: 500, headers: NO_STORE });
-  }
+// Abone ol — KAPALI
+export async function POST() {
+  // ABONELİK YENİ KAYITLARA KAPALI (24 Ağu 2026). Yerini "her siparişte %5 puan"
+  // aldı. Sebep: abonelik %10'u checkout'ta veremiyordu (indirim yalnız sonraki
+  // dönem ABONE10 kuponuyla geliyordu), müşteri indirimi göremeyince sepeti
+  // bırakıyordu; ayrıca ABONE10 abonelik kontrolü olmayan açık bir kupondu.
+  // MEVCUT abonelikler bilinçli olarak çalışmaya devam eder (GET/DELETE açık,
+  // cron hatırlatmaları sürer) — 12 aktif aboneye verilmiş söz bozulmaz.
+  // Bu dal, arayüz kaldırıldıktan sonra doğrudan API çağrılarına karşı kapıdır.
+  return NextResponse.json(
+    { error: "Abonelik sistemi kapatıldı. Artık her siparişinizde puan kazanıyorsunuz." },
+    { status: 410, headers: NO_STORE },
+  );
 }
+
 
 // Üyenin aktif abonelikleri
 export async function GET(req: NextRequest) {

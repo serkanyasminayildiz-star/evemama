@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendSiparisOnayMaili } from "../../../../lib/email";
+import { SADAKAT, KARGO, kazanilacakPuan, kargoUcretiKg, sepetAgirligiKg } from "../../../../lib/indirim";
 
 // Havale/EFT siparişini "ödendi" olarak onaylar: STOK DÜŞÜRÜR + sipariş onay maili
 // gönderir. Admin panelden (ödeme durumu → "Ödendi") çağrılır. Stok düşüşü
@@ -62,6 +63,51 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {
     console.error("[havale-onayla] stok dusurme hatasi:", e);
+  }
+
+  // SADAKAT PUANI — havale/elden siparişleri de "her alışverişte %5" sözüne
+  // dahildir. Kart siparişleri bunu odeme/sonuc'ta alır; bu iki yöntemde ödeme
+  // admin onayıyla kesinleştiği için kazanım buraya bağlandı. Yukarıdaki
+  // "zaten odendi" erken dönüşü sayesinde çift puan yüklenmez (idempotent).
+  //
+  // Üyelik kontrolü: bu siparişlerde uye_email saklanmıyor, o yüzden e-posta
+  // auth.users içinde aranır (terk-edilen route'undaki desenin aynısı).
+  // Misafir sipariş puan kazanmaz. 1000 kullanıcıdan sonrası taranmaz —
+  // liste büyürse sayfalama gerekir.
+  try {
+    const alici = String(sip.email || "").toLowerCase().trim();
+    if (alici && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const { data: liste } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const uye = (liste?.users || []).some(u => (u.email || "").toLowerCase() === alici);
+      if (uye) {
+        // Taban = ödenen − kargo (kart tarafıyla birebir aynı kural).
+        const odenen = Number(sip.toplam) || 0;
+        const araToplam = Number(sip.ara_toplam) || 0;
+        let kargoTutari = 0;
+        if (sip.odeme_yontemi !== "elden" && araToplam > 0 && araToplam < KARGO.BEDAVA_ESIK) {
+          let kalemler: { name?: string; quantity?: number }[] = [];
+          const ham = sip.urunler;
+          if (typeof ham === "string") { try { kalemler = JSON.parse(ham); } catch { kalemler = []; } }
+          else if (Array.isArray(ham)) kalemler = ham;
+          if (kalemler.length) {
+            kargoTutari = kargoUcretiKg(sepetAgirligiKg(kalemler as Array<{ name: string; quantity: number }>));
+          }
+        }
+        const puan = kazanilacakPuan(odenen - kargoTutari);
+        if (puan > 0) {
+          await supabaseAdmin.from("sadakat_bonuslari").insert({
+            email: alici,
+            tutar: puan,
+            min_sepet: SADAKAT.MIN_SEPET,
+            bitis_tarihi: new Date(Date.now() + SADAKAT.GECERLILIK_GUN * 24 * 60 * 60 * 1000).toISOString(),
+            kaynak_siparis_no: siparisNo,
+          });
+          console.log("[havale-onayla] sadakat puani yuklendi:", { siparisNo, puan });
+        }
+      }
+    }
+  } catch (e) {
+    console.error("[havale-onayla] sadakat puani hatasi:", e);
   }
 
   // Sipariş onay maili (best-effort — hata akışı bozmaz).

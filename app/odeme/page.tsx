@@ -3,7 +3,7 @@ import { useState, useEffect, type ChangeEvent } from "react";
 import Link from "next/link";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
-import { KARGO, TUTAR_INDIRIMI, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
+import { TUTAR_INDIRIMI, hesaplaIndirim, sepetAgirligiKg, kazanilacakPuan } from "../../lib/indirim";
 import { HAVALE_HESAP } from "../../lib/havale";
 import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../lib/eldenTeslimat";
 import { clarityEvent, claritySet } from "../../lib/clarity";
@@ -140,11 +140,9 @@ export default function Odeme() {
   }, []);
 
   // Sadakat bonusu KAZANMA (bu sipariş → BİR SONRAKİ alışveriş). Yalnızca ÜYE.
-  // Ödenecek tutara (genelToplam) göre eşik: ≥5000 → 200, ≥3000 → 150 —
-  // odeme/sonuc'taki kurallarla BİREBİR AYNI. Sepetteki ile de aynı (tek kaynak).
-  // Eşik ÖDENEN tutara (genelToplam) göredir; "sepete X ekle" deltası YANLIŞ
-  // olurdu (ekledikçe tutar indirimi paidPrice'ı düşürür). Net eşik ifadesi.
-  const kazanilacakBonus = genelToplam >= SADAKAT.KAZAN_ESIK_2 ? SADAKAT.KAZAN_2 : genelToplam >= SADAKAT.KAZAN_ESIK_1 ? SADAKAT.KAZAN_1 : 0;
+  // Taban = ödenecek tutar − kargo; odeme/sonuc'taki kazanım hesabıyla BİREBİR
+  // aynı (tek kaynak: kazanilacakPuan). Elden teslimde kargo zaten düşülmüştür.
+  const kazanilacakBonus = kazanilacakPuan(odenecekToplam - (eldenAktif ? 0 : kargoUcreti));
 
   const handleOde = async () => {
     if (!sozlesme || !aydinlatma) { setHata("Lütfen yukarıdaki sözleşme onay kutularını işaretleyin."); return; }
@@ -404,15 +402,7 @@ export default function Odeme() {
                   ayrı (altın tema) ki "şimdi mi / sonra mı" karışmasın. */}
               {uye && kazanilacakBonus > 0 && (
                 <div style={{ background: "linear-gradient(135deg,#FFF3D6,#FFE7B0)", borderRadius: 12, padding: "12px 14px", marginBottom: 14, fontSize: 12.5, color: "#6B4E00", textAlign: "center", border: "1.5px solid #E6B800" }}>
-                  🎁 Bu siparişle <strong>bir sonraki alışverişinizde</strong> kullanmak üzere <strong>₺{kazanilacakBonus}</strong> sadakat bonusu kazanıyorsunuz!
-                  {kazanilacakBonus === 150 && (
-                    <><br />Ödemeniz <strong>₺5.000</strong> ve üzeri olursa bonusunuz <strong>₺200</strong> olur.</>
-                  )}
-                </div>
-              )}
-              {uye && kazanilacakBonus === 0 && genelToplam >= KARGO.BEDAVA_ESIK && (
-                <div style={{ background: "linear-gradient(135deg,#FFF3D6,#FFE7B0)", borderRadius: 12, padding: "12px 14px", marginBottom: 14, fontSize: 12.5, color: "#6B4E00", textAlign: "center", border: "1.5px solid #E6B800" }}>
-                  🎁 Ödemeniz <strong>₺3.000</strong> ve üzeri olursa, bir sonraki alışverişiniz için <strong>₺150</strong> sadakat bonusu kazanırsınız!
+                  🎁 Bu siparişten <strong>₺{kazanilacakBonus} puan</strong> kazanıyorsunuz — <strong>bir sonraki alışverişinizde</strong> kullanabilirsiniz.
                 </div>
               )}
 

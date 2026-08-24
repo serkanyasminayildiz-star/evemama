@@ -71,13 +71,35 @@ export const TUTAR_INDIRIMI = {
   ESIK_2: 10000,  INDIRIM_2: 500, // ≥10.000₺ → 500₺
 } as const;
 
-// Sadakat bonusu — ÜYE, ÖDENEN tutara göre KAZANIR; sonraki alışverişte KULLANIR
+// Sadakat puanı — ÜYE her siparişte KAZANIR; SONRAKİ alışverişte KULLANIR.
+//
+// 24 Ağu 2026'da kademeli yapıdan (≥3.000→150, ≥5.000→200) ORAN tabanlı yapıya
+// geçildi. Sebebi: eski kural hem eşik altındaki siparişleri hiç ödüllendirmiyor
+// hem de TERS çalışıyordu (₺3.000'e %5, ₺5.000'e %4 — çok alan az kazanıyordu).
+// Oran tabanlı yapı her siparişi ödüllendirir, 2. siparişi tetikler (müşteri
+// kaybının olduğu yer) ve sorumluluk cironun sabit bir yüzdesi olarak kalır.
+//
+// Aynı tarihte ABONELİK sistemi yeni kayıtlara kapatıldı: abonelik %10'u
+// checkout'ta veremediği için müşteri sepeti bırakıyordu ve ABONE10 herkesin
+// kullanabildiği açık bir kupondu. Puan bunun yerini alır — tek seferlik indirim
+// alınıp kaçılabilir, ORAN kaçırılamaz (değeri ancak devam edince ortaya çıkar).
 export const SADAKAT = {
-  KAZAN_ESIK_1: 3000, KAZAN_1: 150, // ödenen ≥3.000₺ → 150₺ bonus
-  KAZAN_ESIK_2: 5000, KAZAN_2: 200, // ödenen ≥5.000₺ → 200₺ bonus
-  MIN_SEPET: 1000,                  // bonusu KULLANMAK için minimum sepet (varsayılan)
-  GECERLILIK_GUN: 60,               // kazanım tarihinden itibaren geçerlilik (gün)
+  KAZANIM_ORANI: 0.05,  // her siparişte KARGO HARİÇ ödenen tutarın %5'i
+  KAZANIM_TAVAN: 500,   // sipariş başına en fazla puan (uç sepetlere karşı koruma)
+  MIN_SEPET: 1000,      // puanı KULLANMAK için minimum sepet (varsayılan)
+  GECERLILIK_GUN: 60,   // kazanım tarihinden itibaren geçerlilik (gün)
 } as const;
+
+/**
+ * Bir siparişten kazanılacak puan. Taban KARGO HARİÇ tutardır — kargo maliyet
+ * aktarımıdır, ona puan vermek marjdan vermek olur. Aşağı yuvarlanır ki
+ * müşteriye gösterilen sayı ile yüklenen sayı birebir aynı olsun.
+ * TEK KAYNAK: hem gösterim (sepet/ödeme) hem kazanım (odeme/sonuc, havale) burayı çağırır.
+ */
+export function kazanilacakPuan(kargoHaricTutar: number): number {
+  if (!(kargoHaricTutar > 0)) return 0;
+  return Math.min(SADAKAT.KAZANIM_TAVAN, Math.floor(kargoHaricTutar * SADAKAT.KAZANIM_ORANI));
+}
 
 // ── Ortak indirim hesabı (SAF fonksiyon) ───────────────────────────────────
 // Hem client (sepet/odeme GÖSTERİM) hem server (api/odeme paidPrice) AYNI

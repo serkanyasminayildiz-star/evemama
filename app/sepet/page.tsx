@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import type { User } from "@supabase/supabase-js";
-import { KARGO, TUTAR_INDIRIMI, SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../lib/indirim";
+import { KARGO, TUTAR_INDIRIMI, hesaplaIndirim, sepetAgirligiKg, kazanilacakPuan } from "../../lib/indirim";
 import { clarityEvent, claritySet } from "../../lib/clarity";
 
 export default function Sepet() {
@@ -112,17 +112,15 @@ export default function Sepet() {
 
   const genelToplam = hesap.genelToplam;
 
-  // Sadakat bonusu KAZANMA (bu sipariş → BİR SONRAKİ alışveriş). Yalnızca ÜYE.
-  // Ödenecek tutara (genelToplam = sunucudaki paidPrice karşılığı) göre eşik:
-  // ≥5000 → 200, ≥3000 → 150 — odeme/sonuc'taki kurallarla BİREBİR AYNI.
+  // Sadakat puanı KAZANMA (bu sipariş → BİR SONRAKİ alışveriş). Yalnızca ÜYE.
+  // Her siparişte kargo hariç ödenen tutarın %5'i (sipariş başına tavanlı).
   // Misafir kazanmaz. DİKKAT: bu, "5000₺ üzeri tutar indirimi" teşvikinden
   // (sonrakiIndirim — bu siparişe ANINDA uygulanır) AYRI bir şeydir; o BU
   // sipariş için, bu ise SONRAKİ sipariş için kazanılır. İkisi karışmasın diye
   // gösterimde net ayrıldı.
-  // Eşik ÖDENEN tutara (genelToplam) göredir; "sepete X ekle" deltası YANLIŞ
-  // olurdu çünkü ekledikçe tutar indirimi de devreye girip paidPrice'ı düşürür.
-  // O yüzden müşterinin gördüğü Toplam üzerinden net eşik ifadesi kullanılır.
-  const kazanilacakBonus = genelToplam >= SADAKAT.KAZAN_ESIK_2 ? SADAKAT.KAZAN_2 : genelToplam >= SADAKAT.KAZAN_ESIK_1 ? SADAKAT.KAZAN_1 : 0;
+  // Taban = ödenecek tutar − kargo; odeme/sonuc'taki kazanım hesabıyla BİREBİR
+  // aynı (tek kaynak: kazanilacakPuan). Kargoya puan verilmez.
+  const kazanilacakBonus = kazanilacakPuan(genelToplam - kargoUcreti);
 
   const handleArtir = (id: number, quantity: number) => {
     setEklendi(id);
@@ -350,15 +348,7 @@ export default function Sepet() {
               olarak ayrı (altın tema) ki "şimdi mi kazandım / sonra mı" karışmasın. */}
           {kullanici && kazanilacakBonus > 0 && (
             <div style={{ background: "linear-gradient(135deg,#FFF3D6,#FFE7B0)", borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 12.5, color: "#6B4E00", textAlign: "center", border: "1.5px solid #E6B800" }}>
-              🎁 Bu siparişle <strong>bir sonraki alışverişinizde</strong> kullanmak üzere <strong>₺{kazanilacakBonus}</strong> sadakat bonusu kazanıyorsunuz!
-              {kazanilacakBonus === 150 && (
-                <><br />Ödemeniz <strong>₺5.000</strong> ve üzeri olursa bonusunuz <strong>₺200</strong> olur.</>
-              )}
-            </div>
-          )}
-          {kullanici && kazanilacakBonus === 0 && genelToplam >= KARGO.BEDAVA_ESIK && (
-            <div style={{ background: "linear-gradient(135deg,#FFF3D6,#FFE7B0)", borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 12.5, color: "#6B4E00", textAlign: "center", border: "1.5px solid #E6B800" }}>
-              🎁 Ödemeniz <strong>₺3.000</strong> ve üzeri olursa, bir sonraki alışverişiniz için <strong>₺150</strong> sadakat bonusu kazanırsınız!
+              🎁 Bu siparişten <strong>₺{kazanilacakBonus} puan</strong> kazanıyorsunuz — <strong>bir sonraki alışverişinizde</strong> kullanabilirsiniz.
             </div>
           )}
 

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { sendSiparisOnayMaili } from "../../../../lib/email";
-import { SADAKAT } from "../../../../lib/indirim";
+import { SADAKAT, KARGO, kazanilacakPuan, kargoUcretiKg, sepetAgirligiKg } from "../../../../lib/indirim";
 
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
 const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
@@ -192,11 +192,26 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Sadakat bonusu KAZANMA — sipariş başarılı + ÜYE + ödenen tutar eşiği.
-        // Misafir (uye_email null) bonus ALMAZ. ≥5000 → 200 TL, ≥3000 → 150 TL.
-        // Bonus min 1000 TL sepet + 60 gün geçerli.
+        // Sadakat puanı KAZANMA — sipariş başarılı + ÜYE. Misafir puan ALMAZ.
+        // Her siparişte kargo hariç ödenen tutarın %5'i (sipariş başına tavan
+        // uygulanır); min 1000 TL sepet + 60 gün geçerli.
+        //
+        // TABAN = ödenen − kargo. Kargo burada, sepet/ödeme ekranlarıyla BİREBİR
+        // aynı tek kaynaktan (KARGO eşiği + kargoUcretiKg/sepetAgirligiKg) yeniden
+        // hesaplanır; aksi halde müşteriye gösterilen puan ile yüklenen puan
+        // tutmazdı. Sepet çözülemezse kargo 0 sayılır (müşteri lehine).
         const odenen = parseFloat(String(data.paidPrice)) || 0;
-        const bonusTutar = odenen >= SADAKAT.KAZAN_ESIK_2 ? SADAKAT.KAZAN_2 : odenen >= SADAKAT.KAZAN_ESIK_1 ? SADAKAT.KAZAN_1 : 0;
+        let kargoTutari = 0;
+        try {
+          const kalemler = typeof gecici?.urunler === "string" ? JSON.parse(gecici.urunler) : gecici?.urunler;
+          const araToplam = parseFloat(String(gecici?.ara_toplam ?? "")) || 0;
+          if (Array.isArray(kalemler) && araToplam < KARGO.BEDAVA_ESIK) {
+            kargoTutari = kargoUcretiKg(sepetAgirligiKg(kalemler));
+          }
+        } catch (e) {
+          console.error("[odeme/sonuc] puan tabani icin kargo hesabi:", e);
+        }
+        const bonusTutar = kazanilacakPuan(odenen - kargoTutari);
         if (gecici?.uye_email && bonusTutar > 0) {
           try {
             await supabaseAdmin.from("sadakat_bonuslari").insert({

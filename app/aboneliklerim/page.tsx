@@ -55,7 +55,7 @@ export default function Aboneliklerim() {
 
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "32px 20px 64px" }}>
         <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: "#5C3D2E", marginBottom: 6 }}>🔄 Aboneliklerim</h1>
-        <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.6, marginBottom: 28 }}>Düzenli teslimat aboneliklerin — her dönem %10 indirim ve hatırlatma.</p>
+        <p style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.6, marginBottom: 28 }}>Mevcut aboneliklerin — dönemi gelince hatırlatma göndeririz. Yeni abonelik alınmıyor; artık <strong>her siparişinde %5 puan</strong> kazanıyorsun.</p>
 
         {yukleniyor ? (
           <div style={{ textAlign: "center", padding: "48px 0", fontSize: 32 }}>⏳</div>
@@ -69,7 +69,7 @@ export default function Aboneliklerim() {
           <div style={{ background: "white", borderRadius: 20, padding: "40px 28px", textAlign: "center", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🐾</div>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 18, color: "#5C3D2E", marginBottom: 8 }}>Henüz aboneliğiniz yok</div>
-            <div style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.6, marginBottom: 20 }}>Bir ürün sayfasından düzenli teslimata abone olun, %10 indirim kazanın.</div>
+            <div style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.6, marginBottom: 20 }}>Abonelik sistemi kapandı — yerine daha iyisi geldi: her siparişinizde <strong>%5 puan</strong> kazanır, bir sonraki alışverişinizde kullanırsınız.</div>
             <Link href="/urunler" style={{ background: "#E8845A", color: "white", padding: "12px 28px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14 }}>Ürünlere Göz At →</Link>
           </div>
         ) : (
