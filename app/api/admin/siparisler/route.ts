@@ -37,11 +37,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, toplam: toplam || 0, bekleyen: bekleyen || 0, bugun: bugun || 0 }, { headers: noStore });
     }
     const durum = req.nextUrl.searchParams.get("durum") || "";
-    let q = sb.from("siparisler").select("*").order("created_at", { ascending: false }).limit(200);
-    if (durum) q = q.eq("durum", durum);
-    const { data, error } = await q;
-    if (error) throw error;
-    return NextResponse.json({ ok: true, siparisler: data || [] }, { headers: noStore });
+    // TÜM geçmiş siparişler döner (eskiden .limit(200) ile son 200 ile sınırlıydı).
+    // Sayfalama ŞART: PostgREST tek istekte en fazla 1000 satır verir ve .limit()
+    // bunu AŞMAZ — sessizce keser, hata da vermez. Bu repoda aynı tuzak 6 kez vurdu.
+    // İkincil sıralama (id) bilinçli: created_at eşit olduğunda satır sırası
+    // sayfalar arasında kayarsa kayıt tekrarlanır ya da atlanırdı.
+    const SAYFA = 1000;
+    const TAVAN_SAYFA = 20; // 20.000 sipariş tavanı — panel kilitlenmesin
+    type SiparisSatir = Record<string, unknown>;
+    const tumu: SiparisSatir[] = [];
+    let kesildi = false;
+    for (let s = 0; s < TAVAN_SAYFA; s++) {
+      let q = sb.from("siparisler").select("*")
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(s * SAYFA, s * SAYFA + SAYFA - 1);
+      if (durum) q = q.eq("durum", durum);
+      const { data, error } = await q;
+      if (error) throw error;
+      if (!data?.length) break;
+      tumu.push(...(data as SiparisSatir[]));
+      if (data.length < SAYFA) break;
+      if (s === TAVAN_SAYFA - 1) kesildi = true; // sessiz kesme YOK — yanıtta bildirilir
+    }
+    return NextResponse.json({ ok: true, siparisler: tumu, toplam: tumu.length, kesildi }, { headers: noStore });
   } catch (e: unknown) {
     console.error("[admin/siparisler] GET:", e instanceof Error ? e.message : e);
     return NextResponse.json({ error: "siparişler okunamadı" }, { status: 500, headers: noStore });

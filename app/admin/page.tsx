@@ -153,6 +153,9 @@ export default function Admin() {
     return () => mq.removeEventListener("change", dinle);
   }, []);
   const [siparisDurumFiltre, setSiparisDurumFiltre] = useState("");
+  // Artık TÜM geçmiş siparişler yükleniyor (eskiden son 200) → listede arama şart.
+  const [siparisArama, setSiparisArama] = useState("");
+  const [siparisKesildi, setSiparisKesildi] = useState(false);
   const [acikSiparisId, setAcikSiparisId] = useState<number | null>(null);
   const [siparisKalemleri, setSiparisKalemleri] = useState<{ [key: number]: SiparisKalem[] }>({});
   const [kalemYukleniyor, setKalemYukleniyor] = useState<number | null>(null);
@@ -242,11 +245,24 @@ export default function Admin() {
       });
       const d = await r.json();
       setSiparisler(d.siparisler || []);
+      setSiparisKesildi(!!d.kesildi);
     } catch {
       setSiparisler([]);
       goster("❌ Siparişler yüklenemedi");
     }
   };
+
+  // Sipariş araması — istemci tarafında, çünkü tüm geçmiş zaten yüklü.
+  // toLocaleLowerCase("tr-TR") ŞART: "İSTANBUL" → "istanbul" (düz toLowerCase
+  // "i̇stanbul" üretir ve eşleşme kaçar). Aynı tuzak kupon kodlarında yaşandı.
+  const trKucult = (s: unknown) => String(s ?? "").toLocaleLowerCase("tr-TR");
+  const siparisAramaTemiz = trKucult(siparisArama).trim();
+  const gosterilenSiparisler = !siparisAramaTemiz
+    ? siparisler
+    : siparisler.filter(sp =>
+        [sp.siparis_no, `${sp.ad || ""} ${sp.soyad || ""}`, sp.email, sp.telefon, sp.sehir]
+          .some(alan => trKucult(alan).includes(siparisAramaTemiz)),
+      );
 
   // Sipariş alan güncellemeleri (durum/ödeme/kargo takip) — server API üzerinden.
   const siparisGuncelle = async (id: number, degisiklik: Record<string, string>): Promise<boolean> => {
@@ -1492,13 +1508,37 @@ export default function Admin() {
                 </button>
               ))}
             </div>
+
+            {/* Tüm geçmiş siparişler yüklendiği için arama: sipariş no, ad/soyad,
+                e-posta veya telefon. Türkçe büyük/küçük harf duyarsız (İ/ı). */}
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
+              <input
+                value={siparisArama}
+                onChange={e => setSiparisArama(e.target.value)}
+                placeholder="🔍 Sipariş no, ad, e-posta veya telefon ara..."
+                style={{ flex: 1, minWidth: 240, padding: "11px 14px", border: "2px solid #E8D5B7", borderRadius: 10, fontSize: 14, outline: "none", fontFamily: "inherit", color: "#5C3D2E", background: "white" }}
+              />
+              <span style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.6, whiteSpace: "nowrap" }}>
+                {siparisArama ? `${gosterilenSiparisler.length} / ${siparisler.length}` : `${siparisler.length}`} sipariş
+              </span>
+              {siparisArama && (
+                <button onClick={() => setSiparisArama("")} style={{ ...btn("#E8D5B7"), color: "#5C3D2E", padding: "8px 14px", fontSize: 12 }}>Temizle</button>
+              )}
+            </div>
+
+            {siparisKesildi && (
+              <div style={{ background: "#FFF8E1", border: "1.5px dashed #F9A825", borderRadius: 12, padding: "10px 14px", fontSize: 12, color: "#5C3D2E", marginBottom: 16 }}>
+                ⚠️ Kayıt sayısı tavana ulaştı — en eski siparişler bu listeye girmemiş olabilir.
+              </div>
+            )}
+
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {siparisler.length === 0 ? (
+              {gosterilenSiparisler.length === 0 ? (
                 <div style={{ background: "white", borderRadius: 18, padding: "60px 0", textAlign: "center", opacity: 0.4 }}>
                   <div style={{ fontSize: 48, marginBottom: 12 }}>📭</div>
-                  <div style={{ fontSize: 16 }}>Bu durumda sipariş yok</div>
+                  <div style={{ fontSize: 16 }}>{siparisArama ? "Aramanıza uyan sipariş yok" : "Bu durumda sipariş yok"}</div>
                 </div>
-              ) : siparisler.map(sp => (
+              ) : gosterilenSiparisler.map(sp => (
                 <div key={sp.id} style={{ background: "white", borderRadius: 18, boxShadow: "0 4px 16px rgba(92,61,46,0.06)", overflow: "hidden" }}>
                   {/* Sipariş başlık */}
                   <div style={{ padding: "14px 20px", background: "#FAF5EF", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
