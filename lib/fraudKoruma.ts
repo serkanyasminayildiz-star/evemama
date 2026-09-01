@@ -4,7 +4,8 @@
 // ("ada anmewr adwq", "1 qwe qweqwe") ve geçersiz telefonlarla (53252352333)
 // çalıntı kart denedi; 3DS onu durdurdu ama bankalar iyzico'ya fraud bildirdi →
 // iyzico hesaba ZORUNLU 3DS açtı. Devam ederse hesap askıya alınabilir.
-// Bu modül üç katman sağlar: hız limiti, telefon doğrulama, ülke kapısı.
+// Bu modül İKİ katman sağlar: hız limiti + telefon doğrulama. (Üçüncü katman
+// olan ülke kapısı 1 Eyl 2026'da kaldırıldı — gerekçesi dosyanın sonunda.)
 //
 // TASARIM İLKESİ: gerçek müşteriyi ASLA engelleme. Her kural, meşru bir
 // siparişin geçeceği şekilde gevşek; yalnız otomatik/özensiz saldırıyı keser.
@@ -80,24 +81,10 @@ export function telefonGecerli(ham: string): { gecerli: boolean; sebep?: string 
   return { gecerli: true };
 }
 
-// ── 3) ÜLKE KAPISI ──────────────────────────────────────────────────────────
-// SİTE GENELİNDE IP ENGELİ YOK (bilinçli): Googlebot, Merchant Center feed
-// çekimi ve Clarity yurtdışı IP'lerden gelir — engellenirse SEO ve Shopping
-// reklamları ölür. Kapı YALNIZ kartlı ödeme başlatmada uygulanır; yurtdışından
-// gelen kullanıcı havale/EFT ile (peşin, fraud riski sıfır) alışverişe devam eder.
-// Kartla ödemeye izin verilen ülkeler. Yurtdışındaki Türk müşteriler (Almanya,
-// Hollanda...) Türkiye'ye sipariş verebilir; onlar da kesiliyorsa buraya ülke
-// kodu eklemek yeterli — TEK SATIRLIK genişletme. Karar için Vercel loglarında
-// "[kontrol] yurtdisi checkout" satırlarına bak: hangi ülke, ne sıklıkta.
-export const KART_ULKELERI = ["TR"] as const;
-
-/** Vercel'in coğrafi başlığı. Bilinmiyorsa "" döner → kapı UYGULANMAZ (fail-open). */
-export function ulkeKodu(req: { headers: { get(ad: string): string | null } }): string {
-  return (req.headers.get("x-vercel-ip-country") || "").toUpperCase();
-}
-
-/** Kartla ödeme bu istek için açık mı? Ülke okunamazsa AÇIK sayılır. */
-export function kartOdemeAcik(req: { headers: { get(ad: string): string | null } }): boolean {
-  const ulke = ulkeKodu(req);
-  return ulke === "" || (KART_ULKELERI as readonly string[]).includes(ulke);
-}
+// ── 3) ÜLKE KAPISI — KALDIRILDI (1 Eyl 2026) ────────────────────────────────
+// Yurtdışı IP'de kartı kapatan kural ölçülebilir fayda üretmedi ama gerçek
+// müşteri kaybettirdi: VPN kullanan ya da mobil operatörü yurtdışına yönlenen
+// kullanıcıya kart seçeneği hiç görünmüyordu. Saldırıyı kesen katmanlar
+// yukarıdaki ikisi (hız limiti + telefon doğrulama) — onlar duruyor.
+// Not: site geneli IP engeli hiçbir zaman olmadı ve olmamalı (Googlebot,
+// Merchant feed çekimi ve Clarity yurtdışından gelir).

@@ -14,10 +14,6 @@ export default function Odeme() {
   const { items, totalPrice, clearCart } = useCart();
   const [yukleniyor, setYukleniyor] = useState(false);
   const [odemeYontemi, setOdemeYontemi] = useState<"kart" | "havale" | "elden">("kart");
-  // Yurtdışı IP'de kartla ödeme kapalıdır (kart deneme saldırısı koruması);
-  // havale/EFT açık kalır. Sunucu /api/odeme'de de zorlar — bu yalnız UX.
-  // Varsayılan AÇIK: kontrol yanıtı gelene kadar gerçek müşteri engellenmez.
-  const [kartAcik, setKartAcik] = useState(true);
   const [sozlesme, setSozlesme] = useState(false);
   const [aydinlatma, setAydinlatma] = useState(false);
   const [hata, setHata] = useState("");
@@ -123,21 +119,8 @@ export default function Odeme() {
   const odenecekToplam = eldenAktif ? Math.max(0, genelToplam - kargoUcreti) : genelToplam;
   useEffect(() => {
     // İl/ilçe değişip kapsamdan çıkarsa elden seçimi karta döner (gizli seçim kalmasın).
-    if (odemeYontemi === "elden" && !eldenSecilebilir) setOdemeYontemi(kartAcik ? "kart" : "havale");
-    // Kart kapalıysa (yurtdışı) seçili yöntem havaleye kayar.
-    if (odemeYontemi === "kart" && !kartAcik) setOdemeYontemi("havale");
-  }, [odemeYontemi, eldenSecilebilir, kartAcik]);
-
-  useEffect(() => {
-    // Bağlantının ülkesini sor; yalnız "kart kapalı" yanıtında UI'ı daralt.
-    // Hata/timeout durumunda hiçbir şey yapma → kart açık kalır (fail-open).
-    let iptal = false;
-    fetch("/api/odeme/kontrol")
-      .then(r => r.json())
-      .then(d => { if (!iptal && d?.kartAcik === false) setKartAcik(false); })
-      .catch(() => {});
-    return () => { iptal = true; };
-  }, []);
+    if (odemeYontemi === "elden" && !eldenSecilebilir) setOdemeYontemi("kart");
+  }, [odemeYontemi, eldenSecilebilir]);
 
   // Sadakat bonusu KAZANMA (bu sipariş → BİR SONRAKİ alışveriş). Yalnızca ÜYE.
   // Taban = ödenecek tutar − kargo; odeme/sonuc'taki kazanım hesabıyla BİREBİR
@@ -170,18 +153,12 @@ export default function Odeme() {
         body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.ilce ? `${form.address}, ${form.ilce}` : form.address, city: form.city }, ilce: form.ilce, kuponKodu: uygulananKupon?.kod || "", yontem: odemeYontemi }),
       });
       const data = await res.json();
-      // Sunucu hataları (429 hız limiti, 400 telefon, 403 yurtdışı kart, 500)
-      // yöntem dallarından ÖNCE ele alınır ki sunucunun net mesajı olduğu gibi
-      // gösterilsin — kart dalı yalnız `errorMessage` okuduğu için bunlar
-      // "Bilinmeyen hata" olarak görünüyordu.
+      // Sunucu hataları (429 hız limiti, 400 telefon, 500) yöntem dallarından
+      // ÖNCE ele alınır ki sunucunun net mesajı olduğu gibi gösterilsin — kart
+      // dalı yalnız `errorMessage` okuduğu için bunlar "Bilinmeyen hata"
+      // olarak görünüyordu.
       if (!res.ok) {
-        if (data?.error === "kart-yurtdisi") {
-          setKartAcik(false);          // kart seçeneğini gizle
-          setOdemeYontemi("havale");   // müşteriyi çalışan yönteme al
-          setHata(data.mesaj || "Yurt dışı bağlantılarda kartla ödeme kapalıdır. Havale/EFT ile devam edebilirsiniz.");
-        } else {
-          setHata(data?.error || data?.errorMessage || "İşlem tamamlanamadı, lütfen tekrar deneyin.");
-        }
+        setHata(data?.error || data?.errorMessage || "İşlem tamamlanamadı, lütfen tekrar deneyin.");
         setYukleniyor(false);
         return;
       }
@@ -283,7 +260,7 @@ export default function Odeme() {
             <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 18 }}>💳 Ödeme Yöntemi</div>
             <div className="odeme-yontem-grid">
               {([
-                ...(kartAcik ? [{ id: "kart" as const, icon: "💳", title: "Kredi / Banka Kartı", sub: "Taksit seçeneği mevcut" }] : []),
+                { id: "kart" as const, icon: "💳", title: "Kredi / Banka Kartı", sub: "Taksit seçeneği mevcut" },
                 { id: "havale" as const, icon: "🏦", title: "Banka Havalesi / EFT", sub: "Banka hesabına havale/EFT" },
                 ...(eldenSecilebilir ? [{ id: "elden" as const, icon: "🛵", title: "Elden Teslim — Aynı Gün", sub: "İzmir merkez · kapıda nakit · kargo yok" }] : []),
               ]).map(o => (
@@ -303,12 +280,6 @@ export default function Odeme() {
             {odemeYontemi === "kart" && (
               <div style={{ marginTop: 14, background: "#FDF6EE", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "#5C3D2E", opacity: 0.8 }}>
                 🔒 Kart bilgileriniz <strong>iyzico</strong>&apos;nun güvenli sayfasında girilecektir.
-              </div>
-            )}
-
-            {!kartAcik && (
-              <div style={{ marginTop: 14, background: "#FFF8E1", border: "1.5px dashed #F9A825", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "#5C3D2E", lineHeight: 1.6 }}>
-                🌍 Yurt dışı bağlantılarda güvenlik nedeniyle <strong>kartla ödeme kapalıdır</strong>. Siparişinizi <strong>havale/EFT</strong> ile tamamlayabilirsiniz. Türkiye&apos;den bağlanıyorsanız lütfen VPN&apos;i kapatıp sayfayı yenileyin.
               </div>
             )}
 

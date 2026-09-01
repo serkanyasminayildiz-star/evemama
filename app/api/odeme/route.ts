@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
 import { SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../../lib/indirim";
 import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../../lib/eldenTeslimat";
-import { hizAsildi, istekIp, telefonGecerli, kartOdemeAcik, ulkeKodu } from "../../../lib/fraudKoruma";
+import { hizAsildi, istekIp, telefonGecerli } from "../../../lib/fraudKoruma";
 import { sendHavaleTalimatMaili, sendEldenTeslimMaili } from "../../../lib/email";
 
 // Sepet ürünü — client'tan gelen JSON şekli (explicit any yerine).
@@ -79,16 +79,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: telefonSonuc.sebep }, { status: 400 });
   }
 
-  // 3) ÜLKE KAPISI — yalnız KARTLI ödemede. Yurtdışı IP havale/EFT ile devam
-  //    edebilir (peşin ödeme = fraud riski yok). Site geneli IP engeli YOK.
-  const yontem = body.yontem || "kart";
-  if (yontem === "kart" && !kartOdemeAcik(req)) {
-    console.warn("[odeme] yurtdisi IP kart denemesi engellendi:", ip, ulkeKodu(req));
-    return NextResponse.json(
-      { error: "kart-yurtdisi", mesaj: "Yurt dışı bağlantılarda kartla ödeme kapalıdır. Havale/EFT ile siparişinizi tamamlayabilirsiniz." },
-      { status: 403 },
-    );
-  }
+  // 3) ÜLKE KAPISI KALDIRILDI (1 Eyl 2026). Yurtdışı IP'de kartı kapatan kural
+  //    21 Ağustos'ta saldırıya karşı eklenmişti; ölçülebilir bir fayda üretmedi
+  //    (saldırı zaten hız limiti + telefon doğrulamasıyla kesiliyor, saldırganın
+  //    numaraları doğrulamadan geçmiyor) ama gerçek zarar verdi: VPN kullanan
+  //    veya mobil operatörü yurtdışına yönlenen müşteriye kart seçeneği hiç
+  //    gösterilmiyordu. Kart yerine havale gören müşteri çoğunlukla ayrılıyor.
+  //    Kalan iki katman (hız limiti + telefon) saldırı imzasına birebir uyuyor.
 
   const conversationId = Date.now().toString();
   const randomString = generateRandomString();
