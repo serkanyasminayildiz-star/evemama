@@ -16,7 +16,7 @@ function adminClient() {
 
 type Kayit = {
   email: string; ad: string; telefon: string; toplam: number;
-  sebep: string; paymentStatus: string; urunOzet: string; tarih: string; deneme: number;
+  sebep: string; errorCode: string; paymentStatus: string; urunOzet: string; tarih: string; deneme: number;
 };
 
 export async function GET(req: NextRequest) {
@@ -48,6 +48,12 @@ export async function GET(req: NextRequest) {
           telefon: r.telefon || "",
           toplam: parseFloat(String(r.toplam)) || 0,
           sebep: (r.error_message || r.payment_status || "Bilinmiyor").trim(),
+          // iyzico hata KODU: "Ödeme işlemi esnasında genel bir hata oluştu"
+          // mesajı tek başına teşhis ettirmiyor — kod (örn. 0962 SANAL POS
+          // TANIMSIZ VEYA KAPALI) sorunun bankada mı, terminalde mi, fraud
+          // kuralında mı olduğunu söyler. Tabloda zaten saklanıyordu ama
+          // yanıta konmadığı için görünmüyordu; iyzico görüşmesinde şart.
+          errorCode: r.error_code || "",
           paymentStatus: r.payment_status || "",
           urunOzet,
           tarih: r.created_at,
