@@ -158,7 +158,11 @@ export async function POST(req: NextRequest) {
   if (kuponKodu) {
     try {
       const { data: kupon } = await supabaseAdmin.from("kuponlar").select("*").eq("kod", kuponKodu).maybeSingle();
-      const sonuc = kuponIndirimiHesapla(kupon, basketTotal);
+      // Kupon KİŞİYE BAĞLI: üye e-postası varsa o, yoksa formda girilen
+      // e-posta ile eşleşmeli. Yetkili kontrol burasıdır — istemcinin
+      // gösterdiği indirim bağlayıcı değildir.
+      const kuponEmail = uyeEmail || String(buyer?.email || "");
+      const sonuc = kuponIndirimiHesapla(kupon, basketTotal, kuponEmail);
       if (sonuc.gecerli && kupon) { kuponIndirimi = sonuc.indirim; gecerliKuponKod = kupon.kod; }
     } catch (e) {
       console.error("[odeme] kupon dogrulama:", e);

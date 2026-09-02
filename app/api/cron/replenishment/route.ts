@@ -3,6 +3,7 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendReplenishmentMaili, sendAbonelikHatirlatma } from "../../../../lib/email";
+import { kisiselKuponOlustur } from "../../../../lib/kuponUret";
 
 // "Maman bitiyor" otomatik hatırlatma (replenishment).
 // Vercel cron her gün çağırır (vercel.json). ~28 gün önce ödeme yapıp DAHA
@@ -26,8 +27,12 @@ const supabaseAdmin = createClient(
 );
 
 const HATIRLATMA_GUN = 28;
+// Bu kodlar artık müşteriye GÖNDERİLMEZ — yalnız şablon adıdır. Her alıcı
+// için kişiye bağlı, tek kullanımlık kod üretilir (bkz. lib/kuponUret.ts).
 const KUPON_KOD = "YENILE10";
 const ABONE_KOD = "ABONE10";
+const YENILE_SABLON = { kod: KUPON_KOD, indirim_tipi: "yuzde", indirim_degeri: 10, min_sepet: 0 };
+const ABONE_SABLON = { kod: ABONE_KOD, indirim_tipi: "yuzde", indirim_degeri: 10, min_sepet: 0 };
 const GUN_MS = 24 * 60 * 60 * 1000;
 
 type SiparisRow = { siparis_no: string; ad: string | null; email: string | null; urunler: unknown; created_at: string };
@@ -52,19 +57,10 @@ export async function GET(req: NextRequest) {
   const dry = url.searchParams.get("dry") === "1";
   const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") || "100", 10) || 100, 1), 500);
 
-  // 1) YENILE10 kuponunu garanti et (%10, 60 gün geçerli). Yoksa oluştur,
-  //    varsa süresini/aktifliğini tazele. (kod tekilliğine güvenmeden.)
-  try {
-    const bitis = new Date(Date.now() + 60 * GUN_MS).toISOString();
-    const { data: mevcut } = await supabaseAdmin.from("kuponlar").select("kod").eq("kod", KUPON_KOD).maybeSingle();
-    if (!mevcut) {
-      await supabaseAdmin.from("kuponlar").insert({ kod: KUPON_KOD, indirim_tipi: "yuzde", indirim_degeri: 10, min_sepet: 0, aktif: true, bitis_tarihi: bitis });
-    } else {
-      await supabaseAdmin.from("kuponlar").update({ aktif: true, bitis_tarihi: bitis }).eq("kod", KUPON_KOD);
-    }
-  } catch (e) {
-    console.error("[cron/replenishment] kupon hazirlama hatasi:", e);
-  }
+  // 1) PAYLAŞIMLI KUPON ÜRETİMİ KALDIRILDI (2 Eyl 2026). Eskiden YENILE10
+  //    satırı burada oluşturulup herkese AYNI kod gönderiliyordu; kodu duyan
+  //    herkes kullanabiliyordu. Artık her alıcıya, gönderim anında, kişiye
+  //    bağlı tek kullanımlık kod üretilir (kisiselKuponOlustur).
 
   // Önizleme modu: ?onizleme=email → sipariş taraması yapmadan verilen adrese
   // ÖRNEK bir replenishment maili atar (şablon/tasarımı görmek için test).
@@ -88,10 +84,8 @@ export async function GET(req: NextRequest) {
   const aktifAboneEmailler = new Set<string>();
   const aboneGidecekler: string[] = [];
   try {
-    const bitisA = new Date(Date.now() + 60 * GUN_MS).toISOString();
-    const { data: mevcutA } = await supabaseAdmin.from("kuponlar").select("kod").eq("kod", ABONE_KOD).maybeSingle();
-    if (!mevcutA) await supabaseAdmin.from("kuponlar").insert({ kod: ABONE_KOD, indirim_tipi: "yuzde", indirim_degeri: 10, min_sepet: 0, aktif: true, bitis_tarihi: bitisA });
-    else await supabaseAdmin.from("kuponlar").update({ aktif: true, bitis_tarihi: bitisA }).eq("kod", ABONE_KOD);
+    // ABONE10 paylaşımlı kuponu ARTIK ÜRETİLMİYOR — her aboneye kendi
+    // tek kullanımlık kodu gönderim anında üretilir.
 
     const { data: aktifAboneler } = await supabaseAdmin.from("abonelikler").select("email").eq("aktif", true);
     for (const a of (aktifAboneler || []) as { email: string | null }[]) {
@@ -107,7 +101,9 @@ export async function GET(req: NextRequest) {
     for (const ab of (dueAbone || []) as { id: number; email: string | null; urun_adi: string | null; urun_slug: string | null; cadence_gun: number }[]) {
       if (!ab.email) continue;
       if (dry) { aboneGidecekler.push(`${ab.email} (${ab.urun_adi || "ürün"})`); aboneGonderildi++; continue; }
-      await sendAbonelikHatirlatma({ email: ab.email, urunAdi: ab.urun_adi || undefined, urunSlug: ab.urun_slug || undefined, kod: ABONE_KOD });
+      const abKod = await kisiselKuponOlustur(supabaseAdmin, ABONE_SABLON, ab.email);
+      if (!abKod) { console.error("[cron] abone kuponu uretilemedi:", ab.email); continue; }
+      await sendAbonelikHatirlatma({ email: ab.email, urunAdi: ab.urun_adi || undefined, urunSlug: ab.urun_slug || undefined, kod: abKod });
       const yeniSonraki = new Date(Date.now() + (ab.cadence_gun || 28) * GUN_MS).toISOString();
       await supabaseAdmin.from("abonelikler").update({ sonraki_tarih: yeniSonraki, son_hatirlatma: new Date().toISOString() }).eq("id", ab.id);
       aboneGonderildi++;
@@ -160,7 +156,9 @@ export async function GET(req: NextRequest) {
       gonderildi++;
       continue;
     }
-    const ok = await sendReplenishmentMaili({ email: s.email!, ad: s.ad || undefined, sonUrun, kod: KUPON_KOD });
+    const kisiselKodu = await kisiselKuponOlustur(supabaseAdmin, YENILE_SABLON, s.email!);
+    if (!kisiselKodu) { console.error("[cron] yenile kuponu uretilemedi:", s.email); continue; }
+    const ok = await sendReplenishmentMaili({ email: s.email!, ad: s.ad || undefined, sonUrun, kod: kisiselKodu });
     if (ok) gonderildi++; else atlandi++;
     await new Promise((r) => setTimeout(r, 600)); // Resend rate limit (~2/sn)
   }

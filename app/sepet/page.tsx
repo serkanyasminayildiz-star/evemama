@@ -46,9 +46,13 @@ export default function Sepet() {
     setKuponYukleniyor(true);
     if (!sessiz) setKuponMesaj("");
     try {
+      // Kupon kişiye bağlı → e-posta gerekir. Sepette yalnız GİRİŞ YAPMIŞ
+      // üyenin adresi bilinir; misafirde boş gider ve sunucu "ödeme adımında
+      // e-postanızı girin" der (orada alan zorunlu).
+      const { data: { user } } = await supabase.auth.getUser();
       const res = await fetch("/api/kupon-dogrula", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kod, sepetTutari: totalPrice }),
+        body: JSON.stringify({ kod, sepetTutari: totalPrice, email: user?.email || "" }),
       });
       const d = await res.json();
       if (d.gecerli) {

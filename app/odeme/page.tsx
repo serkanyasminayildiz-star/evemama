@@ -111,7 +111,9 @@ export default function Odeme() {
     try {
       const res = await fetch("/api/kupon-dogrula", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kod, sepetTutari: totalPrice }),
+        // Kupon kişiye bağlı → e-posta ŞART. Formdaki adres kullanılır;
+        // boşsa sunucu "size özel, e-postanızı girin" der.
+        body: JSON.stringify({ kod, sepetTutari: totalPrice, email: form.email }),
       });
       const d = await res.json();
       if (d.gecerli) {
@@ -138,11 +140,14 @@ export default function Odeme() {
     if (typeof window !== "undefined") localStorage.removeItem("evemama_kupon");
   };
 
+  // form.email BAĞIMLILIKTA olmalı: kupon kişiye bağlı olduğu için müşteri
+  // e-postasını yazdığında yeniden doğrulanmalı. Aksi halde açılışta e-posta
+  // boşken "size özel, e-postanızı girin" deyip orada kalırdı.
   useEffect(() => {
     const kayitli = typeof window !== "undefined" ? localStorage.getItem("evemama_kupon") : null;
     if (kayitli) { setKuponKodu(kayitli); kuponDogrula(kayitli, true); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalPrice]);
+  }, [totalPrice, form.email]);
 
   const kdv = totalPrice * 0.20;
   const bonusUygulanabilir = !!bonus && totalPrice >= bonus.min_sepet;

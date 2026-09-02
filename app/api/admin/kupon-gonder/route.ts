@@ -1,5 +1,6 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
+import { kisiselKuponOlustur } from "../../../../lib/kuponUret";
 import { createClient } from "@supabase/supabase-js";
 import { sendKuponMaili } from "../../../../lib/email";
 
@@ -46,17 +47,21 @@ export async function POST(req: NextRequest) {
   const minSepetMetni = kupon.min_sepet
     ? `Min. ₺${Number(kupon.min_sepet).toLocaleString("tr-TR")} sepet tutarı`
     : undefined;
-  const bitisMetni = kupon.bitis_tarihi
-    ? `Son kullanım: ${new Date(kupon.bitis_tarihi).toLocaleDateString("tr-TR")}`
-    : undefined;
+  // Kişisel kuponlar 30 gün geçerli üretilir; metin de onu yansıtsın.
+  const bitisMetni = `Son kullanım: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("tr-TR")}`;
 
   let sent = 0, failed = 0;
   for (const u of uyeler) {
     try {
+      // KİŞİYE ÖZEL KOD: seçilen kupon artık ŞABLON'dur. Her alıcı için ona
+      // bağlı, tek kullanımlık yeni bir kod üretilir — paylaşımlı kod
+      // gönderilmez (kod sızınca herkes kullanabiliyordu).
+      const kisisel = await kisiselKuponOlustur(sb, kupon, u.email);
+      if (!kisisel) { failed += 1; continue; }
       const ok = await sendKuponMaili({
         email: u.email,
         ad: u.ad || "",
-        kod: kupon.kod,
+        kod: kisisel,
         indirimMetni,
         minSepetMetni,
         bitisMetni,

@@ -1,6 +1,7 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { hedefKontrol, hedefMesaji } from "../../../lib/kupon";
 
 // Müşterinin sepet/ödemede girdiği kupon kodunu doğrular ve indirim tutarını
 // döner (GÖSTERİM için). Gerçek indirim odeme/route.ts'te sunucuda yeniden
@@ -25,11 +26,24 @@ export type KuponKaydi = {
   min_sepet?: number | null;
   indirim_tipi?: string;
   indirim_degeri?: number | string | null;
+  hedef_email?: string | null;
 };
 
-export function kuponIndirimiHesapla(kupon: KuponKaydi | null, sepetTutari: number): { gecerli: boolean; indirim: number; mesaj?: string } {
+/**
+ * @param email Kuponun tanımlı olduğu kişi kontrolü için müşteri e-postası.
+ *   Bilinmiyorsa (sepette misafir) hedefli kupon "e-posta gerekli" ile reddedilir;
+ *   ödeme adımında e-posta zorunlu olduğu için orada kesin karar verilir.
+ */
+export function kuponIndirimiHesapla(kupon: KuponKaydi | null, sepetTutari: number, email?: string | null): { gecerli: boolean; indirim: number; mesaj?: string } {
   if (!kupon) return { gecerli: false, indirim: 0, mesaj: "Kupon bulunamadı." };
   if (kupon.aktif === false) return { gecerli: false, indirim: 0, mesaj: "Bu kupon artık geçerli değil." };
+
+  // KİŞİYE BAĞLILIK — genel/paylaşımlı kupon KAPALI (bkz. lib/kupon.ts).
+  // Diğer kontrollerden ÖNCE: hedefi olmayan kupon hiçbir koşulda geçmesin.
+  const hedef = hedefKontrol(kupon, email);
+  if (hedef.durum !== "uygun") {
+    return { gecerli: false, indirim: 0, mesaj: hedefMesaji(hedef) };
+  }
   if (kupon.bitis_tarihi && new Date(kupon.bitis_tarihi) < new Date()) {
     return { gecerli: false, indirim: 0, mesaj: "Bu kuponun süresi dolmuş." };
   }
@@ -52,10 +66,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const kod = typeof body.kod === "string" ? body.kod.trim().toUpperCase() : "";
     const sepetTutari = Number(body.sepetTutari) || 0;
+    // Kupon kişiye bağlı olduğu için e-posta gerekir. Sepette misafir müşteri
+    // henüz girmemiş olabilir — o zaman "size özel, e-postanızı girin" denir.
+    const email = typeof body.email === "string" ? body.email : "";
     if (!kod) return NextResponse.json({ gecerli: false, mesaj: "Kupon kodu girin." }, { headers: { "Cache-Control": "no-store" } });
 
     const { data: kupon } = await supabase.from("kuponlar").select("*").eq("kod", kod).maybeSingle();
-    const sonuc = kuponIndirimiHesapla(kupon, sepetTutari);
+    const sonuc = kuponIndirimiHesapla(kupon, sepetTutari, email);
 
     return NextResponse.json(
       sonuc.gecerli
