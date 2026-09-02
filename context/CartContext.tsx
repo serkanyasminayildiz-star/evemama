@@ -69,6 +69,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = () => {
     setItems([]);
     localStorage.removeItem("evemama_sepet");
+    // KUPON DA TEMİZLENİR (2 Eyl 2026). Uygulanan kupon kodu
+    // localStorage("evemama_kupon")'a yazılıyor ve sepet/ödeme sayfaları
+    // açılışta onu SESSİZCE yeniden doğrulayıp uyguluyor — sepet↔ödeme
+    // taşınması için kasıtlı. Ama sipariş tamamlandığında temizlenmediği için
+    // kod tarayıcıda KALICI oluyordu: bir kez YENILE10 giren müşteri sonraki
+    // her siparişinde de %10 indirim alıyordu. Kampanya kuponu tek seferlik
+    // olmalı; sepet boşaldığında kupon da düşer.
+    localStorage.removeItem("evemama_kupon");
   };
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
