@@ -262,7 +262,19 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.error("[odeme/sonuc] basarisiz odeme log hatasi:", e);
       }
-      return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz`, { status: 303 });
+      // RET SEBEBİNİ MÜŞTERİYE TAŞI. iyzico anlamlı ve eyleme dönük mesajlar
+      // döndürüyor ("Son kullanma tarihi hatalı", "Kart limiti yetersiz",
+      // "Kartınız internetten alışverişe kapalıdır. Açtırmak için … SMS …") ama
+      // bunlar yalnız basarisiz_odemeler tablosuna yazılıyordu; müşteri sadece
+      // "Ödeme tamamlanamadı" görüp ayrılıyordu. Sebebi bilmeyen müşteri
+      // düzeltemez. Mesaj URL'de taşınır; sonuç sayfası eyleme çevirir.
+      const hataMesaji = String(data.errorMessage || "").slice(0, 200);
+      const hataKodu = data.errorCode != null ? String(data.errorCode).slice(0, 20) : "";
+      const ek = [
+        hataMesaji ? `hata=${encodeURIComponent(hataMesaji)}` : "",
+        hataKodu ? `kod=${encodeURIComponent(hataKodu)}` : "",
+      ].filter(Boolean).join("&");
+      return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarisiz${ek ? "&" + ek : ""}`, { status: 303 });
     }
   } catch (err) {
     console.error("[odeme/sonuc] callback error:", err);

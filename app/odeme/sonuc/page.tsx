@@ -124,19 +124,63 @@ function OdemeSonucIcerik() {
   // En sık sebep: taksitli işlemi kartın/bankanın reddetmesi → "tek çekim" öner.
   // + farklı kart + banka araması + tek tıkla WhatsApp'tan insan desteği.
   const waMesaj = encodeURIComponent("Merhaba, ödeme sırasında sorun yaşadım. Sipariş vermek için yardımcı olabilir misiniz?");
+
+  // iyzico'nun döndürdüğü ret sebebi (odeme/sonuc route'u URL'de taşır).
+  // Sebep BİLİNİYORSA genel tahmin listesi yerine ona özel yönerge gösterilir —
+  // "Son kullanma tarihi hatalı" diyen müşteri 10 saniyede düzeltip tekrar
+  // dener; "Ödeme tamamlanamadı" diyen müşteri ayrılır.
+  const hamHata = (searchParams.get("hata") || "").trim();
+  // iyzico bazen mesaj yerine düz "FAILURE" döndürür — bu müşteriye bir şey
+  // anlatmaz, genel yönergeye düşülür.
+  const anlamliHata = hamHata && hamHata.toUpperCase() !== "FAILURE" ? hamHata : "";
+  const kucuk = anlamliHata.toLocaleLowerCase("tr-TR");
+
+  // Sebebe göre TEK cümlelik somut yönerge. Eşleşme yoksa genel liste kalır.
+  const yonerge =
+    kucuk.includes("son kullanma")
+      ? "Kartınızın son kullanma tarihini kontrol edip tekrar deneyin."
+      : kucuk.includes("yetersiz") || kucuk.includes("limit")
+        ? "Kart limitiniz bu tutara yetmiyor. Farklı bir kart deneyebilir veya havale/EFT ile ödeyebilirsiniz."
+        : kucuk.includes("internetten") || kucuk.includes("e-ticaret")
+          ? "Kartınız internetten alışverişe kapalı. Bankanızın yukarıdaki talimatıyla açtırıp tekrar deneyebilirsiniz."
+          : kucuk.includes("cvc") || kucuk.includes("cvv") || kucuk.includes("güvenlik kodu")
+            ? "Kartın arkasındaki 3 haneli güvenlik kodunu kontrol edip tekrar deneyin."
+            : kucuk.includes("şifre") || kucuk.includes("3d")
+              ? "3D Secure doğrulaması tamamlanamadı. Bankanızdan gelen SMS şifresini girerek tekrar deneyin."
+              : "";
+
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif", padding: 20 }}>
       <div style={{ background: "white", borderRadius: 24, padding: "40px 32px", maxWidth: 460, width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(92,61,46,0.1)" }}>
         <div style={{ fontSize: 60, marginBottom: 12 }}>💳</div>
         <div style={{ fontFamily: "Georgia, serif", fontSize: 23, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>Ödeme tamamlanamadı</div>
         <div style={{ fontSize: 14, color: "#5C3D2E", opacity: 0.75, marginBottom: 20, lineHeight: 1.6 }}>
-          Merak etmeyin, <strong>kartınızdan para çekilmedi.</strong> Genelde şunlardan biri çözer 👇
+          Merak etmeyin, <strong>kartınızdan para çekilmedi.</strong>
+          {anlamliHata ? " Bankanızın bildirdiği sebep:" : " Genelde şunlardan biri çözer 👇"}
         </div>
+
+        {/* Bankanın/iyzico'nun gerçek ret sebebi — varsa tahmin listesinin yerine geçer. */}
+        {anlamliHata && (
+          <div style={{ background: "#FFF3E0", border: "1.5px solid #E8845A", borderRadius: 14, padding: "16px 18px", marginBottom: 16, textAlign: "left" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#B34700", lineHeight: 1.6 }}>⚠️ {anlamliHata}</div>
+            {yonerge && (
+              <div style={{ fontSize: 13.5, color: "#5C3D2E", lineHeight: 1.7, marginTop: 8 }}>{yonerge}</div>
+            )}
+          </div>
+        )}
+
         <div style={{ background: "#FFF7ED", border: "1.5px solid #F4C09A", borderRadius: 14, padding: "16px 18px", marginBottom: 24, textAlign: "left" }}>
           <div style={{ fontSize: 13.5, color: "#5C3D2E", lineHeight: 1.95 }}>
-            <div>💳 <strong>Taksitle</strong> denediyseniz → <strong style={{ color: "#E8845A" }}>Tek Çekim</strong> seçip tekrar deneyin <span style={{ opacity: 0.6 }}>(en sık çözüm)</span></div>
-            <div>🔄 Başka bir kartla deneyin</div>
-            <div>📞 Bankanızı arayın — yüksek tutarlı işlemi güvenlik için durdurmuş olabilir</div>
+            {!anlamliHata && (
+              <>
+                <div>💳 <strong>Taksitle</strong> denediyseniz → <strong style={{ color: "#E8845A" }}>Tek Çekim</strong> seçip tekrar deneyin <span style={{ opacity: 0.6 }}>(en sık çözüm)</span></div>
+                <div>🔄 Başka bir kartla deneyin</div>
+                <div>📞 Bankanızı arayın — yüksek tutarlı işlemi güvenlik için durdurmuş olabilir</div>
+              </>
+            )}
+            {/* Kart yolu tıkalıysa havale her zaman çalışan çıkış — ödeme
+                sayfasında bilgileriniz korunur, baştan doldurmak gerekmez. */}
+            <div>🏦 Kartla olmuyorsa <strong style={{ color: "#E8845A" }}>Havale/EFT</strong> ile ödeyebilirsiniz — ödeme sayfasında seçenek olarak duruyor</div>
           </div>
         </div>
         <Link href="/odeme" style={{ background: "#E8845A", color: "white", padding: "15px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "block", marginBottom: 12, boxShadow: "0 8px 20px rgba(232,132,90,0.3)" }}>
