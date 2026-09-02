@@ -30,10 +30,61 @@ export default function Odeme() {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  // ── TESLİMAT BİLGİLERİNİ HATIRLA ──────────────────────────────────────────
+  // Ödeme başarısız olduğunda müşteri /odeme/sonuc?durum=basarisiz sayfasına
+  // düşüyor; "Tekrar Dene" ile /odeme'ye dönünce form BOMBOŞ geliyordu ve
+  // adres/telefon baştan yazılmak zorundaydı. Çoğu müşteri bu noktada vazgeçti.
+  // Sepet zaten localStorage'da tutuluyordu (evemama_sepet) — teslimat bilgisi
+  // tutulmuyordu; tek eksik buydu.
+  //
+  // 30 GÜN ÖMÜR bilinçli: ortak/halka açık bilgisayarda adres+telefon+e-posta
+  // süresiz durmasın. Sepetten farklı olarak burada kişisel veri var.
+  const FORM_ANAHTAR = "evemama_teslimat";
+  const FORM_OMRU_MS = 30 * 24 * 60 * 60 * 1000;
+
+  useEffect(() => {
+    // Açılışta geri yükle (yalnız bir kez; sonrasında kullanıcı girdisi esastır).
+    try {
+      const ham = localStorage.getItem(FORM_ANAHTAR);
+      if (!ham) return;
+      const kayit = JSON.parse(ham) as { kaydedildi?: number; form?: Record<string, string> };
+      if (!kayit?.form || !kayit.kaydedildi || Date.now() - kayit.kaydedildi > FORM_OMRU_MS) {
+        localStorage.removeItem(FORM_ANAHTAR);
+        return;
+      }
+      // Yalnız bilinen alanlar yazılır — eski/bozuk kayıt forma sızmasın.
+      setForm(o => ({
+        name: kayit.form!.name ?? o.name,
+        surname: kayit.form!.surname ?? o.surname,
+        email: kayit.form!.email ?? o.email,
+        phone: kayit.form!.phone ?? o.phone,
+        address: kayit.form!.address ?? o.address,
+        city: kayit.form!.city ?? o.city,
+        ilce: kayit.form!.ilce ?? o.ilce,
+      }));
+    } catch { /* bozuk kayıt → boş formla devam, akış bozulmaz */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // Her değişiklikte sakla. Tamamen boş formu yazmaya gerek yok.
+    try {
+      if (!Object.values(form).some(v => String(v || "").trim())) return;
+      localStorage.setItem(FORM_ANAHTAR, JSON.stringify({ kaydedildi: Date.now(), form }));
+    } catch { /* kota/gizli mod → sessizce geç */ }
+  }, [form]);
+
   // Üyelik durumu (sadakat bonusu + kargo teşviki gösterimi için).
   useEffect(() => {
     supabase.auth.getUser()
-      .then(({ data: { user } }) => setUye(!!user))
+      .then(({ data: { user } }) => {
+        setUye(!!user);
+        // Üyenin e-postası biliniyorsa ve alan boşsa doldur — her siparişte
+        // tekrar yazdırmanın anlamı yok. Doluysa DOKUNULMAZ (müşteri farklı
+        // bir e-posta girmiş olabilir).
+        const eposta = user?.email;
+        if (eposta) setForm(o => (o.email ? o : { ...o, email: eposta }));
+      })
       .catch(err => console.error("[odeme] uye kontrolu:", err));
   }, []);
 
@@ -240,12 +291,12 @@ export default function Odeme() {
           <div style={{ background: "white", borderRadius: 20, padding: "24px", marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 18 }}>👤 Teslimat Bilgileri</div>
             <div className="ad-soyad-grid">
-              <input name="name" placeholder="Ad *" value={form.name} onChange={handleChange} style={inputStyle} />
-              <input name="surname" placeholder="Soyad *" value={form.surname} onChange={handleChange} style={inputStyle} />
+              <input name="name" autoComplete="given-name" placeholder="Ad *" value={form.name} onChange={handleChange} style={inputStyle} />
+              <input name="surname" autoComplete="family-name" placeholder="Soyad *" value={form.surname} onChange={handleChange} style={inputStyle} />
             </div>
-            <input name="email" type="email" placeholder="E-posta *" value={form.email} onChange={handleChange} style={inputStyle} />
+            <input name="email" type="email" autoComplete="email" placeholder="E-posta *" value={form.email} onChange={handleChange} style={inputStyle} />
             <input name="phone" type="tel" inputMode="numeric" autoComplete="tel" placeholder="Cep Telefonu * (0532 XXX XX XX)" value={form.phone} onChange={handleChange} style={inputStyle} />
-            <input name="address" placeholder="Adres *" value={form.address} onChange={handleChange} style={inputStyle} />
+            <input name="address" autoComplete="street-address" placeholder="Adres *" value={form.address} onChange={handleChange} style={inputStyle} />
             <select name="city" value={form.city} onChange={e => setForm({ ...form, city: e.target.value, ilce: "" })} style={{ ...inputStyle, cursor: "pointer" }}>
               <option value="">İl seçin *</option>
               {IL_LISTESI.map(il => <option key={il} value={il}>{il}</option>)}
