@@ -8,12 +8,13 @@ import { HAVALE_HESAP } from "../../lib/havale";
 import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../lib/eldenTeslimat";
 import { clarityEvent, claritySet } from "../../lib/clarity";
 import { telefonGecerli } from "../../lib/fraudKoruma";
+import { KAPIDA, kapidaMi, kapidaUygun, kapidaKomisyonu } from "../../lib/kapidaOdeme";
 import { TR_ILLER, IL_LISTESI } from "../../lib/tr-iller";
 
 export default function Odeme() {
   const { items, totalPrice, clearCart } = useCart();
   const [yukleniyor, setYukleniyor] = useState(false);
-  const [odemeYontemi, setOdemeYontemi] = useState<"kart" | "havale" | "elden">("kart");
+  const [odemeYontemi, setOdemeYontemi] = useState<"kart" | "havale" | "elden" | "kapida-nakit" | "kapida-kart">("kart");
   const [sozlesme, setSozlesme] = useState(false);
   const [aydinlatma, setAydinlatma] = useState(false);
   const [hata, setHata] = useState("");
@@ -167,11 +168,20 @@ export default function Odeme() {
   const eldenKonumUygun = eldenUygun(form.city, form.ilce);
   const eldenSecilebilir = eldenKonumUygun && totalPrice >= ELDEN_TESLIMAT.MIN_SEPET;
   const eldenAktif = odemeYontemi === "elden" && eldenSecilebilir;
-  const odenecekToplam = eldenAktif ? Math.max(0, genelToplam - kargoUcreti) : genelToplam;
+  // Kapıda ödeme: üst sınır SUNUCUDA da doğrulanır (burası yalnız gösterim).
+  // Kartla kapıda ödemede komisyon eklenir — tek kaynak lib/kapidaOdeme.ts.
+  const kapidaSecilebilir = kapidaUygun(genelToplam);
+  const kapidaKomisyon = kapidaKomisyonu(odemeYontemi, genelToplam);
+  // Elden teslimde kargo düşer; kapıda kartta komisyon eklenir (nakitte eklenmez).
+  const odenecekToplam = eldenAktif
+    ? Math.max(0, genelToplam - kargoUcreti)
+    : Math.round((genelToplam + kapidaKomisyon) * 100) / 100;
   useEffect(() => {
     // İl/ilçe değişip kapsamdan çıkarsa elden seçimi karta döner (gizli seçim kalmasın).
     if (odemeYontemi === "elden" && !eldenSecilebilir) setOdemeYontemi("kart");
-  }, [odemeYontemi, eldenSecilebilir]);
+    // Sepet üst sınırı aşarsa kapıda seçimi karta döner (gizli seçim kalmasın).
+    if (kapidaMi(odemeYontemi) && !kapidaSecilebilir) setOdemeYontemi("kart");
+  }, [odemeYontemi, eldenSecilebilir, kapidaSecilebilir]);
 
   // Sadakat bonusu KAZANMA (bu sipariş → BİR SONRAKİ alışveriş). Yalnızca ÜYE.
   // Taban = ödenecek tutar − kargo; odeme/sonuc'taki kazanım hesabıyla BİREBİR
@@ -218,6 +228,23 @@ export default function Odeme() {
         if (data.elden && data.siparisNo) {
           clearCart();
           window.location.href = `/odeme/elden?siparis=${encodeURIComponent(data.siparisNo)}&tutar=${encodeURIComponent(data.toplam || odenecekToplam.toFixed(2))}&teslim=${encodeURIComponent(data.teslim || "")}`;
+        } else {
+          setHata("Sipariş oluşturulamadı: " + (data.error || "Bilinmeyen hata"));
+          setYukleniyor(false);
+        }
+        return;
+      }
+      // Kapıda ödeme: sipariş "ödeme bekliyor" oluştu → onay sayfasına git.
+      if (kapidaMi(odemeYontemi)) {
+        if (data.kapida && data.siparisNo) {
+          clearCart();
+          const q = new URLSearchParams({
+            siparis: data.siparisNo,
+            tutar: String(data.toplam || odenecekToplam.toFixed(2)),
+            yontem: odemeYontemi,
+            komisyon: String(data.komisyon ?? kapidaKomisyon),
+          });
+          window.location.href = `/odeme/kapida?${q.toString()}`;
         } else {
           setHata("Sipariş oluşturulamadı: " + (data.error || "Bilinmeyen hata"));
           setYukleniyor(false);
@@ -313,6 +340,11 @@ export default function Odeme() {
               {([
                 { id: "kart" as const, icon: "💳", title: "Kredi / Banka Kartı", sub: "Taksit seçeneği mevcut" },
                 { id: "havale" as const, icon: "🏦", title: "Banka Havalesi / EFT", sub: "Banka hesabına havale/EFT" },
+                // Kapıda ödeme yalnız üst sınırın altındaki sepetlerde görünür.
+                ...(kapidaSecilebilir ? [
+                  { id: "kapida-nakit" as const, icon: "💵", title: "Kapıda Nakit Ödeme", sub: "Teslimatta kuryeye nakit · ek ücret yok" },
+                  { id: "kapida-kart" as const, icon: "🏧", title: "Kapıda Kredi Kartı", sub: `Teslimatta kuryeye kart · +%${(KAPIDA.KART_KOMISYON_ORANI * 100).toFixed(0)} komisyon` },
+                ] : []),
                 ...(eldenSecilebilir ? [{ id: "elden" as const, icon: "🛵", title: "Elden Teslim — Aynı Gün", sub: "İzmir merkez · kapıda nakit · kargo yok" }] : []),
               ]).map(o => (
                 <div key={o.id} onClick={() => setOdemeYontemi(o.id)}
@@ -327,6 +359,17 @@ export default function Odeme() {
                 </div>
               ))}
             </div>
+
+            {kapidaMi(odemeYontemi) && (
+              <div style={{ marginTop: 14, background: "#F0FAF1", border: "1.5px solid #8BAF8E", borderRadius: 14, padding: "14px 18px", fontSize: 13, color: "#5C3D2E", lineHeight: 1.8 }}>
+                📦 Siparişiniz hazırlanıp kargoya verilecek, ödemeyi <strong>teslimat sırasında kuryeye</strong> yapacaksınız.<br />
+                {odemeYontemi === "kapida-kart" ? (
+                  <>🏧 Kurye <strong>kredi kartı</strong> ile tahsilat yapacak. Kapıda kart hizmeti için <strong>%{(KAPIDA.KART_KOMISYON_ORANI * 100).toFixed(0)} komisyon</strong> eklenir.</>
+                ) : (
+                  <>💵 Lütfen teslimat sırasında tutarı <strong>nakit</strong> hazır bulundurun. <strong>Ek ücret yok.</strong></>
+                )}
+              </div>
+            )}
 
             {odemeYontemi === "kart" && (
               <div style={{ marginTop: 14, background: "#FDF6EE", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "#5C3D2E", opacity: 0.8 }}>
@@ -428,8 +471,19 @@ export default function Odeme() {
                 </div>
               )}
 
+              {/* Kapıda kart komisyonu AYRI SATIRDA — müşteri toplamdaki farkı
+                  görmeden onaylamasın, kapıda sürprizle karşılaşmasın. */}
+              {kapidaKomisyon > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, color: "#5C3D2E", marginBottom: 10 }}>
+                  <span>Kapıda kart komisyonu <span style={{ opacity: 0.6 }}>(%{(KAPIDA.KART_KOMISYON_ORANI * 100).toFixed(0)})</span></span>
+                  <span style={{ fontWeight: 700 }}>+₺{kapidaKomisyon.toFixed(2)}</span>
+                </div>
+              )}
+
               <div style={{ borderTop: "2px solid #FDF6EE", paddingTop: 14, display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontFamily: "Georgia, serif", fontSize: 17, fontWeight: 700, color: "#5C3D2E" }}>Toplam</span>
+                <span style={{ fontFamily: "Georgia, serif", fontSize: 17, fontWeight: 700, color: "#5C3D2E" }}>
+                  {kapidaMi(odemeYontemi) ? "Kapıda Ödenecek" : "Toplam"}
+                </span>
                 <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#E8845A" }}>₺{odenecekToplam.toFixed(2)}</span>
               </div>
             </div>
@@ -464,7 +518,7 @@ export default function Odeme() {
           {/* Buton artık DEVRE DIŞI değil — kutular işaretsizse tıklayınca handleOde uyarı verir */}
           <button onClick={handleOde} disabled={yukleniyor}
             style={{ width: "100%", background: "#E8845A", color: "white", border: "none", borderRadius: 16, padding: "16px", fontSize: 16, fontWeight: 700, cursor: yukleniyor ? "not-allowed" : "pointer", fontFamily: "inherit", boxShadow: "0 8px 20px rgba(232,132,90,0.3)", transition: "all .2s", opacity: yukleniyor ? 0.7 : 1 }}>
-            {yukleniyor ? "Yükleniyor..." : odemeYontemi === "elden" ? "Siparişi Tamamla 🛵" : odemeYontemi === "havale" ? "Siparişi Tamamla 🏦" : "Ödemeye Geç 🔒"}
+            {yukleniyor ? "Yükleniyor..." : kapidaMi(odemeYontemi) ? "Siparişi Tamamla 📦" : odemeYontemi === "elden" ? "Siparişi Tamamla 🛵" : odemeYontemi === "havale" ? "Siparişi Tamamla 🏦" : "Ödemeye Geç 🔒"}
           </button>
 
           <div style={{ textAlign: "center", marginTop: 10, fontSize: 11, color: "#5C3D2E", opacity: 0.4 }}>

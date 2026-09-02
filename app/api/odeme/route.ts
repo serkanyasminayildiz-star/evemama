@@ -6,7 +6,8 @@ import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
 import { SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../../lib/indirim";
 import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../../lib/eldenTeslimat";
 import { hizAsildi, istekIp, telefonGecerli } from "../../../lib/fraudKoruma";
-import { sendHavaleTalimatMaili, sendEldenTeslimMaili } from "../../../lib/email";
+import { KAPIDA, KAPIDA_ETIKET, kapidaMi, kapidaUygun, kapidaKomisyonu } from "../../../lib/kapidaOdeme";
+import { sendHavaleTalimatMaili, sendEldenTeslimMaili, sendKapidaOdemeMaili } from "../../../lib/email";
 
 // Sepet ürünü — client'tan gelen JSON şekli (explicit any yerine).
 type SepetUrun = { id: string | number; name: string; price: number; quantity: number };
@@ -235,6 +236,71 @@ export async function POST(req: NextRequest) {
   // oluştur, IBAN + sipariş no döndür, talimat maili at. STOK DÜŞÜŞÜ + onay maili
   // admin ödemeyi "ödendi" işaretleyince olur (Faz 2). Bonus/kupon harcaması burada
   // işaretlenir (kart akışındaki gibi). Tutar SUNUCUDA hesaplandı (hesap.genelToplam).
+  // KAPIDA ÖDEME (nakit / kredi kartı) — havale ile aynı akış: iyzico'ya
+  // gidilmez, sipariş "ödeme bekliyor" açılır, tahsilat kuryede yapılır,
+  // admin "Ödendi" işaretleyince stok düşer + sadakat puanı yüklenir.
+  // Tutar ve komisyon SUNUCUDA hesaplanır — tarayıcıdan gelen tutar yok sayılır.
+  const secilenYontem: string = String(body.yontem || "");
+  if (kapidaMi(secilenYontem)) {
+    if (!kapidaUygun(hesap.genelToplam)) {
+      return NextResponse.json(
+        { error: `Kapıda ödeme en fazla ₺${KAPIDA.UST_SINIR.toLocaleString("tr-TR")} tutarındaki siparişlerde geçerlidir. Kart veya havale ile devam edebilirsiniz.` },
+        { status: 400 },
+      );
+    }
+    const komisyon = kapidaKomisyonu(secilenYontem, hesap.genelToplam);
+    const kapidaToplam = Math.round((hesap.genelToplam + komisyon) * 100) / 100;
+    const siparisNo = "EVE" + Date.now().toString().slice(-8);
+    const { error: kapidaErr } = await supabaseAdmin.from("siparisler").insert({
+      siparis_no: siparisNo,
+      durum: "beklemede",
+      odeme_yontemi: secilenYontem,
+      odeme_durumu: "bekliyor",
+      toplam: kapidaToplam,     // kapıda tahsil edilecek tutar (komisyon DAHİL)
+      ara_toplam: basketTotal,
+      ad: buyer.name,
+      soyad: buyer.surname,
+      email: buyer.email,
+      telefon: buyer.phone || "",
+      adres: buyer.address,
+      sehir: buyer.city,
+      urunler: JSON.stringify(items),
+      created_at: new Date().toISOString(),
+    });
+    if (kapidaErr) {
+      console.error("[odeme] kapida siparis kayit hatasi:", kapidaErr);
+      return NextResponse.json({ error: "Sipariş oluşturulamadı, lütfen tekrar deneyin." }, { status: 500 });
+    }
+    // Bonus/kupon harcaması havale/kart akışıyla BİREBİR aynı mantık.
+    if (nihaiBonusId) {
+      try {
+        await supabaseAdmin.from("sadakat_bonuslari")
+          .update({ kullanildi: true, kullanildi_siparis_no: siparisNo })
+          .eq("id", nihaiBonusId).eq("kullanildi", false);
+      } catch (e) { console.error("[odeme] kapida bonus isaretleme:", e); }
+    }
+    if (kullanilanKuponKod) {
+      try {
+        const { data: k } = await supabaseAdmin.from("kuponlar").select("kullanim_sayisi").eq("kod", kullanilanKuponKod).maybeSingle();
+        await supabaseAdmin.from("kuponlar").update({ kullanim_sayisi: (Number(k?.kullanim_sayisi) || 0) + 1 }).eq("kod", kullanilanKuponKod);
+      } catch (e) { console.error("[odeme] kapida kupon sayaci:", e); }
+    }
+    try {
+      await sendKapidaOdemeMaili({
+        siparisNo,
+        ad: buyer.name,
+        email: buyer.email,
+        toplam: kapidaToplam,
+        komisyon,
+        yontemEtiket: KAPIDA_ETIKET[secilenYontem],
+      });
+    } catch (e) { console.error("[odeme] kapida mail:", e); }
+    console.log("[odeme] kapida siparis olusturuldu:", siparisNo, secilenYontem, "komisyon:", komisyon);
+    return NextResponse.json({
+      kapida: true, siparisNo, toplam: kapidaToplam.toFixed(2), komisyon, yontem: secilenYontem,
+    });
+  }
+
   if (body.yontem === "havale") {
     const siparisNo = "EVE" + Date.now().toString().slice(-8);
     const { error: havaleErr } = await supabaseAdmin.from("siparisler").insert({

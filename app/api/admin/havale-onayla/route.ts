@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendSiparisOnayMaili } from "../../../../lib/email";
 import { SADAKAT, KARGO, kazanilacakPuan, kargoUcretiKg, sepetAgirligiKg } from "../../../../lib/indirim";
+import { kapidaMi, kapidaKomisyonuAyikla } from "../../../../lib/kapidaOdeme";
 
 // Havale/EFT siparişini "ödendi" olarak onaylar: STOK DÜŞÜRÜR + sipariş onay maili
 // gönderir. Admin panelden (ödeme durumu → "Ödendi") çağrılır. Stok düşüşü
@@ -33,7 +34,9 @@ export async function POST(req: NextRequest) {
     .from("siparisler").select("*").eq("siparis_no", siparisNo).maybeSingle();
   if (sipErr || !sip) return NextResponse.json({ error: "siparis bulunamadi" }, { status: 404 });
 
-  if (sip.odeme_yontemi !== "havale" && sip.odeme_yontemi !== "elden") {
+  // Kapıda ödeme (nakit/kart) de bu akışa dahil: tahsilat kuryede yapılır,
+  // admin "Ödendi" işaretleyince stok düşer + sadakat puanı yüklenir.
+  if (sip.odeme_yontemi !== "havale" && sip.odeme_yontemi !== "elden" && !kapidaMi(sip.odeme_yontemi)) {
     return NextResponse.json({ error: "Bu işlem yalnız havale/elden teslim siparişleri içindir." }, { status: 400 });
   }
   // Zaten ödendiyse → çift stok düşürme YOK (idempotent).
@@ -81,7 +84,11 @@ export async function POST(req: NextRequest) {
       const uye = (liste?.users || []).some(u => (u.email || "").toLowerCase() === alici);
       if (uye) {
         // Taban = ödenen − kargo (kart tarafıyla birebir aynı kural).
-        const odenen = Number(sip.toplam) || 0;
+        // KAPIDA KART: siparişin toplamı komisyonu İÇERİR. Komisyon bir hizmet
+        // bedelidir, mal bedeli değil — puan tabanından düşülür, aksi halde
+        // müşteri komisyondan da puan kazanırdı.
+        const kapidaKom = kapidaKomisyonuAyikla(sip.odeme_yontemi, Number(sip.toplam) || 0);
+        const odenen = Math.max(0, (Number(sip.toplam) || 0) - kapidaKom);
         const araToplam = Number(sip.ara_toplam) || 0;
         let kargoTutari = 0;
         if (sip.odeme_yontemi !== "elden" && araToplam > 0 && araToplam < KARGO.BEDAVA_ESIK) {
