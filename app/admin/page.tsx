@@ -66,6 +66,27 @@ type SiparisKalem = {
   quantity?: number;
   resim_url?: string | null;
 };
+// ── ÖDEME YÖNTEMİ — TEK KAYNAK ──────────────────────────────────────────────
+// Eskiden rozet "kredi_karti ise Kart, elden ise Elden, AKSİ HALDE Havale"
+// diyordu. Kapıda ödeme eklenince kapida-nakit ve kapida-kart da "Havale"
+// görünmeye başladı (2 Eyl 2026) — üstelik kapıda-kart siparişleri %2 komisyon
+// içerdiği için "havale fiyatı artıyor" gibi okundu. Yeni yöntem eklenince
+// YALNIZCA bu tablo güncellenir.
+const ODEME_ROZET: Record<string, { etiket: string; arka: string; yazi: string }> = {
+  kredi_karti:     { etiket: "💳 Kart",          arka: "#E3F2FD", yazi: "#1565C0" },
+  havale:          { etiket: "🏦 Havale",        arka: "#E8F5E9", yazi: "#2E7D32" },
+  elden:           { etiket: "🛵 Elden/Nakit",   arka: "#FFF3E0", yazi: "#E65100" },
+  "kapida-nakit":  { etiket: "💵 Kapıda Nakit",  arka: "#F1F8E9", yazi: "#33691E" },
+  "kapida-kart":   { etiket: "🏧 Kapıda Kart",   arka: "#EDE7F6", yazi: "#4527A0" },
+};
+const BILINMEYEN_ROZET = { etiket: "❔ Bilinmiyor", arka: "#F5F5F5", yazi: "#666" };
+function odemeRozet(yontem?: string | null) {
+  return ODEME_ROZET[String(yontem || "")] || BILINMEYEN_ROZET;
+}
+/** Tahsilatı ADMIN onaylayan yöntemler — "ödendi" işaretlenince havale-onayla
+ *  çağrılır (stok düşümü + sadakat puanı + onay maili). Kart hariç hepsi. */
+const ADMIN_ONAYLI_YONTEMLER = new Set(["havale", "elden", "kapida-nakit", "kapida-kart"]);
+
 type SiparisRow = {
   id: number;
   siparis_no: string;
@@ -1545,8 +1566,8 @@ export default function Admin() {
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ fontFamily: "Georgia,serif", fontSize: 16, fontWeight: 700, color: "#5C3D2E" }}>#{sp.siparis_no}</span>
                       <span style={{ fontSize: 12, opacity: 0.5 }}>{new Date(sp.created_at).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                      <span style={{ background: sp.odeme_yontemi === "kredi_karti" ? "#E3F2FD" : sp.odeme_yontemi === "elden" ? "#FFF3E0" : "#E8F5E9", color: sp.odeme_yontemi === "kredi_karti" ? "#1565C0" : sp.odeme_yontemi === "elden" ? "#E65100" : "#2E7D32", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
-                        {sp.odeme_yontemi === "kredi_karti" ? "💳 Kart" : sp.odeme_yontemi === "elden" ? "🛵 Elden/Nakit" : "🏦 Havale"}
+                      <span style={{ background: odemeRozet(sp.odeme_yontemi).arka, color: odemeRozet(sp.odeme_yontemi).yazi, padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
+                        {odemeRozet(sp.odeme_yontemi).etiket}
                       </span>
                       <span style={{ background: (({ beklemede: "#FFF3E0", hazirlaniyor: "#E3F2FD", kargoda: "#E8F5E9", tamamlandi: "#F3E5F5", iptal: "#FFEBEE" }) as Record<string, string>)[sp.durum ?? ""] || "#F5F5F5", color: (({ beklemede: "#E65100", hazirlaniyor: "#1565C0", kargoda: "#2E7D32", tamamlandi: "#6A1B9A", iptal: "#C62828" }) as Record<string, string>)[sp.durum ?? ""] || "#666", padding: "2px 9px", borderRadius: 50, fontSize: 11, fontWeight: 700 }}>
                         {sp.durum || "beklemede"}
@@ -1677,8 +1698,9 @@ export default function Admin() {
                         </select>
                         <select value={sp.odeme_durumu || "beklemede"} onChange={async e => {
                           const yeni = e.target.value;
-                          // Havale/elden siparişi "ödendi"ye geçince: server'da stok düş + onay maili (idempotent).
-                          if ((sp.odeme_yontemi === "havale" || sp.odeme_yontemi === "elden") && yeni === "odendi" && sp.odeme_durumu !== "odendi") {
+                          // Tahsilatı ADMIN onaylayan yöntemler "ödendi"ye geçince: server'da
+                          // stok düş + sadakat puanı + onay maili (idempotent).
+                          if (ADMIN_ONAYLI_YONTEMLER.has(String(sp.odeme_yontemi || "")) && yeni === "odendi" && sp.odeme_durumu !== "odendi") {
                             const r = await fetch("/api/admin/havale-onayla", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` }, body: JSON.stringify({ siparis_no: sp.siparis_no }) });
                             if (r.ok) { siparisleriYukle(siparisDurumFiltre); goster("✅ Ödeme onaylandı — stok düşüldü, onay maili gönderildi"); }
                             else { goster("❌ Ödeme onaylanamadı"); }
@@ -1701,7 +1723,7 @@ export default function Admin() {
                             const adet = k.adet || k.miktar || k.quantity || 1;
                             return `<div class="row"><span>${ad} x${adet}</span><span>₺${fiyat.toFixed(2)}</span></div>`;
                           }).join("") || "<div class='row'><span>Kalem yok</span><span>—</span></div>";
-                          const odemeYazi = sp.odeme_yontemi === "kredi_karti" ? "Kredi Kartı" : (sp.odeme_yontemi || "Havale/EFT");
+                          const odemeYazi = odemeRozet(sp.odeme_yontemi).etiket.replace(/^\S+\s/, "");
                           const tutar = parseFloat(String(sp.toplam || 0)).toFixed(2);
                           const fishHtml = `<html><head><meta charset="utf-8"><title>Paketleme Fişi #${sp.siparis_no}</title><style>body{font-family:Arial;padding:20px;max-width:420px}h2{border-bottom:2px solid #333;padding-bottom:8px}.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:13px}.total{font-size:18px;font-weight:bold;color:#E8845A;margin-top:12px}@media print{.no-print{display:none}}</style></head><body><h2>🐾 evemama.net — Paketleme Fişi</h2><div class="row"><b>Sipariş No</b><span>#${sp.siparis_no}</span></div><div class="row"><b>Tarih</b><span>${new Date(sp.created_at).toLocaleDateString("tr-TR")}</span></div><div class="row"><b>Müşteri</b><span>${sp.ad} ${sp.soyad}</span></div><div class="row"><b>E-posta</b><span>${sp.email || "-"}</span></div><div class="row"><b>Telefon</b><span>${sp.telefon || "-"}</span></div><div class="row"><b>Adres</b><span>${sp.adres || "-"}, ${sp.sehir || ""}</span></div><div class="row"><b>Ödeme</b><span>${odemeYazi}</span></div><hr/>${kalemleriHtml}<div class="total">Toplam: ₺${tutar}</div><br/><div class="no-print" style="display:flex;gap:8px"><button onclick="window.print()" style="padding:8px 14px;border:none;background:#5C3D2E;color:white;border-radius:8px;cursor:pointer;font-size:13px">🖨️ Yazdır / PDF</button></div></body></html>`;
                           const w = window.open("", "_blank");
@@ -1718,7 +1740,7 @@ export default function Admin() {
                             const adet = k.adet || k.miktar || k.quantity || 1;
                             return `<div class="row"><span>${ad} x${adet}</span><span>₺${fiyat.toFixed(2)}</span></div>`;
                           }).join("") || "<div class='row'><span>Kalem yok</span><span>—</span></div>";
-                          const odemeYazi = sp.odeme_yontemi === "kredi_karti" ? "Kredi Kartı" : (sp.odeme_yontemi || "Havale/EFT");
+                          const odemeYazi = odemeRozet(sp.odeme_yontemi).etiket.replace(/^\S+\s/, "");
                           const tutar = parseFloat(String(sp.toplam || 0)).toFixed(2);
                           const fishHtml = `<!doctype html><html><head><meta charset="utf-8"><title>Paketleme Fişi #${sp.siparis_no}</title><style>body{font-family:Arial;padding:20px;max-width:420px}h2{border-bottom:2px solid #333;padding-bottom:8px}.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:13px}.total{font-size:18px;font-weight:bold;color:#E8845A;margin-top:12px}</style></head><body><h2>🐾 evemama.net — Paketleme Fişi</h2><div class="row"><b>Sipariş No</b><span>#${sp.siparis_no}</span></div><div class="row"><b>Tarih</b><span>${new Date(sp.created_at).toLocaleDateString("tr-TR")}</span></div><div class="row"><b>Müşteri</b><span>${sp.ad} ${sp.soyad}</span></div><div class="row"><b>E-posta</b><span>${sp.email || "-"}</span></div><div class="row"><b>Telefon</b><span>${sp.telefon || "-"}</span></div><div class="row"><b>Adres</b><span>${sp.adres || "-"}, ${sp.sehir || ""}</span></div><div class="row"><b>Ödeme</b><span>${odemeYazi}</span></div><hr/>${kalemleriHtml}<div class="total">Toplam: ₺${tutar}</div></body></html>`;
                           const blob = new Blob([fishHtml], { type: "text/html;charset=utf-8" });
