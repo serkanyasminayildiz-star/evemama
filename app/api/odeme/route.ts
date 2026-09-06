@@ -247,8 +247,13 @@ export async function POST(req: NextRequest) {
   const secilenYontem: string = String(body.yontem || "");
   if (kapidaMi(secilenYontem)) {
     if (!kapidaUygun(hesap.genelToplam)) {
+      // Kapalıyken üst-sınır mesajı yanıltıcı olurdu; iki durumu ayır.
       return NextResponse.json(
-        { error: `Kapıda ödeme en fazla ₺${KAPIDA.UST_SINIR.toLocaleString("tr-TR")} tutarındaki siparişlerde geçerlidir. Kart veya havale ile devam edebilirsiniz.` },
+        {
+          error: !KAPIDA.ACIK
+            ? "Kapıda ödeme şu anda kullanılamıyor. Kart veya havale/EFT ile ödeyebilirsiniz."
+            : `Kapıda ödeme en fazla ₺${KAPIDA.UST_SINIR.toLocaleString("tr-TR")} tutarındaki siparişlerde geçerlidir. Kart veya havale ile devam edebilirsiniz.`,
+        },
         { status: 400 },
       );
     }

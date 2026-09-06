@@ -9,11 +9,24 @@
 // kargo ücreti YOK. Kapıda ödeme = tüm Türkiye, normal kargo, kargo ücreti VAR.
 
 export const KAPIDA = {
+  /**
+   * ANA ANAHTAR — 6 Eyl 2026'da KAPATILDI.
+   * Sebep: müşterilerin bir kısmı kargoyu teslim almıyor; paket geri dönüyor ve
+   * gidiş+dönüş kargo bedeli işletmede kalıyor. Kapıda ödemenin getirdiği
+   * dönüşüm, teslim alınmayan paketlerin maliyetini karşılamadı.
+   *
+   * Özellik SİLİNMEDİ, kapatıldı: panelde bekleyen kapıda siparişleri var ve
+   * onların rozeti, "Ödendi" akışı (stok düşümü + sadakat puanı + onay maili)
+   * ve komisyon ayıklaması çalışmaya devam etmeli. Yeniden açmak = burayı true
+   * yapmak; başka hiçbir yere dokunmak gerekmez.
+   */
+  ACIK: false,
   /** Kapıda ödemenin üst sınırı. 268 ödenmiş siparişin %97'si bu bandın
    *  altında — pratikte müşteri kesmez, ama kapıda reddedilen büyük paketin
    *  iade kargo + stok riskini sınırlar. Üstü kart/havale ile devam eder. */
   UST_SINIR: 10000,
-  /** Kapıda KARTLA ödemede POS/komisyon karşılığı eklenen oran. Nakitte YOK. */
+  /** Kapıda KARTLA ödemede POS/komisyon karşılığı eklenen oran. Nakitte YOK.
+   *  Kapalıyken de gerekli: geçmiş siparişlerin puan tabanı bundan ayıklanır. */
   KART_KOMISYON_ORANI: 0.02,
 } as const;
 
@@ -47,8 +60,13 @@ export function kapidaKomisyonuAyikla(yontem: string | undefined | null, komisyo
   return Math.round((komisyonDahilToplam - taban) * 100) / 100;
 }
 
-/** Sepet tutarı kapıda ödemeye uygun mu? (üst sınır kontrolü) */
+/**
+ * Kapıda ödeme bu sepet için sunulabilir mi?
+ * Ana anahtar kapalıyken HER ZAMAN false — checkout seçeneği göstermez,
+ * sunucu da doğrudan API çağrısını reddeder (fail-closed).
+ */
 export function kapidaUygun(odenecekToplam: number): boolean {
+  if (!KAPIDA.ACIK) return false;
   return odenecekToplam > 0 && odenecekToplam <= KAPIDA.UST_SINIR;
 }
 
