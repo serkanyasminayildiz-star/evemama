@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { supabase } from "../lib/supabase";
+import { ELDEN_TESLIMAT } from "../lib/eldenTeslimat";
 import { useCart } from "../context/CartContext";
 import type { User } from "@supabase/supabase-js";
 import KumbaraWidget from "./components/KumbaraWidget";
@@ -656,7 +657,10 @@ export default function AnaSayfaClient() {
         </div>
       </Link>
 
-      {/* İZMİR ELDEN TESLİMAT ŞERİDİ — 9 merkez ilçeye aynı gün, kapıda nakit */}
+      {/* İZMİR ELDEN TESLİMAT ŞERİDİ — ELDEN_TESLIMAT.ACIK anahtarına bağlı.
+          Hizmet kapatıldığında (7 Eyl 2026) duyuru da kalkar; tutulamayan bir
+          teslimat sözünün sitede durması hiç vermemekten daha kötüdür. */}
+      {ELDEN_TESLIMAT.ACIK && (
       <Link href="/kargo" style={{ display: "block", textDecoration: "none" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 14px 8px" }}>
           <div style={{ background: "linear-gradient(135deg,#FFF3E0,#FFE0B2)", border: "1.5px solid #E8845A", borderRadius: 18, padding: "13px 18px", display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: "6px 22px" }}>
@@ -665,6 +669,7 @@ export default function AnaSayfaClient() {
           </div>
         </div>
       </Link>
+      )}
 
       {/* PATİ KUMBARASI — sosyal proje: her alışverişin %5'i barınak/sokak köpeklerine mama */}
       <KumbaraWidget />

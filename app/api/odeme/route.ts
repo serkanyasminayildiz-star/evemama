@@ -187,7 +187,12 @@ export async function POST(req: NextRequest) {
   // STOK + onay maili admin "ödendi" işaretleyince düşer (havale-onayla, elden dahil).
   if (body.yontem === "elden") {
     if (!eldenUygun(String(buyer.city || ""), String(body.ilce || ""))) {
-      return NextResponse.json({ error: "Elden teslimat yalnız İzmir merkez ilçelerinde geçerlidir." }, { status: 400 });
+      // Hizmet kapalıyken "yalnız İzmir merkez" mesajı yanıltıcı olurdu.
+      return NextResponse.json({
+        error: !ELDEN_TESLIMAT.ACIK
+          ? "Elden teslimat şu anda kullanılamıyor. Kargo ile gönderim veya havale/EFT ile devam edebilirsiniz."
+          : "Elden teslimat yalnız İzmir merkez ilçelerinde geçerlidir.",
+      }, { status: 400 });
     }
     if (basketTotal < ELDEN_TESLIMAT.MIN_SEPET) {
       return NextResponse.json({ error: `Elden teslimat minimum ₺${ELDEN_TESLIMAT.MIN_SEPET} sepet tutarında geçerlidir.` }, { status: 400 });

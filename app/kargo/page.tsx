@@ -17,7 +17,9 @@ export default function Kargo() {
         <div style={{ width: 60, height: 4, background: "#E8845A", borderRadius: 2, marginBottom: 8 }} />
         <p style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.5, marginBottom: 40 }}>Son güncelleme tarihi: 01/02/2026</p>
 
-        {/* İzmir elden teslimat — öne çıkan blok (kurallar lib/eldenTeslimat TEK KAYNAK) */}
+        {/* İzmir elden teslimat bloğu — ELDEN_TESLIMAT.ACIK anahtarına bağlı.
+            Hizmet kapalıyken duyuru da görünmez (7 Eyl 2026). */}
+        {ELDEN_TESLIMAT.ACIK && (
         <div style={{ background: "linear-gradient(135deg,#FFF3E0,#FFE0B2)", border: "2px solid #E8845A", borderRadius: 24, padding: "28px 32px", marginBottom: 24 }}>
           <h2 style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 700, color: "#5C3D2E", margin: "0 0 12px" }}>🛵 İzmir&apos;e Aynı Gün ELDEN Teslimat</h2>
           <div style={{ fontSize: 15, color: "#5C3D2E", lineHeight: 2 }}>
@@ -30,6 +32,7 @@ export default function Kargo() {
             📞 Teslimattan önce telefonla haber verilir.
           </div>
         </div>
+        )}
 
         <div style={{ background: "white", borderRadius: 24, padding: "40px 48px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
           {[

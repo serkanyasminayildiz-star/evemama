@@ -11,6 +11,18 @@
 //  • Ödeme: kapıda NAKİT (fiziki POS başvurusu yapıldı; yakında kapıda kart).
 
 export const ELDEN_TESLIMAT = {
+  /**
+   * ANA ANAHTAR — 7 Eyl 2026'da KAPATILDI.
+   * Sebep: iş yoğunluğunda aynı gün teslim sözü zaman zaman tutulamıyor.
+   * Tutulamayan bir teslimat sözü, hiç verilmemiş bir sözden daha çok zarar
+   * verir; hizmet askıya alındı.
+   *
+   * Özellik SİLİNMEDİ, kapatıldı: geçmiş elden siparişleri panelde duruyor ve
+   * rozetleri, "Ödendi" akışı (stok + sadakat puanı + onay maili) ve kargo
+   * muafiyeti hesabı çalışmaya devam etmeli. Yeniden açmak = burayı true
+   * yapmak; ilçe listesi, saatler ve minimum sepet olduğu gibi korundu.
+   */
+  ACIK: false,
   IL: "İzmir",
   ILCELER: ["Balçova", "Bayraklı", "Bornova", "Buca", "Gaziemir", "Karabağlar", "Karşıyaka", "Konak", "Narlıdere"] as readonly string[],
   KESIM_SAATI: 12,                 // bu saate kadar sipariş → aynı gün
@@ -20,8 +32,14 @@ export const ELDEN_TESLIMAT = {
   ODEME_NOTU: "Kapıda nakit ödeme (çok yakında kapıda kartla ödeme)",
 } as const;
 
-/** İl + ilçe bu hizmetin kapsamında mı? (Türkçe-duyarsız karşılaştırma) */
+/**
+ * İl + ilçe bu hizmetin kapsamında mı? (Türkçe-duyarsız karşılaştırma)
+ * Ana anahtar kapalıyken HER ZAMAN false — checkout seçeneği göstermez,
+ * ana sayfa/ürün/kargo sayfasındaki duyurular kalkar, sunucu doğrudan API
+ * çağrısını da reddeder (fail-closed).
+ */
 export function eldenUygun(il: string, ilce: string): boolean {
+  if (!ELDEN_TESLIMAT.ACIK) return false;
   if ((il || "").toLocaleLowerCase("tr-TR") !== ELDEN_TESLIMAT.IL.toLocaleLowerCase("tr-TR")) return false;
   const i = (ilce || "").toLocaleLowerCase("tr-TR").trim();
   return ELDEN_TESLIMAT.ILCELER.some(x => x.toLocaleLowerCase("tr-TR") === i);
