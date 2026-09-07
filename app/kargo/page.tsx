@@ -36,7 +36,9 @@ export default function Kargo() {
 
         <div style={{ background: "white", borderRadius: 24, padding: "40px 48px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
           {[
-            { baslik: "1. Kargo Seçenekleri", icerik: "Siparişleriniz anlaşmalı olduğumuz MNG Kargo ile gönderilir. Farklı kargo seçenekleri hız, maliyet ve teslimat zamanı açısından değişiklik gösterebilir. İzmir merkez ilçelerinde ayrıca aynı gün elden teslimat seçeneği sunulur (yukarıdaki kutu)." },
+            // Elden teslimat cümlesi de ANA ANAHTARA bağlı — hizmet kapalıyken
+            // sözleşme metninde "sunulur" demek yanlış beyan olur.
+            { baslik: "1. Kargo Seçenekleri", icerik: "Siparişleriniz anlaşmalı olduğumuz MNG Kargo ile gönderilir. Farklı kargo seçenekleri hız, maliyet ve teslimat zamanı açısından değişiklik gösterebilir." + (ELDEN_TESLIMAT.ACIK ? " İzmir merkez ilçelerinde ayrıca aynı gün elden teslimat seçeneği sunulur (yukarıdaki kutu)." : "") },
             { baslik: "2. Teslimat Süresi", icerik: "Ürünlerinizin teslimat süresi, sipariş verilen ürünlerin türüne ve seçtiğiniz kargo seçeneğine bağlı olarak değişebilir. Siparişinizin tahmini teslimat tarihini alışveriş sepetinizde görebilirsiniz." },
             { baslik: "3. Sipariş İzleme", icerik: "Siparişiniz kargoya verildiğinde, size bir takip numarası ve kargo şirketi bilgisi sağlanacaktır. Bu bilgileri kullanarak siparişinizin nerede olduğunu kolayca izleyebilirsiniz." },
             { baslik: "4. Teslimat Adresi", icerik: "Lütfen sipariş verirken doğru teslimat adresi ve iletişim bilgilerini sağladığınızdan emin olun. Yanlış teslimat adresi verilmesi durumunda sorumluluk kabul edilmez." },
