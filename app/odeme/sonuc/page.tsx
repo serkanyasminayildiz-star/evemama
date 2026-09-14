@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { clarityEvent } from "../../../lib/clarity";
+import { whatsappLinki } from "../../../lib/iletisim";
 
 // Google Ads tag ID — layout.tsx'te yuklendi. Buradaki conversion label
 // 'Satin Alma' islemine ozel.
@@ -123,7 +124,7 @@ function OdemeSonucIcerik() {
   // Başarısız ödeme = kaybedilmiş satış DEĞİL — müşteriyi kurtarmaya çalışıyoruz.
   // En sık sebep: taksitli işlemi kartın/bankanın reddetmesi → "tek çekim" öner.
   // + farklı kart + banka araması + tek tıkla WhatsApp'tan insan desteği.
-  const waMesaj = encodeURIComponent("Merhaba, ödeme sırasında sorun yaşadım. Sipariş vermek için yardımcı olabilir misiniz?");
+  const waMesajHam = "Merhaba, ödeme sırasında sorun yaşadım. Sipariş vermek için yardımcı olabilir misiniz?";
 
   // iyzico'nun döndürdüğü ret sebebi (odeme/sonuc route'u URL'de taşır).
   // Sebep BİLİNİYORSA genel tahmin listesi yerine ona özel yönerge gösterilir —
@@ -186,7 +187,7 @@ function OdemeSonucIcerik() {
         <Link href="/odeme" style={{ background: "#E8845A", color: "white", padding: "15px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 15, display: "block", marginBottom: 12, boxShadow: "0 8px 20px rgba(232,132,90,0.3)" }}>
           Tekrar Dene →
         </Link>
-        <a href={`https://wa.me/905347488001?text=${waMesaj}`} style={{ background: "#25D366", color: "white", padding: "13px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14, display: "block", marginBottom: 14 }}>
+        <a href={whatsappLinki(waMesajHam)} style={{ background: "#25D366", color: "white", padding: "13px 32px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14, display: "block", marginBottom: 14 }}>
           📱 WhatsApp&apos;tan sipariş ver
         </a>
         <Link href="/sepet" style={{ fontSize: 13, color: "#E8845A", textDecoration: "none" }}>← Sepete Dön</Link>

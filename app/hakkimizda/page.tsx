@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ILETISIM } from "../../lib/iletisim";
 export const metadata = {
   title: "Hakkımızda",
   description: "evemama.net — evcil hayvan tutkunlarının güvendiği online dükkân. Hikâyemiz, misyonumuz ve değerlerimiz.",
@@ -89,7 +90,7 @@ export default function Hakkimizda() {
               { label: "Mersis No", value: "0938120871700001" },
               { label: "Ticaret Sicil No", value: "233886" },
               { label: "Adres", value: "Atilla Mahallesi No: 32/B KONAK/İZMİR" },
-              { label: "Telefon", value: "+90 552 090 80 01" },
+              { label: "WhatsApp", value: ILETISIM.WHATSAPP },
               { label: "E-Posta", value: "info@evemama.net" },
             ].map((item, i) => (
               <div key={i} style={{ background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "16px" }}>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ILETISIM } from "../../lib/iletisim";
 export const metadata = {
   title: "İade ve Değişim",
   description: "evemama.net ürün iade koşulları, değişim süreci, cayma hakkı ve iade için yapılması gerekenler.",
@@ -26,7 +27,7 @@ export default function Iade() {
               no: "1", baslik: "İptal Politikası",
               maddeler: [
                 { harf: "a", baslik: "Sipariş İptali Süresi", icerik: "Siparişinizi iptal etmek için, siparişi verdikten sonraki 24 saat içinde bize bildirmeniz gerekmektedir." },
-                { harf: "b", baslik: "İptal İşlemi", icerik: "Siparişinizi iptal etmek için info@evemama.net veya +905520908001 üzerinden bizimle iletişime geçebilirsiniz. İptal işlemi sonrasında ödemeniz ödeme yönteminize iade edilecektir." },
+                { harf: "b", baslik: "İptal İşlemi", icerik: "Siparişinizi iptal etmek için info@evemama.net veya WhatsApp (0534 748 80 01) üzerinden bizimle iletişime geçebilirsiniz. İptal işlemi sonrasında ödemeniz ödeme yönteminize iade edilecektir." },
               ]
             },
             {
@@ -61,7 +62,7 @@ export default function Iade() {
           <div style={{ background: "#FFF5F0", borderRadius: 16, padding: "20px 24px" }}>
             <h2 style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>4. İletişim</h2>
             <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.7, margin: 0 }}>
-              📧 <strong>info@evemama.net</strong> &nbsp;|&nbsp; 📞 <strong>+90 552 090 80 01</strong>
+              📧 <strong>info@evemama.net</strong> &nbsp;|&nbsp; 💬 <strong>WhatsApp: {ILETISIM.WHATSAPP}</strong>
             </p>
           </div>
         </div>

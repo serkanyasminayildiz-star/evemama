@@ -8,6 +8,7 @@
 //
 // FROM adresi: evemama.net Resend'de Verified, siparis@evemama.net ile gonderilir.
 import { Resend } from "resend";
+import { ILETISIM } from "./iletisim";
 import { HAVALE_HESAP } from "./havale";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
@@ -187,7 +188,7 @@ function buildHTML(p: SiparisOnayParams): string {
     <div style="padding:20px 24px;background:#f9fafb;text-align:center;border-top:1px solid #eee;">
       <p style="margin:0 0 8px 0;font-size:13px;color:#666;">Sorunuz mu var?</p>
       <p style="margin:0;font-size:14px;color:#333;">
-        <a href="https://wa.me/905347488001" style="color:#25D366;text-decoration:none;font-weight:600;">WhatsApp: 0534 748 80 01</a>
+        <a href="${ILETISIM.WHATSAPP_LINK}" style="color:#25D366;text-decoration:none;font-weight:600;">WhatsApp: ${ILETISIM.WHATSAPP}</a>
       </p>
     </div>
 
@@ -228,7 +229,7 @@ ${p.adres ? `Teslimat Adresi:\n${p.ad}${p.soyad ? " " + p.soyad : ""}\n${p.adres
 Siparis durumunuzu takip edin:
 https://evemama.net/siparislerim
 
-Sorulariniz icin WhatsApp: 0534 748 80 01
+Sorulariniz icin WhatsApp: ${ILETISIM.WHATSAPP}
 
 evemama.net
 `;
@@ -303,7 +304,7 @@ function buildKuponHTML(p: KuponMailParams): string {
     </div>
     <div style="padding:20px 24px;background:#f9fafb;text-align:center;border-top:1px solid #eee;">
       <p style="margin:0 0 8px 0;font-size:13px;color:#666;">Sorularınız için bize ulaşın:</p>
-      <p style="margin:0;font-size:14px;color:#333;"><a href="https://wa.me/905347488001" style="color:#25D366;text-decoration:none;font-weight:600;">WhatsApp: 0534 748 80 01</a></p>
+      <p style="margin:0;font-size:14px;color:#333;"><a href="${ILETISIM.WHATSAPP_LINK}" style="color:#25D366;text-decoration:none;font-weight:600;">WhatsApp: ${ILETISIM.WHATSAPP}</a></p>
     </div>
     <div style="padding:18px 24px;text-align:center;background:#1a1a1a;color:#9ca3af;font-size:12px;line-height:1.6;">
       <p style="margin:0 0 6px 0;">evemama.net — Evcil Dostunuzun Dükkanı</p>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ILETISIM } from "../../lib/iletisim";
 import { ELDEN_TESLIMAT } from "../../lib/eldenTeslimat";
 export const metadata = {
   title: "Kargo ve Teslimat",
@@ -70,7 +71,7 @@ export default function Kargo() {
             <h2 style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>6. İletişim</h2>
             <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.7, margin: 0 }}>
               Kargo ve teslimat süreci hakkında herhangi bir sorunuz varsa müşteri hizmetleri ekibimiz size yardımcı olur.<br />
-              📞 <strong>+90 552 090 80 01</strong> &nbsp;|&nbsp; 📧 <strong>info@evemama.net</strong>
+              💬 <strong>WhatsApp: {ILETISIM.WHATSAPP}</strong> &nbsp;|&nbsp; 📧 <strong>info@evemama.net</strong>
             </p>
           </div>
         </div>

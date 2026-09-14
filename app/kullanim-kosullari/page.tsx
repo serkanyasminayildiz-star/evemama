@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ILETISIM } from "../../lib/iletisim";
 export const metadata = {
   title: "Kullanım Koşulları",
   description: "evemama.net site kullanım koşulları, üyelik, alışveriş ve hizmet kuralları.",
@@ -36,7 +37,7 @@ export default function KullanimKosullari() {
           <div style={{ background: "#FFF5F0", borderRadius: 16, padding: "20px 24px" }}>
             <h2 style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#5C3D2E", marginBottom: 8 }}>8. İletişim</h2>
             <p style={{ fontSize: 15, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.7, margin: 0 }}>
-              📧 <strong>info@evemama.net</strong> &nbsp;|&nbsp; 📞 <strong>+90 552 090 80 01</strong>
+              📧 <strong>info@evemama.net</strong> &nbsp;|&nbsp; 💬 <strong>WhatsApp: {ILETISIM.WHATSAPP}</strong>
             </p>
           </div>
         </div>

@@ -1,14 +1,15 @@
 "use client";
 import Link from "next/link";
+import { ILETISIM } from "../../lib/iletisim";
 import { useState } from "react";
 
 const sorular = [
   { kategori: "Siparişler & Satın Almalar", items: [
     { soru: "Siparişim nerede?", cevap: "Siparişiniz kargoya verildikten sonra size e-posta ile takip numarası gönderilecektir. MNG Kargo web sitesi veya uygulaması üzerinden siparişinizi takip edebilirsiniz." },
-    { soru: "Siparişimi nasıl iptal edebilirim?", cevap: "Siparişinizi iptal etmek için sipariş tarihinden itibaren 24 saat içinde info@evemama.net adresine e-posta gönderebilir veya +90 552 090 80 01 numaralı hattı arayabilirsiniz." },
+    { soru: "Siparişimi nasıl iptal edebilirim?", cevap: "Siparişinizi iptal etmek için sipariş tarihinden itibaren 24 saat içinde info@evemama.net adresine e-posta gönderebilir veya WhatsApp üzerinden (0534 748 80 01) yazabilirsiniz." },
     { soru: "Siparişim neden iptal edildi?", cevap: "Siparişiniz; ödeme onaylanamaması, stok yetersizliği veya teslimat adresiyle ilgili sorunlar nedeniyle iptal edilmiş olabilir. Detaylı bilgi için müşteri hizmetlerimizle iletişime geçin." },
     { soru: "Siparişimin tamamını alamadım, neden?", cevap: "Bazı durumlarda ürünler farklı kargolarla gönderilebilir. Lütfen takip numaranızı kontrol edin veya müşteri hizmetlerimizle iletişime geçin." },
-    { soru: "Siparişimle ilgili bir sorun olursa ne olur?", cevap: "Siparişinizle ilgili herhangi bir sorun yaşamanız halinde info@evemama.net adresine e-posta gönderebilir veya +90 552 090 80 01 numaralı hattı arayabilirsiniz. En kısa sürede çözüm sağlanacaktır." },
+    { soru: "Siparişimle ilgili bir sorun olursa ne olur?", cevap: "Siparişinizle ilgili herhangi bir sorun yaşamanız halinde info@evemama.net adresine e-posta gönderebilir veya WhatsApp üzerinden (0534 748 80 01) yazabilirsiniz. En kısa sürede çözüm sağlanacaktır." },
     { soru: "İade barkodunu nasıl alabilirim?", cevap: "İade talebinizi müşteri hizmetlerimize iletmeniz halinde size iade barkodu gönderilecektir." },
   ]},
   { kategori: "Üyelik", items: [
@@ -81,7 +82,7 @@ export default function SSS() {
           <p style={{ fontSize: 14, color: "#F4C09A", opacity: 0.8, marginBottom: 20 }}>Müşteri hizmetlerimiz size yardımcı olmaktan mutluluk duyar.</p>
           <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/iletisim" style={{ background: "#E8845A", color: "white", padding: "12px 24px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14 }}>📧 Bize Yazın</Link>
-            <a href="tel:+905520908001" style={{ background: "rgba(255,255,255,0.1)", color: "white", padding: "12px 24px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14 }}>📞 +90 552 090 80 01</a>
+            <a href={ILETISIM.WHATSAPP_LINK} style={{ background: "#25D366", color: "white", padding: "12px 24px", borderRadius: 50, textDecoration: "none", fontWeight: 700, fontSize: 14 }}>💬 WhatsApp: {ILETISIM.WHATSAPP}</a>
           </div>
         </div>
       </div>

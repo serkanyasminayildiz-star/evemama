@@ -1,4 +1,5 @@
 import { HAVALE_HESAP } from "../../lib/havale";
+import { ILETISIM } from "../../lib/iletisim";
 
 export const metadata = {
   title: "Kısa Bir Ara — evemama.net",
@@ -32,7 +33,7 @@ export default function Bakim() {
 
         <div style={{ fontSize: 14, color: "#5C3D2E", lineHeight: 2 }}>
           📧 <a href="mailto:info@evemama.net" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>info@evemama.net</a><br />
-          📞 <a href="tel:+905520908001" style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>+90 552 090 80 01</a>
+          💬 <a href={ILETISIM.WHATSAPP_LINK} style={{ color: "#E8845A", fontWeight: 700, textDecoration: "none" }}>WhatsApp: {ILETISIM.WHATSAPP}</a>
         </div>
 
         <div style={{ marginTop: 26, paddingTop: 18, borderTop: "1px solid #F0E8E0", fontSize: 12, color: "#5C3D2E", opacity: 0.5 }}>

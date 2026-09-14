@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { ILETISIM } from "../../lib/iletisim";
 import { useState, useEffect } from "react";
 
 export default function Iletisim() {
@@ -53,19 +54,27 @@ export default function Iletisim() {
           </p>
 
           {[
-            { icon: "📞", title: "Müşteri Hizmetleri", value: "+90 552 090 80 01", sub: "Pazartesi–Cuma 09:00–17:00 arası arayabilirsiniz; harici saatlerde telefona cevap verilememektedir." },
-            { icon: "📧", title: "E-posta", value: "info@evemama.net", sub: "En geç 24 saat içinde yanıt" },
-            { icon: "📍", title: "Adres", value: "Atilla Mah. No: 32/B", sub: "Konak / İzmir" },
-          ].map((item, i) => (
-            <div key={i} style={{ background: "white", borderRadius: 20, padding: "20px 24px", marginBottom: 16, display: "flex", gap: 16, alignItems: "flex-start", boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
-              <span style={{ fontSize: 28 }}>{item.icon}</span>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>{item.title}</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#5C3D2E", marginBottom: 2 }}>{item.value}</div>
-                <div style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.55 }}>{item.sub}</div>
-              </div>
-            </div>
-          ))}
+            // Telefon hattı kaldırıldı (14 Eyl 2026) — iletişim WhatsApp üzerinden.
+            { icon: "💬", title: "WhatsApp", value: ILETISIM.WHATSAPP, sub: ILETISIM.NOT, href: ILETISIM.WHATSAPP_LINK as string | undefined },
+            { icon: "📧", title: "E-posta", value: ILETISIM.EPOSTA, sub: "En geç 24 saat içinde yanıt", href: `mailto:${ILETISIM.EPOSTA}` as string | undefined },
+            { icon: "📍", title: "Adres", value: "Atilla Mah. No: 32/B", sub: "Konak / İzmir", href: undefined as string | undefined },
+          ].map((item, i) => {
+            const icerik = (
+              <>
+                <span style={{ fontSize: 28 }}>{item.icon}</span>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#5C3D2E", opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>{item.title}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#5C3D2E", marginBottom: 2 }}>{item.value}</div>
+                  <div style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.55 }}>{item.sub}</div>
+                </div>
+              </>
+            );
+            const kartStil = { background: "white", borderRadius: 20, padding: "20px 24px", marginBottom: 16, display: "flex", gap: 16, alignItems: "flex-start", boxShadow: "0 4px 16px rgba(92,61,46,0.06)", textDecoration: "none", color: "inherit" } as const;
+            // WhatsApp ve e-posta kartları tıklanabilir — mobilde tek dokunuşla sohbet/mail açılsın.
+            return item.href
+              ? <a key={i} href={item.href} target={item.href.startsWith("http") ? "_blank" : undefined} rel="noopener" style={kartStil}>{icerik}</a>
+              : <div key={i} style={kartStil}>{icerik}</div>;
+          })}
 
           <div style={{ background: "#FDF6EE", borderRadius: 16, padding: "16px 20px", marginTop: 8, fontSize: 13, color: "#5C3D2E", opacity: 0.7 }}>
             📩 Göndermiş olduğunuz mesajlar en geç 24 saat içerisinde müşteri temsilcilerimiz tarafından yanıtlanır.

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { ILETISIM } from "../lib/iletisim";
 import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { supabase } from "../lib/supabase";
@@ -783,8 +784,8 @@ export default function AnaSayfaClient() {
                 <strong style={{ opacity: 0.7, fontSize: 11 }}>TNB Pet Mama ve Aksesuarları İthalat İhracat Limited Şirketi</strong><br />
                 Vergi No: 9381208717 — Konak V.D.<br />
                 Atilla Mah. No: 32/B Konak / İzmir<br />
-                📞 0552 090 80 01<br />
-                <span style={{ fontSize: 11, opacity: 0.7, display: "inline-block", margin: "2px 0" }}>Pazartesi–Cuma 09:00–17:00 arası arayabilirsiniz; harici saatlerde telefona cevap verilememektedir.</span><br />
+                💬 WhatsApp: {ILETISIM.WHATSAPP}<br />
+                <span style={{ fontSize: 11, opacity: 0.7, display: "inline-block", margin: "2px 0" }}>{ILETISIM.NOT}</span><br />
                 ✉️ info@evemama.net
               </p>
             </div>
