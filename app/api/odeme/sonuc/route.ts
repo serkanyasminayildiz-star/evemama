@@ -4,11 +4,15 @@ import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { sendSiparisOnayMaili } from "../../../../lib/email";
 import { SADAKAT, KARGO, kazanilacakPuan, kargoUcretiKg, sepetAgirligiKg } from "../../../../lib/indirim";
+import { SITE_KOK } from "../../../../lib/site";
 
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
 const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
 const IYZICO_BASE_URL = process.env.IYZICO_BASE_URL || "https://api.iyzipay.com";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://evemama.net";
+// KANONİK www (bkz. lib/site.ts): ödeme sonrası redirect'ler de non-www'ye
+// gidip 307 ile bounce etmesin — callback POST'unun token'ını koruyan asıl
+// düzeltme callbackUrl'de ama redirect host'u da kanonik tutulur.
+const SITE_URL = SITE_KOK;
 
 // ANON İSTEMCİ YOK (bilinçli): bu route'un dokunduğu tabloların HEPSİ RLS
 // korumalı (odeme_gecici, siparisler, urunler, sadakat_bonuslari, kuponlar,

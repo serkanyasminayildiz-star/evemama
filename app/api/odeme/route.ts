@@ -6,6 +6,7 @@ import { kuponIndirimiHesapla } from "../kupon-dogrula/route";
 import { SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../../lib/indirim";
 import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../../lib/eldenTeslimat";
 import { hizAsildi, istekIp, telefonGecerli } from "../../../lib/fraudKoruma";
+import { ODEME_CALLBACK_URL } from "../../../lib/site";
 import { KAPIDA, KAPIDA_ETIKET, kapidaMi, kapidaUygun, kapidaKomisyonu } from "../../../lib/kapidaOdeme";
 import { sendHavaleTalimatMaili, sendEldenTeslimMaili, sendKapidaOdemeMaili } from "../../../lib/email";
 
@@ -366,7 +367,9 @@ export async function POST(req: NextRequest) {
     currency: "TRY",
     basketId: "B" + conversationId,
     paymentGroup: "PRODUCT",
-    callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://evemama.net"}/api/odeme/sonuc`,
+    // KANONİK www — non-www callbackUrl 307 redirect'i iyzico POST token'ını
+    // yiyordu (18 Eyl olayı). Env'e güvenilmez, host www'ye sabit. bkz. lib/site.ts
+    callbackUrl: ODEME_CALLBACK_URL,
     enabledInstallments: [1, 2, 3, 6, 9, 12],
     buyer: {
       id: buyer.id || "1",
