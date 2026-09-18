@@ -80,7 +80,19 @@ export async function POST(req: NextRequest) {
     });
 
     if (data.status === "success" && data.paymentStatus === "SUCCESS") {
-      
+
+      // ÇİFT-ÖNLEME (idempotent): bu iyzico token'ı için sipariş ZATEN varsa
+      // yeniden oluşturma. iyzico bazen callback'i iki kez gönderir; ayrıca
+      // kurtarma ucu aynı token'ı tekrar işlerse mükerrer sipariş + çift stok
+      // düşümü olurdu. Token benzersiz olduğu için güvenli anahtar.
+      const { data: mevcutSip } = await supabaseAdmin
+        .from("siparisler").select("siparis_no, email").eq("iyzico_token", token).maybeSingle();
+      if (mevcutSip) {
+        console.log("[odeme/sonuc] siparis zaten var, atlaniyor:", mevcutSip.siparis_no);
+        const emailEnc = encodeURIComponent(mevcutSip.email || "");
+        return NextResponse.redirect(`${SITE_URL}/odeme/sonuc?durum=basarili&siparis=${mevcutSip.siparis_no}&tutar=${data.paidPrice}&email=${emailEnc}`, { status: 303 });
+      }
+
       const siparisNo = "EVE" + Date.now().toString().slice(-8);
 
       // Geçici tablodan müşteri bilgilerini al
