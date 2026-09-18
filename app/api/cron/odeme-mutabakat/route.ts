@@ -24,8 +24,9 @@ const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
 const IYZICO_BASE_URL = process.env.IYZICO_BASE_URL || "https://api.iyzipay.com";
 const ENDPOINT = "/payment/iyzipos/checkoutform/auth/ecom/detail";
 
-const YENI_ESIK_MS = 3 * 60_000;  // 3 dk'dan yeni gecici'ye dokunma (canlı callback ile yarışma)
-const KAP = 50;                    // koşu başına en fazla token (süre sınırı)
+const YENI_ESIK_MS = 3 * 60_000;       // 3 dk'dan yeni gecici'ye dokunma (canlı callback ile yarışma)
+const ESKI_ESIK_MS = 48 * 3600_000;    // 48 saatten eski gecici = terk edilmiş, kurtarma penceresi dışı
+const KAP = 50;                         // koşu başına en fazla token (süre sınırı)
 
 function rnd(): string { return process.hrtime()[0] + Math.random().toString(8).slice(2); }
 function auth(randomString: string, body: Record<string, unknown>): string {
@@ -70,10 +71,15 @@ export async function GET(req: NextRequest) {
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 
-  // Callback'in silemediği (bekleyen) geçici kayıtlar — 3 dk'dan eski olanlar.
-  const esik = new Date(Date.now() - YENI_ESIK_MS).toISOString();
+  // Kurtarma penceresi: 3 dk – 48 saat. EN YENİ ÖNCE — binlerce eski terk
+  // edilmiş sepet arasında yeni kaçan ödemeye önce bakılsın (eski-önce olsaydı
+  // cron hep eskileri tarar, yeni ödemeye hiç ulaşmazdı). <3dk canlı callback
+  // ile yarışmasın, >48s terk edilmiş sayılır.
+  const ustSinir = new Date(Date.now() - YENI_ESIK_MS).toISOString();
+  const altSinir = new Date(Date.now() - ESKI_ESIK_MS).toISOString();
   const { data: geciciler, error } = await db
-    .from("odeme_gecici").select("*").lt("created_at", esik).order("created_at", { ascending: true }).limit(KAP);
+    .from("odeme_gecici").select("*").lt("created_at", ustSinir).gte("created_at", altSinir)
+    .order("created_at", { ascending: false }).limit(KAP);
   if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: noStore });
   if (!geciciler?.length) return NextResponse.json({ ok: true, taranan: 0, olusan: 0, mesaj: "bekleyen kayıt yok" }, { headers: noStore });
 
