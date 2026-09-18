@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
+import { sendSiparisOnayMaili } from "../../../../lib/email";
 
 // TEK SEFERLİK KURTARMA + TEŞHİS (18 Eyl 2026, non-www callback olayı, d4e2b0d).
 // İş bitince bu dosya kaldırılır.
@@ -93,6 +94,22 @@ export async function POST(req: NextRequest) {
       }
     }
     return NextResponse.json({ sipNo, sonuc: "İPTAL EDİLDİ + stok iade", stokIade: iade }, { headers: noStore });
+  }
+
+  // ── EYLEM: kurtarılan siparişe onay maili gönder ────────────────────────
+  // Kurtarma ile oluşan siparişler callback'ten geçmediği için onay maili
+  // almadı. Müşteri ödeyip hiçbir bildirim almasın istemiyoruz.
+  if (body.action === "mail") {
+    const sipNo = String(body.siparis_no || "").trim();
+    if (!sipNo) return NextResponse.json({ error: "siparis_no gerekli" }, { status: 400, headers: noStore });
+    const { data: sip } = await db.from("siparisler").select("*").eq("siparis_no", sipNo).maybeSingle();
+    if (!sip) return NextResponse.json({ error: "sipariş bulunamadı" }, { status: 404, headers: noStore });
+    const ok = await sendSiparisOnayMaili({
+      siparisNo: sip.siparis_no, ad: sip.ad || "", soyad: sip.soyad || "", email: sip.email || "",
+      urunler: kalemleriCoz(sip.urunler), toplam: Number(sip.toplam) || 0, araToplam: Number(sip.ara_toplam) || undefined,
+      adres: sip.adres || "", sehir: sip.sehir || "", telefon: sip.telefon || "",
+    });
+    return NextResponse.json({ sipNo, email: sip.email, mailGonderildi: ok }, { headers: noStore });
   }
 
   // ── KURTARMA / TEŞHİS (email) ───────────────────────────────────────────
