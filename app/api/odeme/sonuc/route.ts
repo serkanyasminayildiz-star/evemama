@@ -81,12 +81,23 @@ export async function POST(req: NextRequest) {
 
     if (data.status === "success" && data.paymentStatus === "SUCCESS") {
 
-      // ÇİFT-ÖNLEME (idempotent): bu iyzico token'ı için sipariş ZATEN varsa
-      // yeniden oluşturma. iyzico bazen callback'i iki kez gönderir; ayrıca
-      // kurtarma ucu aynı token'ı tekrar işlerse mükerrer sipariş + çift stok
-      // düşümü olurdu. Token benzersiz olduğu için güvenli anahtar.
-      const { data: mevcutSip } = await supabaseAdmin
-        .from("siparisler").select("siparis_no, email").eq("iyzico_token", token).maybeSingle();
+      // ÇİFT-ÖNLEME (idempotent): bu ödeme için sipariş ZATEN varsa yeniden
+      // oluşturma. ÖNCE iyzico paymentId (gerçek çekim kimliği) — aynı checkout
+      // oturumunun farklı token'ları TEK paymentId paylaşır, mükerreri o yakalar
+      // (callback çift gönderimi + mutabakat cron'u ile callback yarışı). Sonra
+      // token — paymentId okunamazsa yedek.
+      const paymentId = data.paymentId ? String(data.paymentId) : "";
+      let mevcutSip: { siparis_no: string; email?: string } | null = null;
+      if (paymentId) {
+        const { data: m } = await supabaseAdmin
+          .from("siparisler").select("siparis_no, email").eq("iyzico_payment_id", paymentId).limit(1);
+        mevcutSip = m?.[0] || null;
+      }
+      if (!mevcutSip) {
+        const { data: m } = await supabaseAdmin
+          .from("siparisler").select("siparis_no, email").eq("iyzico_token", token).limit(1);
+        mevcutSip = m?.[0] || null;
+      }
       if (mevcutSip) {
         console.log("[odeme/sonuc] siparis zaten var, atlaniyor:", mevcutSip.siparis_no);
         const emailEnc = encodeURIComponent(mevcutSip.email || "");
@@ -111,6 +122,7 @@ export async function POST(req: NextRequest) {
         toplam: data.paidPrice,
         ara_toplam: data.price,
         iyzico_token: token,
+        iyzico_payment_id: paymentId || null, // mutabakat + çift-önleme anahtarı
         ad: gecici?.ad || "",
         soyad: gecici?.soyad || "",
         email: gecici?.email || "",

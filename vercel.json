@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/replenishment", "schedule": "0 9 * * *" },
-    { "path": "/api/cron/bezos-sync", "schedule": "0 6 * * *" }
+    { "path": "/api/cron/bezos-sync", "schedule": "0 6 * * *" },
+    { "path": "/api/cron/odeme-mutabakat", "schedule": "*/10 * * * *" }
   ]
 }
