@@ -120,6 +120,9 @@ export async function GET(req: NextRequest) {
     const { error: insErr } = await db.from("siparisler").insert({
       siparis_no: siparisNo, durum: "hazirlaniyor", odeme_yontemi: "kredi_karti", odeme_durumu: "odendi",
       toplam: data.paidPrice, ara_toplam: data.price ?? g.ara_toplam ?? null, iyzico_token: token, iyzico_payment_id: paymentId || null,
+      // Tıklama kimliği: bu sipariş callback'ten geçmedi → Ads dönüşümü de
+      // tetiklenmedi. Kimlik burada korunur ki çevrimdışı yüklenebilsin.
+      gclid: g.gclid || null,
       ad: g.ad || "", soyad: g.soyad || "", email: g.email || "", telefon: g.telefon || "",
       adres: g.adres || "", sehir: g.sehir || "", urunler: g.urunler || null, created_at: new Date().toISOString(),
     });

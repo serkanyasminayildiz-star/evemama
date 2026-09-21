@@ -10,6 +10,7 @@ import { clarityEvent, claritySet } from "../../lib/clarity";
 import { telefonGecerli } from "../../lib/fraudKoruma";
 import { KAPIDA, kapidaMi, kapidaUygun, kapidaKomisyonu } from "../../lib/kapidaOdeme";
 import { TR_ILLER, IL_LISTESI } from "../../lib/tr-iller";
+import { gclidOku } from "../../lib/gclid";
 
 export default function Odeme() {
   const { items, totalPrice, clearCart } = useCart();
@@ -216,7 +217,7 @@ export default function Odeme() {
           "Content-Type": "application/json",
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.ilce ? `${form.address}, ${form.ilce}` : form.address, city: form.city }, ilce: form.ilce, kuponKodu: uygulananKupon?.kod || "", yontem: odemeYontemi }),
+        body: JSON.stringify({ items, buyer: { name: form.name, surname: form.surname, email: form.email, phone: form.phone, address: form.ilce ? `${form.address}, ${form.ilce}` : form.address, city: form.city }, ilce: form.ilce, kuponKodu: uygulananKupon?.kod || "", yontem: odemeYontemi, gclid: gclidOku() }),
       });
       const data = await res.json();
       // Sunucu hataları (429 hız limiti, 400 telefon, 500) yöntem dallarından

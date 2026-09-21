@@ -7,6 +7,7 @@ import { SADAKAT, hesaplaIndirim, sepetAgirligiKg } from "../../../lib/indirim";
 import { ELDEN_TESLIMAT, eldenUygun, teslimBilgisi } from "../../../lib/eldenTeslimat";
 import { hizAsildi, istekIp, telefonGecerli } from "../../../lib/fraudKoruma";
 import { ODEME_CALLBACK_URL } from "../../../lib/site";
+import { gclidTemizle } from "../../../lib/gclid";
 import { KAPIDA, KAPIDA_ETIKET, kapidaMi, kapidaUygun, kapidaKomisyonu } from "../../../lib/kapidaOdeme";
 import { sendHavaleTalimatMaili, sendEldenTeslimMaili, sendKapidaOdemeMaili } from "../../../lib/email";
 
@@ -58,6 +59,12 @@ function generateAuth(randomString: string, uri: string, body: Record<string, un
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { items, buyer } = body;
+
+  // Google tıklama kimliği — istemciden gelir, GÜVENİLMEZ: desen süzgecinden
+  // geçer (bkz. lib/gclid.ts). Siparişe yazılır ki callback kaçırıp sipariş
+  // mutabakat cron'uyla kurtarılsa bile satış Google Ads'e çevrimdışı dönüşüm
+  // olarak yüklenebilsin (17-18 Eyl'de ₺13.675,78 bu yüzden kalıcı kayıptı).
+  const gclid = gclidTemizle(body.gclid);
 
   // ── FRAUD KORUMASI (21 Ağu 2026) ──────────────────────────────────────────
   // Kart deneme saldırısı → bankalar iyzico'ya fraud bildirdi → hesaba zorunlu
@@ -215,6 +222,7 @@ export async function POST(req: NextRequest) {
       adres: buyer.address,
       sehir: buyer.city,
       urunler: JSON.stringify(items),
+      gclid, // Ads çevrimdışı dönüşüm yüklemesi için (bkz. lib/gclid.ts)
       created_at: new Date().toISOString(),
     });
     if (eldenErr) {
@@ -280,6 +288,7 @@ export async function POST(req: NextRequest) {
       adres: buyer.address,
       sehir: buyer.city,
       urunler: JSON.stringify(items),
+      gclid, // Ads çevrimdışı dönüşüm yüklemesi için (bkz. lib/gclid.ts)
       created_at: new Date().toISOString(),
     });
     if (kapidaErr) {
@@ -332,6 +341,7 @@ export async function POST(req: NextRequest) {
       adres: buyer.address,
       sehir: buyer.city,
       urunler: JSON.stringify(items),
+      gclid, // Ads çevrimdışı dönüşüm yüklemesi için (bkz. lib/gclid.ts)
       created_at: new Date().toISOString(),
     });
     if (havaleErr) {
@@ -437,7 +447,8 @@ export async function POST(req: NextRequest) {
         uye_email: uyeEmail, // null ise misafir → sadakat bonusu verilmez
         kullanilan_bonus_id: nihaiBonusId, // bonus yalnızca otomatik indirim kazandıysa harcanır
         kullanilan_kupon_kod: kullanilanKuponKod, // kupon avantajlıysa harcanır
-        created_at: new Date().toISOString(),
+        gclid, // Ads çevrimdışı dönüşüm yüklemesi için (bkz. lib/gclid.ts)
+      created_at: new Date().toISOString(),
       }, { onConflict: "token" });
     }
 

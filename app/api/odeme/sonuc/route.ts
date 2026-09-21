@@ -123,6 +123,7 @@ export async function POST(req: NextRequest) {
         ara_toplam: data.price,
         iyzico_token: token,
         iyzico_payment_id: paymentId || null, // mutabakat + çift-önleme anahtarı
+        gclid: gecici?.gclid || null, // Ads çevrimdışı dönüşüm yüklemesi (bkz. lib/gclid.ts)
         ad: gecici?.ad || "",
         soyad: gecici?.soyad || "",
         email: gecici?.email || "",

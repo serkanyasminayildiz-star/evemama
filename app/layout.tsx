@@ -2,6 +2,7 @@ import { CartProvider } from "../context/CartContext";
 import Script from "next/script";
 import ClarityScript from "./ClarityScript";
 import ClarityKimlik from "./ClarityKimlik";
+import GclidYakala from "./GclidYakala";
 import "./globals.css";
 
 // Google Ads conversion tracking Tag ID (AW-...).
@@ -57,6 +58,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             (admin müşteri verisi içerir; KVKK — kayda PII düşmesin). */}
         <ClarityScript id={CLARITY_ID} />
         <ClarityKimlik />
+        {/* Google tıklama kimliği (gclid) yakalama — dönüşüm etiketi yalnız
+            başarı sayfasında tetiklendiği için, callback kaçıran siparişlerde
+            satış Ads'e görünmüyordu. Kimlik saklanınca çevrimdışı yükleme
+            mümkün olur. bkz. lib/gclid.ts */}
+        <GclidYakala />
         <CartProvider>{children}</CartProvider>
       </body>
     </html>
