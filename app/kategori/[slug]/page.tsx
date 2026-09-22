@@ -7,47 +7,46 @@
 // burada VERIYI BAGIMSIZ olarak ayrica cekiyor — client kendi fetch'ini
 // yapmaya devam ediyor; regression yok.
 
+import { cache } from "react";
 import { supabase } from "../../../lib/supabase";
 import KategoriClient from "./KategoriClient";
 import { kategoriSeo } from "./seoIcerik";
+import { altAgacIdleri, slugIleBul } from "../../../lib/kategoriAgac";
 
 export const dynamic = "force-dynamic";
 
 type Kategori = { id: number | string; ad: string; slug: string; ust_kategori_id?: number | string | null };
 type Urun = { id: number | string; ad: string; slug: string; fiyat: number; indirimli_fiyat?: number | null; resim_url?: string | null; stok?: number | null };
 
-async function kategoriGetir(slug: string): Promise<Kategori | null> {
-  // .single() yerine .limit(1) — duplicate slug veya RLS hatasi durumunda
-  // sayfa 404'e dusmesin, client component fetch'i devraisin.
-  // NOT: kategoriler tablosunda 'aciklama' kolonu yok — SELECT'ten cikarildi.
+// Kategori tablosunun TAMAMI — 72 satır, tek sorgu. React cache() ile aynı
+// istek içinde generateMetadata + sayfa arasında PAYLAŞILIR (eskiden ikisi ayrı
+// ayrı sorguluyordu). Slug araması ve alt-ağaç hesabı artık bu listeden
+// türetilir; kategoriler tablosuna sunucu başına 5 sorgu yerine 1 gider.
+// bkz. lib/kategoriAgac.ts — Disk IO kökü.
+const tumKategorilerGetir = cache(async (): Promise<Kategori[]> => {
   const { data, error } = await supabase
     .from("kategoriler")
-    .select("id, ad, slug, ust_kategori_id")
-    .eq("slug", slug)
-    .limit(1);
+    .select("id, ad, slug, ust_kategori_id");
   if (error) {
-    console.error("[kategoriGetir] supabase error:", slug, error);
-    return null;
+    console.error("[tumKategorilerGetir] supabase error:", error);
+    return [];
   }
-  return (data?.[0] as unknown as Kategori) || null;
+  return (data as unknown as Kategori[]) || [];
+});
+
+async function kategoriGetir(slug: string): Promise<Kategori | null> {
+  // Eski hali .eq("slug", slug).limit(1) idi (duplicate slug'da .single()
+  // patlamasın diye). Artık tam listeden bulunur — aynı sonuç, sorgu yok.
+  return slugIleBul(await tumKategorilerGetir(), slug);
 }
 
 // Kategori + tum alt kategorilerin (3 seviyeye kadar) urunlerini doner.
 // KategoriClient.tsx ile ayni mantik — sonuc tutarli olsun.
 async function altKategorilerVeUrunler(katId: Kategori["id"]): Promise<Urun[]> {
-  const { data: seviye1 } = await supabase.from("kategoriler").select("id")
-    .or(`id.eq.${katId},ust_kategori_id.eq.${katId}`);
-  const idler1: (number | string)[] = seviye1?.map((k: { id: number | string }) => k.id) || [katId];
-
-  const { data: seviye2 } = await supabase.from("kategoriler").select("id")
-    .in("ust_kategori_id", idler1);
-  const idler2: (number | string)[] = seviye2?.map((k: { id: number | string }) => k.id) || [];
-
-  const { data: seviye3 } = await supabase.from("kategoriler").select("id")
-    .in("ust_kategori_id", [...idler1, ...idler2]);
-  const idler3: (number | string)[] = seviye3?.map((k: { id: number | string }) => k.id) || [];
-
-  const tumIdler = Array.from(new Set([...idler1, ...idler2, ...idler3]));
+  // Eskiden seviye1/2/3 için ÜÇ ayrı sorgu vardı; aynı sonuç artık zaten
+  // çekilmiş tam listeden bellekte hesaplanır (aktif süzgeci yok — eskisinde
+  // de yoktu). bkz. lib/kategoriAgac.ts
+  const tumIdler = altAgacIdleri(await tumKategorilerGetir(), katId);
 
   const { data: urunler } = await supabase
     .from("urunler")

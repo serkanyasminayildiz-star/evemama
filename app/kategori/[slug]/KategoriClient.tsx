@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { useCart } from "../../../context/CartContext";
 import { kategoriSeo } from "./seoIcerik";
+import { altAgacIdleri, cocuklar, slugIleBul } from "../../../lib/kategoriAgac";
 
 type Urun = {
   id: number;
@@ -54,43 +55,35 @@ export default function KategoriClient() {
 
     const veriYukle = async () => {
       try {
-        // .single() yerine .limit(1) — DB'de duplicate slug varsa
-        // .single() exception firlatir ve sayfa "yuklenemedi" hatasi verir.
-        // NOT: kategoriler tablosunda 'aciklama' kolonu yok — SELECT'ten cikarildi.
-        const { data: katList, error: katErr } = await supabase.from("kategoriler")
-          .select("id, ad, slug, ust_kategori_id, aktif").eq("slug", slug).limit(1);
-        if (katErr) throw katErr;
-        const kat = katList?.[0];
+        // TEK SORGU — tablo 72 satır. Eskiden burada ALTI ayrı `kategoriler`
+        // sorgusu vardı (kategorinin kendisi, tüm liste, alt kategoriler,
+        // seviye1/2/3). Tüm liste zaten çekiliyordu; diğer beşi ondan
+        // türetilebiliyordu. 22 Eyl ölçümünde kategoriler tablosu Supabase
+        // Disk IO bütçesinin en büyük tüketicisiydi. bkz. lib/kategoriAgac.ts
+        const { data: tumKatData, error: tkErr } = await supabase.from("kategoriler")
+          .select("id, ad, slug, ust_kategori_id, aktif, sira");
+        if (tkErr) throw tkErr;
+        const tumKat: Kategori[] = tumKatData || [];
+        setTumKategoriler(tumKat);
+
+        // Eski: .eq("slug", slug).limit(1) — duplicate slug'da patlamasın diye
+        // .single() kullanılmıyordu; find() de ilkini alır, aynı davranış.
+        // useParams() string | string[] döndürür (dosyanın 33. satırında da
+        // aynı kontrol var); tekil rota olduğu için ilkini/kendisini alıyoruz.
+        const slugStr = typeof slug === "string" ? slug : String(slug?.[0] ?? "");
+        const kat = slugIleBul(tumKat, slugStr);
         if (!kat) { setYukleniyor(false); return; }
         setKategori(kat);
 
-        const { data: tumKatData, error: tkErr } = await supabase.from("kategoriler")
-          .select("id, ad, slug, ust_kategori_id");
-        if (tkErr) throw tkErr;
-        setTumKategoriler(tumKatData || []);
+        // Eski: .eq("ust_kategori_id", kat.id).eq("aktif", true).order("sira")
+        // Postgres ASC → NULL'lar sonda; aynı sıralama korunuyor.
+        setAltKategoriler(
+          cocuklar(tumKat, [kat.id])
+            .filter(k => k.aktif === true)
+            .sort((a, b) => (a.sira ?? Number.POSITIVE_INFINITY) - (b.sira ?? Number.POSITIVE_INFINITY)),
+        );
 
-        const { data: altKat, error: akErr } = await supabase.from("kategoriler")
-          .select("id, ad, slug, ust_kategori_id, sira")
-          .eq("ust_kategori_id", kat.id).eq("aktif", true).order("sira");
-        if (akErr) throw akErr;
-        setAltKategoriler(altKat || []);
-
-        const { data: seviye1, error: s1Err } = await supabase.from("kategoriler").select("id")
-          .or(`id.eq.${kat.id},ust_kategori_id.eq.${kat.id}`);
-        if (s1Err) throw s1Err;
-        const idler1 = seviye1?.map(k => k.id) || [kat.id];
-
-        const { data: seviye2, error: s2Err } = await supabase.from("kategoriler").select("id")
-          .in("ust_kategori_id", idler1);
-        if (s2Err) throw s2Err;
-        const idler2 = seviye2?.map(k => k.id) || [];
-
-        const { data: seviye3, error: s3Err } = await supabase.from("kategoriler").select("id")
-          .in("ust_kategori_id", [...idler1, ...idler2]);
-        if (s3Err) throw s3Err;
-        const idler3 = seviye3?.map(k => k.id) || [];
-
-        const tumIdler = [...new Set([...idler1, ...idler2, ...idler3])];
+        const tumIdler = altAgacIdleri(tumKat, kat.id);
 
         const { data: urunData, error: urErr } = await supabase.from("urunler")
           .select("*, markalar(ad), kategoriler(ad, slug)")
