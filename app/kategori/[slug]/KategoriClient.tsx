@@ -85,16 +85,27 @@ export default function KategoriClient() {
 
         const tumIdler = altAgacIdleri(tumKat, kat.id);
 
+        // YALNIZ KULLANILAN ALANLAR — `Urun` tipinin tam karşılığı. Eskiden
+        // `select *` 24 kolonun hepsini çekiyordu; kategori sayfası açıklama
+        // (aciklama, kisa_aciklama…) göstermediği halde her ziyarette taşınıyordu.
+        // Ölçüm (09.10, 723 ürün): 851 KB → 321 KB (%62 az), kullanılan alanlarda
+        // değer farkı 0. 08.10'daki 8x sipariş günü NANO'nun disk IO bütçesini
+        // bitirip veritabanını kilitledi; en büyük tüketici bu sorguydu.
+        // Yeni alan kullanılacaksa önce `Urun` tipine, sonra BURAYA ekle.
         const { data: urunData, error: urErr } = await supabase.from("urunler")
-          .select("*, markalar(ad), kategoriler(ad, slug)")
+          .select("id, ad, slug, fiyat, indirimli_fiyat, resim_url, stok, markalar(ad), kategoriler(ad, slug)")
           .in("kategori_id", tumIdler)
           .neq("aktif", false)
           .limit(1000);
         if (urErr) throw urErr;
 
-        setUrunler(urunData || []);
-        setFiltrelenmis(urunData || []);
-        const markaSet = new Set(urunData?.map((u: Urun) => u.markalar?.ad).filter(Boolean));
+        // Açık kolon listesinde supabase-js tip çıkarımı markalar/kategoriler
+        // ilişkisini dizi sanıyor; PostgREST çok-a-bir ilişkide NESNE döner (eski
+        // select * ile değerler birebir aynı doğrulandı). Proje deseni: as unknown as.
+        const urunListesi = (urunData || []) as unknown as Urun[];
+        setUrunler(urunListesi);
+        setFiltrelenmis(urunListesi);
+        const markaSet = new Set(urunListesi.map((u: Urun) => u.markalar?.ad).filter(Boolean));
         setMarkalar(Array.from(markaSet) as string[]);
       } catch (err) {
         console.error("[kategori] veri yukleme hatasi:", err);
