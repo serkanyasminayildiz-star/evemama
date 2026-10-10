@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ILETISIM } from "../../lib/iletisim";
+import MesaiBilgisi from "../components/MesaiBilgisi";
 export const metadata = {
   title: "Hakkımızda",
   description: "evemama.net — evcil hayvan tutkunlarının güvendiği online dükkân. Hikâyemiz, misyonumuz ve değerlerimiz.",
@@ -105,6 +106,7 @@ export default function Hakkimizda() {
 
       {/* Footer */}
       <footer style={{ background: "#2C1A0E", padding: "32px 48px", marginTop: 48, textAlign: "center" }}>
+        <MesaiBilgisi tema="koyu" style={{ marginBottom: 16 }} />
         <div style={{ fontSize: 13, color: "white", opacity: 0.3 }}>© 2025 evemama.net — Tüm hakları saklıdır.</div>
       </footer>
 

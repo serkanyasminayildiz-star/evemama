@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MesaiBilgisi from "../components/MesaiBilgisi";
 export const metadata = {
   title: "Gizlilik Politikası",
   description: "evemama.net üzerinde kişisel verilerinizin nasıl işlendiği, korunduğu ve haklarınız hakkında bilgi.",
@@ -40,6 +41,7 @@ export default function Gizlilik() {
         </div>
       </div>
       <footer style={{ background: "#2C1A0E", padding: "32px 48px", textAlign: "center" }}>
+        <MesaiBilgisi tema="koyu" style={{ marginBottom: 16 }} />
         <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.3 }}>© 2025 evemama.net — Tüm hakları saklıdır.</div>
       </footer>
     </main>

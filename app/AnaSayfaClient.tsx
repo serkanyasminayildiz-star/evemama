@@ -8,6 +8,7 @@ import { ELDEN_TESLIMAT } from "../lib/eldenTeslimat";
 import { useCart } from "../context/CartContext";
 import type { User } from "@supabase/supabase-js";
 import KumbaraWidget from "./components/KumbaraWidget";
+import MesaiBilgisi from "./components/MesaiBilgisi";
 
 // Supabase satır tipleri (ana sayfa). numeric kolonlar (fiyat/indirimli_fiyat) string döner.
 type Urun = {
@@ -788,6 +789,8 @@ export default function AnaSayfaClient() {
                 <span style={{ fontSize: 11, opacity: 0.7, display: "inline-block", margin: "2px 0" }}>{ILETISIM.NOT}</span><br />
                 ✉️ info@evemama.net
               </p>
+              {/* Paragrafın (%40 saydam) DIŞINDA — mesai bilgisi tam görünür olsun. */}
+              <MesaiBilgisi tema="koyu" style={{ marginTop: 16 }} />
             </div>
             {[
               { title: "Hızlı Linkler", links: [{ ad: "Hakkımızda", href: "/hakkimizda" }, { ad: "Tüm Ürünler", href: "/urunler" }, { ad: "Açık Mama", href: "/kategori/acik-mamalar" }, { ad: "Orijinallik Garantisi", href: "/orijinallik-garantisi" }, { ad: "Kampanyalar", href: "/kampanyalar" }, { ad: "Mama Asistanı", href: "/mama-asistani" }, { ad: "Blog", href: "/blog" }, { ad: "İletişim", href: "/iletisim" }] },

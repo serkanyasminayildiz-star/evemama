@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { ILETISIM } from "../../lib/iletisim";
+import MesaiBilgisi from "../components/MesaiBilgisi";
 import { useState, useEffect } from "react";
 
 export default function Iletisim() {
@@ -53,10 +54,13 @@ export default function Iletisim() {
             Sorularınız, talepleriniz ve siparişlerinizle ilgili bizimle iletişime geçebilirsiniz. En kısa sürede size dönüş sağlıyoruz.
           </p>
 
+          {/* Kartlardan ÖNCE — iletişim alanında ilk görülen bilgi çalışma saatleri. */}
+          <MesaiBilgisi tema="acik" style={{ marginBottom: 16 }} />
+
           {[
             // Telefon hattı kaldırıldı (14 Eyl 2026) — iletişim WhatsApp üzerinden.
             { icon: "💬", title: "WhatsApp", value: ILETISIM.WHATSAPP, sub: ILETISIM.NOT, href: ILETISIM.WHATSAPP_LINK as string | undefined },
-            { icon: "📧", title: "E-posta", value: ILETISIM.EPOSTA, sub: "En geç 24 saat içinde yanıt", href: `mailto:${ILETISIM.EPOSTA}` as string | undefined },
+            { icon: "📧", title: "E-posta", value: ILETISIM.EPOSTA, sub: "Mesai saatlerinde yanıtlanır", href: `mailto:${ILETISIM.EPOSTA}` as string | undefined },
             { icon: "📍", title: "Adres", value: "Atilla Mah. No: 32/B", sub: "Konak / İzmir", href: undefined as string | undefined },
           ].map((item, i) => {
             const icerik = (
@@ -76,9 +80,9 @@ export default function Iletisim() {
               : <div key={i} style={kartStil}>{icerik}</div>;
           })}
 
-          <div style={{ background: "#FDF6EE", borderRadius: 16, padding: "16px 20px", marginTop: 8, fontSize: 13, color: "#5C3D2E", opacity: 0.7 }}>
-            📩 Göndermiş olduğunuz mesajlar en geç 24 saat içerisinde müşteri temsilcilerimiz tarafından yanıtlanır.
-          </div>
+          {/* "En geç 24 saat" notu kaldırıldı (10.10.2026): mesai dışı yazan
+              (örn. Cuma 18:00) Pazartesi yanıt alır — söz yanlıştı. Yanıt
+              zamanı artık yukarıdaki MesaiBilgisi kartında. */}
         </div>
 
         <div style={{ background: "white", borderRadius: 24, padding: mobil ? "26px 18px" : "36px 32px", boxShadow: "0 4px 24px rgba(92,61,46,0.07)" }}>
@@ -136,6 +140,7 @@ export default function Iletisim() {
       </div>
 
       <footer style={{ background: "#2C1A0E", padding: mobil ? "28px 20px" : "32px 48px", textAlign: "center" }}>
+        <MesaiBilgisi tema="koyu" style={{ marginBottom: 16 }} />
         <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.3 }}>© 2025 evemama.net — Tüm hakları saklıdır.</div>
       </footer>
     </main>

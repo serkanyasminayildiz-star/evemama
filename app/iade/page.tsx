@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ILETISIM } from "../../lib/iletisim";
+import MesaiBilgisi from "../components/MesaiBilgisi";
 export const metadata = {
   title: "İade ve Değişim",
   description: "evemama.net ürün iade koşulları, değişim süreci, cayma hakkı ve iade için yapılması gerekenler.",
@@ -68,6 +69,7 @@ export default function Iade() {
         </div>
       </div>
       <footer style={{ background: "#2C1A0E", padding: "32px 48px", textAlign: "center" }}>
+        <MesaiBilgisi tema="koyu" style={{ marginBottom: 16 }} />
         <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.3 }}>© 2025 evemama.net — Tüm hakları saklıdır.</div>
       </footer>
     </main>

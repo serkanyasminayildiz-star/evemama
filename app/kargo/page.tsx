@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ILETISIM } from "../../lib/iletisim";
 import { ELDEN_TESLIMAT } from "../../lib/eldenTeslimat";
+import MesaiBilgisi from "../components/MesaiBilgisi";
 export const metadata = {
   title: "Kargo ve Teslimat",
   description: "evemama.net kargo süreleri, ücretsiz kargo limiti, anlaşmalı kargo firmaları ve teslimat detayları.",
@@ -77,6 +78,7 @@ export default function Kargo() {
         </div>
       </div>
       <footer style={{ background: "#2C1A0E", padding: "32px 48px", textAlign: "center" }}>
+        <MesaiBilgisi tema="koyu" style={{ marginBottom: 16 }} />
         <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.3 }}>© 2025 evemama.net — Tüm hakları saklıdır.</div>
       </footer>
     </main>

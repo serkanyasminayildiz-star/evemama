@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MesaiBilgisi from "../components/MesaiBilgisi";
 export const metadata = {
   title: "Mesafeli Satış Sözleşmesi",
   description: "evemama.net üzerinden yapılan alışverişlerde tüketici ile satıcı arasındaki mesafeli satış sözleşmesi koşulları.",
@@ -35,6 +36,7 @@ export default function MesafeliSatis() {
         </div>
       </div>
       <footer style={{ background: "#2C1A0E", padding: "32px 48px", textAlign: "center" }}>
+        <MesaiBilgisi tema="koyu" style={{ marginBottom: 16 }} />
         <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.3 }}>© 2025 evemama.net — Tüm hakları saklıdır.</div>
       </footer>
     </main>

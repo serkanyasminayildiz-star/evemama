@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { ILETISIM } from "../../lib/iletisim";
 import { useState } from "react";
+import MesaiBilgisi from "../components/MesaiBilgisi";
 
 const sorular = [
   { kategori: "Siparişler & Satın Almalar", items: [
@@ -87,6 +88,7 @@ export default function SSS() {
         </div>
       </div>
       <footer style={{ background: "#2C1A0E", padding: "32px 48px", textAlign: "center" }}>
+        <MesaiBilgisi tema="koyu" style={{ marginBottom: 16 }} />
         <div style={{ fontSize: 13, color: "#FDF6EE", opacity: 0.3 }}>© 2025 evemama.net — Tüm hakları saklıdır.</div>
       </footer>
     </main>
