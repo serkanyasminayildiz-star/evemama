@@ -1,5 +1,6 @@
 "use client";
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
+import { ALIM_LIMITI, limitCoz } from "../../../lib/alimLimiti";
 
 type SiteAyarlar = Record<string, string>;
 
@@ -11,11 +12,15 @@ type Props = {
   btn: (bg?: string, extra?: CSSProperties) => CSSProperties;
 };
 
-// Site Ayarlari — Iyzico, Havale ve Iletisim ayarlari icin key-value editor.
+// Site Ayarlari — Havale ve Iletisim ayarlari icin key-value editor.
 // alanlar 'as const' ile tanimli; tip 'text' | 'email' literal'i guvenli.
+//
+// İYZICO BÖLÜMÜ KALDIRILDI (13 Eki 2026): site_ayarlari herkese açık okunuyor
+// (anon key tarayıcıda) — API/Secret Key buraya yazılınca herkes okuyabiliyordu.
+// Ödeme kodu bu alanları hiç kullanmıyor; anahtarlar YALNIZ Vercel ortam
+// değişkenlerinde (IYZICO_API_KEY / IYZICO_SECRET_KEY) durur. Geri ekleme.
 export default function SiteAyarlari({ siteAyarlari, setSiteAyarlari, siteAyarKaydet, s, btn }: Props) {
   const bolumler = [
-    { baslik: "💳 İyzico Ödeme", alanlar: [{ key: "iyzico_api_key", label: "API Key", tip: "text" as const }, { key: "iyzico_secret_key", label: "Secret Key", tip: "text" as const }, { key: "iyzico_base_url", label: "Base URL", tip: "text" as const }] },
     { baslik: "🏦 Havale / EFT", alanlar: [{ key: "havale_banka1", label: "Banka Adı", tip: "text" as const }, { key: "havale_iban1", label: "IBAN", tip: "text" as const }, { key: "havale_ad1", label: "Hesap Sahibi", tip: "text" as const }] },
     { baslik: "📞 İletişim", alanlar: [{ key: "whatsapp_no", label: "WhatsApp No", tip: "text" as const }, { key: "site_email", label: "E-posta", tip: "email" as const }] },
   ];
@@ -28,6 +33,24 @@ export default function SiteAyarlari({ siteAyarlari, setSiteAyarlari, siteAyarKa
     if (!yeni && !window.confirm("Site yeniden ZİYARETE AÇILACAK.\n\nStok girişini bitirdiğine emin misin?")) return;
     setSiteAyarlari({ ...siteAyarlari, bakim_modu: yeni ? "true" : "false" });
     await siteAyarKaydet("bakim_modu", yeni ? "true" : "false");
+  };
+
+  // Haftalık alım limiti — /api/odeme okur (lib/alimLimiti.ts). Boş = kapalı.
+  // Girdi ayrı state'te: başlıktaki durum yalnız KAYDEDİLEN değeri gösterir
+  // (yazılıp kaydedilmeyen sayı "açık" gibi görünmesin).
+  const limitAnahtar = ALIM_LIMITI.AYAR_ANAHTARI;
+  const [limitGirdi, setLimitGirdi] = useState<string | null>(null); // null = dokunulmadı
+  const limitKayitli = limitCoz(siteAyarlari[limitAnahtar]);
+  const limitGorunen = limitGirdi ?? (siteAyarlari[limitAnahtar] || "");
+  const limitKaydet = async () => {
+    const deger = limitGorunen.trim();
+    if (deger && !limitCoz(deger)) {
+      window.alert("Limit 1 veya daha büyük bir tam sayı olmalı. Limiti kapatmak için alanı boş bırakıp kaydedin.");
+      return;
+    }
+    await siteAyarKaydet(limitAnahtar, deger);
+    setSiteAyarlari({ ...siteAyarlari, [limitAnahtar]: deger });
+    setLimitGirdi(null);
   };
 
   return (
@@ -46,6 +69,22 @@ export default function SiteAyarlari({ siteAyarlari, setSiteAyarlari, siteAyarKa
           style={{ ...btn(bakimAcik ? "#8BAF8E" : "#C62828"), padding: "13px 26px", fontSize: 14 }}>
           {bakimAcik ? "🟢 Siteyi Yeniden Aç" : "🔴 Siteyi Bakıma Al"}
         </button>
+      </div>
+
+      {/* HAFTALIK ALIM LİMİTİ — aynı müşteri, aynı ürün, kayan 7 gün */}
+      <div style={{ background: "white", borderRadius: 18, padding: 24, marginBottom: 16, boxShadow: "0 4px 16px rgba(92,61,46,0.06)" }}>
+        <h2 style={{ fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700, color: "#2C1A0E", marginBottom: 8 }}>
+          🛒 Haftalık Alım Limiti — {limitKayitli ? `${limitKayitli} adet / 7 gün` : "kapalı (sınırsız)"}
+        </h2>
+        <p style={{ fontSize: 13, color: "#5C3D2E", opacity: 0.75, lineHeight: 1.7, margin: "0 0 16px" }}>
+          Aynı müşteri (aynı e-posta <strong>veya</strong> aynı telefon) aynı üründen son 7 gün içinde en fazla bu kadar adet alabilir. Sınır her gün kayar — düzenli mama alan müşteri her hafta yeniden alabilir. İptal/iade edilen siparişler sayılmaz. <strong>Boş bırakıp kaydedersen limit kapanır.</strong>
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input type="number" min={1} step={1} inputMode="numeric" placeholder="Örn. 3 — boş = sınırsız" autoComplete="off"
+            value={limitGorunen} onChange={e => setLimitGirdi(e.target.value)}
+            style={{ ...s, flex: 1, marginBottom: 0 }} />
+          <button onClick={limitKaydet} style={{ ...btn(), padding: "10px 16px" }}>Kaydet</button>
+        </div>
       </div>
 
       {bolumler.map((bolum, bi) => (

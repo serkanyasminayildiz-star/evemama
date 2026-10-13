@@ -10,9 +10,8 @@ import { ODEME_CALLBACK_URL } from "../../../lib/site";
 import { gclidTemizle } from "../../../lib/gclid";
 import { KAPIDA, KAPIDA_ETIKET, kapidaMi, kapidaUygun, kapidaKomisyonu } from "../../../lib/kapidaOdeme";
 import { sendHavaleTalimatMaili, sendEldenTeslimMaili, sendKapidaOdemeMaili } from "../../../lib/email";
-
-// Sepet ürünü — client'tan gelen JSON şekli (explicit any yerine).
-type SepetUrun = { id: string | number; name: string; price: number; quantity: number };
+import { sepetiAyristir, sepetiKarsilastir, type DbUrun } from "../../../lib/sepetDogrula";
+import { alimLimitiKontrol } from "../../../lib/alimLimiti";
 
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
 const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
@@ -58,7 +57,7 @@ function generateAuth(randomString: string, uri: string, body: Record<string, un
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { items, buyer } = body;
+  const { buyer } = body;
 
   // Google tıklama kimliği — istemciden gelir, GÜVENİLMEZ: desen süzgecinden
   // geçer (bkz. lib/gclid.ts). Siparişe yazılır ki callback kaçırıp sipariş
@@ -72,8 +71,12 @@ export async function POST(req: NextRequest) {
   const ip = istekIp(req);
 
   // 1) HIZ LİMİTİ — gerçek müşteri 1-2 kez dener; kart deneyici onlarca kez.
-  if (hizAsildi(`odeme:${ip}`, 4, 15 * 60_000)) {
-    console.warn("[odeme] hiz limiti asildi:", ip);
+  //    İKİ KOVA (13 Eki 2026): bu kaba kova HER isteği sayar (aşağıdaki DB
+  //    doğrulamalarını korur); asıl 4'lük ödeme kovası sepet + alım limiti
+  //    kontrolünden GEÇEN istekte sayılır (bkz. 1b) — fiyat güncellemesi ya da
+  //    limit uyarısı alıp sepetini düzelten müşteri ödeme hakkını boşa harcamasın.
+  if (hizAsildi(`odeme-istek:${ip}`, 20, 15 * 60_000)) {
+    console.warn("[odeme] istek hiz limiti asildi:", ip);
     return NextResponse.json(
       { error: "Çok fazla ödeme denemesi yapıldı. Lütfen birkaç dakika sonra tekrar deneyin." },
       { status: 429 },
@@ -96,10 +99,35 @@ export async function POST(req: NextRequest) {
   //    gösterilmiyordu. Kart yerine havale gören müşteri çoğunlukla ayrılıyor.
   //    Kalan iki katman (hız limiti + telefon) saldırı imzasına birebir uyuyor.
 
+  // ── SEPET DOĞRULAMA (13 Eki 2026) ──────────────────────────────────────────
+  // Fiyat ve ad TARAYICIDAN ALINMAZ — veritabanından okunur (bkz.
+  // lib/sepetDogrula.ts). Eskiden item.price doğrudan ödenecek tutara
+  // gidiyordu. Aşağıdaki her şey (iyzico sepeti, kargo ağırlığı, siparişe
+  // yazılan urunler) bu doğrulanmış `items` ile çalışır.
+  const ayrisim = sepetiAyristir(body.items);
+  if (!ayrisim.ok) {
+    return NextResponse.json({ error: ayrisim.hata }, { status: 400 });
+  }
+  const { data: dbUrunler, error: urunHata } = await supabaseAdmin
+    .from("urunler")
+    .select("id, ad, slug, fiyat, indirimli_fiyat, resim_url, aktif")
+    .in("id", ayrisim.kalemler.map(k => k.id));
+  if (urunHata) {
+    console.error("[odeme] urun dogrulama:", urunHata);
+    return NextResponse.json({ error: "Ürün bilgileri doğrulanamadı. Lütfen birkaç saniye sonra tekrar deneyin." }, { status: 503 });
+  }
+  const karsilastirma = sepetiKarsilastir(ayrisim.kalemler, (dbUrunler || []) as DbUrun[]);
+  if (!karsilastirma.ok) {
+    // İstemci sepetDuzelt'i uygular (güncel fiyat / satıştan kalkan ürün),
+    // müşteri yeni tutarı görüp tekrar onaylar.
+    return NextResponse.json({ error: karsilastirma.hata, sepetDuzelt: karsilastirma.duzelt }, { status: 409 });
+  }
+  const items = karsilastirma.sepet;
+
   const conversationId = Date.now().toString();
   const randomString = generateRandomString();
 
-  const basketItems = items.map((item: SepetUrun) => ({
+  const basketItems = items.map(item => ({
     id: item.id.toString(),
     name: item.name,
     category1: "Evcil Hayvan",
@@ -107,7 +135,7 @@ export async function POST(req: NextRequest) {
     price: (item.price * item.quantity).toFixed(2),
   }));
 
-  const basketTotal = items.reduce((sum: number, item: SepetUrun) =>
+  const basketTotal = items.reduce((sum, item) =>
     sum + (item.price * item.quantity), 0
   );
 
@@ -130,6 +158,28 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error("[odeme] uye token dogrulama:", e);
     }
+  }
+
+  // ── HAFTALIK ALIM LİMİTİ (13 Eki 2026) — bkz. lib/alimLimiti.ts ──────────
+  // Aynı e-posta VEYA telefon aynı üründen son 7 günde en fazla N adet (N =
+  // admin Site Ayarları; boşsa kapalı). Hiçbir sipariş/ödeme kaydı açılmadan
+  // ÖNCE kontrol edilir.
+  const limitHatasi = await alimLimitiKontrol(supabaseAdmin, items, {
+    emailler: [buyer?.email, uyeEmail],
+    telefon: buyer?.phone,
+  });
+  if (limitHatasi) {
+    return NextResponse.json({ error: limitHatasi }, { status: 400 });
+  }
+
+  // 1b) ÖDEME KOVASI — doğrulamalardan geçen, gerçekten sipariş/ödeme açacak
+  //     istek sayılır (bkz. 1). Kart deneyiciyi durduran asıl sınır bu.
+  if (hizAsildi(`odeme:${ip}`, 4, 15 * 60_000)) {
+    console.warn("[odeme] hiz limiti asildi:", ip);
+    return NextResponse.json(
+      { error: "Çok fazla ödeme denemesi yapıldı. Lütfen birkaç dakika sonra tekrar deneyin." },
+      { status: 429 },
+    );
   }
 
   // Sadakat bonusu — üyenin geçerli (kullanılmamış, süresi geçmemiş) bonusu

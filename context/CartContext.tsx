@@ -11,11 +11,17 @@ interface CartItem {
   resim_url?: string;
   slug?: string;        // ürün sayfası linki için (sepet/ödeme özetinde tıklanabilir ad)
 }
+/** /api/odeme 409 yanıtındaki düzeltme (bkz. lib/sepetDogrula.ts SepetDuzeltme). */
+type SepetDuzeltme = {
+  fiyat?: Array<{ id: number; price: number; name?: string }>;
+  kaldir?: number[];
+};
 interface CartContextType {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
+  sepetiDuzelt: (d: SepetDuzeltme) => void;
   totalItems: number;
   totalPrice: number;
   clearCart: () => void;
@@ -66,6 +72,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems(prev => prev.map(i => i.id === id ? { ...i, quantity } : i));
   };
 
+  // Sunucu sepeti veritabanına göre düzelttiğinde (13 Eki 2026): localStorage'da
+  // bekleyen sepetin fiyatı eskimiş ya da ürün satıştan kalkmış olabilir. Güncel
+  // fiyat/ad yazılır, satıştan kalkan çıkarılır; ödeme ekranı yeni tutarı gösterir.
+  const sepetiDuzelt = (d: SepetDuzeltme) => {
+    const kaldir = new Set((d.kaldir || []).map(Number));
+    const fiyat = new Map((d.fiyat || []).map(f => [Number(f.id), f]));
+    setItems(prev => prev
+      .filter(i => !kaldir.has(Number(i.id)))
+      .map(i => {
+        const f = fiyat.get(Number(i.id));
+        return f ? { ...i, price: Number(f.price), name: f.name || i.name } : i;
+      }));
+  };
+
   const clearCart = () => {
     setItems([]);
     localStorage.removeItem("evemama_sepet");
@@ -83,7 +103,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, totalItems, totalPrice, clearCart }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, sepetiDuzelt, totalItems, totalPrice, clearCart }}>
       {children}
     </CartContext.Provider>
   );

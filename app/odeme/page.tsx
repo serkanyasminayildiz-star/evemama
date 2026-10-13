@@ -13,7 +13,7 @@ import { TR_ILLER, IL_LISTESI } from "../../lib/tr-iller";
 import { gclidOku } from "../../lib/gclid";
 
 export default function Odeme() {
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, sepetiDuzelt } = useCart();
   const [yukleniyor, setYukleniyor] = useState(false);
   const [odemeYontemi, setOdemeYontemi] = useState<"kart" | "havale" | "elden" | "kapida-nakit" | "kapida-kart">("kart");
   const [sozlesme, setSozlesme] = useState(false);
@@ -225,6 +225,10 @@ export default function Odeme() {
       // dalı yalnız `errorMessage` okuduğu için bunlar "Bilinmeyen hata"
       // olarak görünüyordu.
       if (!res.ok) {
+        // 409: sunucu sepeti veritabanına göre düzeltti (eskimiş fiyat / satıştan
+        // kalkan ürün) — sepet yerinde güncellenir, müşteri yeni tutarı görüp
+        // tekrar onaylar (bkz. lib/sepetDogrula.ts).
+        if (data?.sepetDuzelt) sepetiDuzelt(data.sepetDuzelt);
         setHata(data?.error || data?.errorMessage || "İşlem tamamlanamadı, lütfen tekrar deneyin.");
         setYukleniyor(false);
         return;
