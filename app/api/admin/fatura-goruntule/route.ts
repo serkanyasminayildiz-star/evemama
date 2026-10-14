@@ -1,11 +1,11 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import { createClient } from "@supabase/supabase-js";
 import { faturaPdfArsiv } from "../../../../lib/nilvera/client";
 
 // Kesilmiş e-Arşiv faturayı PDF olarak göster (admin). Sipariş → fatura_uuid →
-// Nilvera PDF (base64) → inline application/pdf. Auth: Bearer ADMIN_SIFRE.
-const ADMIN_SIFRE = "evemama2025";
+// Nilvera PDF (base64) → inline application/pdf. Auth: lib/adminOturum (oturum çerezi).
 
 function adminClient() {
   return createClient(
@@ -15,7 +15,7 @@ function adminClient() {
   );
 }
 function yetkili(req: NextRequest) {
-  return (req.headers.get("authorization") || "") === `Bearer ${ADMIN_SIFRE}`;
+  return adminYetkili(req);
 }
 const noStore = { "Cache-Control": "no-store" };
 

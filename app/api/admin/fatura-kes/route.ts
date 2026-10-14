@@ -1,14 +1,14 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import { createClient } from "@supabase/supabase-js";
 import { firmaBilgisi, faturaGonderXml } from "../../../../lib/nilvera/client";
 import { faturaToUblTr, gibFaturaNo, type FaturaKalem } from "../../../../lib/nilvera/ublTr";
 import { randomUUID } from "crypto";
 
 // e-Arşiv fatura kes (admin). Sipariş → UBL-TR e-Arşiv → Nilvera → UUID kaydet.
-// Auth: Bearer ADMIN_SIFRE (diğer admin API'leriyle aynı). service_role gerekli
+// Auth: lib/adminOturum (diğer admin API'leriyle aynı). service_role gerekli
 // (siparisler PII oku + güncelle). Belge tipi B2C → e-Arşiv.
-const ADMIN_SIFRE = "evemama2025";
 const KDV_ORANI = Number(process.env.NILVERA_KDV_ORANI || "20");
 
 function adminClient() {
@@ -19,7 +19,7 @@ function adminClient() {
   );
 }
 function yetkili(req: NextRequest) {
-  return (req.headers.get("authorization") || "") === `Bearer ${ADMIN_SIFRE}`;
+  return adminYetkili(req);
 }
 const noStore = { "Cache-Control": "no-store" };
 

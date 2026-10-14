@@ -1,5 +1,6 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import { kisiselKuponOlustur } from "../../../../lib/kuponUret";
 import { createClient } from "@supabase/supabase-js";
 import { sendHatirlatmaMaili } from "../../../../lib/email";
@@ -7,7 +8,6 @@ import { sendHatirlatmaMaili } from "../../../../lib/email";
 // Terk edilen sepet sahiplerine, seçili bir kuponla "sepetini tamamla"
 // hatırlatma maili gönderir. Kupon bilgisi SUNUCUDA kuponlar tablosundan
 // okunur. Misafirler de kullanabilsin diye admin üyelik şartsız kupon seçer.
-const ADMIN_SIFRE = "evemama2025";
 
 function adminClient() {
   return createClient(
@@ -20,7 +20,7 @@ function adminClient() {
 type SeciliSepet = { email: string; ad?: string; urunOzet?: string };
 
 export async function POST(req: NextRequest) {
-  if ((req.headers.get("authorization") || "") !== `Bearer ${ADMIN_SIFRE}`) {
+  if (!adminYetkili(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

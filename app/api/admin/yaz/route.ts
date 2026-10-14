@@ -1,12 +1,12 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import { createClient } from "@supabase/supabase-js";
 
 // Admin YAZMA proxy'si — RLS Faz 3: admin panelin katalog/kupon/blog/site ayarı
 // yazmaları tarayıcı (anon) yerine buradan (service_role) geçer. Böylece bu
 // tablolarda RLS açılınca anon key ile YAZMA (fiyat vandalizmi vb.) imkânsız olur.
-// Auth: Bearer ADMIN_SIFRE. Tablo + işlem beyaz listeli; filtreler eq eşleşmesi.
-const ADMIN_SIFRE = "evemama2025";
+// Auth: lib/adminOturum (oturum çerezi). Tablo + işlem beyaz listeli; filtreler eq eşleşmesi.
 const noStore = { "Cache-Control": "no-store" };
 
 const TABLOLAR = ["urunler", "kategoriler", "markalar", "kuponlar", "blog_sorular", "site_ayarlari", "abonelikler"] as const;
@@ -23,7 +23,7 @@ function adminClient() {
 }
 
 export async function POST(req: NextRequest) {
-  if ((req.headers.get("authorization") || "") !== `Bearer ${ADMIN_SIFRE}`) {
+  if (!adminYetkili(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: noStore });
   }
   try {

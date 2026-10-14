@@ -1,7 +1,6 @@
 // Admin yazma yardımcısı — /api/admin/yaz proxy'sine gider (service_role).
 // DÖNÜŞ ŞEKLİ supabase-js ile AYNI ({ data, error }) → mevcut çağrı yerlerindeki
 // `const { error } = await ...` / `if (error)` mantığı değişmeden çalışır.
-const ADMIN_SIFRE = "evemama2025";
 
 export type AdminYazSonuc = {
   data: Record<string, unknown>[] | null;
@@ -20,7 +19,7 @@ export async function adminYaz(
   try {
     const r = await fetch("/api/admin/yaz", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tablo, islem, ...ayrinti }),
     });
     const d = (await r.json()) as { ok?: boolean; data?: Record<string, unknown>[]; error?: string };

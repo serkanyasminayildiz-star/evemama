@@ -1,5 +1,6 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { sendSiparisOnayMaili } from "../../../../lib/email";
@@ -15,8 +16,7 @@ import { sendSiparisOnayMaili } from "../../../../lib/email";
 // ile kontrol edilir → callback ya da önceki cron zaten oluşturduysa atlanır,
 // aynı oturumun farklı token'ları tek paymentId'de birleşir (mükerrer yok).
 //
-// Vercel cron: 10 dk'da bir. Manuel: ?secret=<CRON_SECRET> veya Bearer ADMIN_SIFRE.
-const ADMIN_SIFRE = "evemama2025";
+// Vercel cron: 10 dk'da bir. Manuel: ?secret=<CRON_SECRET> veya admin oturumu (lib/adminOturum).
 const noStore = { "Cache-Control": "no-store" };
 
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
   const authHdr = req.headers.get("authorization") || "";
   const yetkili =
     (!!cronSecret && (authHdr === `Bearer ${cronSecret}` || url.searchParams.get("secret") === cronSecret)) ||
-    authHdr === `Bearer ${ADMIN_SIFRE}`;
+    adminYetkili(req);
   if (!yetkili) return NextResponse.json({ error: "yetkisiz" }, { status: 401, headers: noStore });
 
   const dry = url.searchParams.get("dry") === "1";

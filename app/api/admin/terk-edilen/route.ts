@@ -1,11 +1,11 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import { createClient } from "@supabase/supabase-js";
 
 // Terk edilen sepet = ödeme başlatılmış ama tamamlanmamış kayıtlar. Ödeme
 // başlatılınca odeme_gecici'ye yazılır; tamamlanınca (odeme/sonuc) silinir.
 // Yani odeme_gecici'de KALANLAR = terk edilmiş sepetler (satın almışlar yok).
-const ADMIN_SIFRE = "evemama2025";
 
 function adminClient() {
   return createClient(
@@ -16,7 +16,7 @@ function adminClient() {
 }
 
 export async function GET(req: NextRequest) {
-  if ((req.headers.get("authorization") || "") !== `Bearer ${ADMIN_SIFRE}`) {
+  if (!adminYetkili(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
 

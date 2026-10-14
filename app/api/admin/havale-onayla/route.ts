@@ -1,5 +1,6 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import { createClient } from "@supabase/supabase-js";
 import { sendSiparisOnayMaili } from "../../../../lib/email";
 import { SADAKAT, KARGO, kazanilacakPuan, kargoUcretiKg, sepetAgirligiKg } from "../../../../lib/indirim";
@@ -12,7 +13,6 @@ import { kapidaMi, kapidaKomisyonuAyikla } from "../../../../lib/kapidaOdeme";
 //
 // İDEMPOTENT: zaten "odendi" ise stok tekrar düşmez (çift tıklama/çağrı güvenli).
 // Yalnız havale siparişleri için (kart zaten odeme/sonuc'ta stok düşürür).
-const ADMIN_SIFRE = "evemama2025";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,7 +21,7 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  if ((req.headers.get("authorization") || "") !== `Bearer ${ADMIN_SIFRE}`) {
+  if (!adminYetkili(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
 

@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 
-const ADMIN_SIFRE = "evemama2025";
-
 type Kayit = {
   email: string; ad: string; telefon: string; toplam: number;
   sebep: string; paymentStatus: string; urunOzet: string; tarih: string; deneme: number;
@@ -18,7 +16,7 @@ export default function BasarisizOdemeler() {
   const [arama, setArama] = useState("");
 
   useEffect(() => {
-    fetch("/api/admin/basarisiz-odemeler", { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } })
+    fetch("/api/admin/basarisiz-odemeler")
       .then((r) => r.json())
       .then((d) => { if (d.error) setHata(d.error); else { setKayitlar(d.kayitlar || []); setOzet(d.ozet || null); } })
       .catch(() => setHata("Başarısız ödemeler yüklenemedi"))

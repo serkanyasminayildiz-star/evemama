@@ -1,10 +1,10 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import { createClient } from "@supabase/supabase-js";
 
 // Başarısız/yarım ödemeler (basarisiz_odemeler). odeme/sonuc başarısız dalında
 // yazılır → gelir kaybı + sebep ölçümü. RLS korumalı tablo → service_role.
-const ADMIN_SIFRE = "evemama2025";
 
 function adminClient() {
   return createClient(
@@ -20,7 +20,7 @@ type Kayit = {
 };
 
 export async function GET(req: NextRequest) {
-  if ((req.headers.get("authorization") || "") !== `Bearer ${ADMIN_SIFRE}`) {
+  if (!adminYetkili(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
   try {

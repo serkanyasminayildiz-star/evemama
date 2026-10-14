@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 
-const ADMIN_SIFRE = "evemama2025";
-
 type Sepet = {
   email: string;
   ad: string;
@@ -44,7 +42,7 @@ export default function TerkEdilen({ kuponlar, goster }: { kuponlar: Kupon[]; go
   const aktifKuponlar = (kuponlar || []).filter((k) => k.aktif !== false);
 
   useEffect(() => {
-    fetch("/api/admin/terk-edilen", { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } })
+    fetch("/api/admin/terk-edilen")
       .then((r) => r.json())
       .then((d) => {
         if (d.error) setHata(d.error);
@@ -101,7 +99,7 @@ export default function TerkEdilen({ kuponlar, goster }: { kuponlar: Kupon[]; go
         .map((s) => ({ email: s.email, ad: s.ad, urunOzet: s.urunOzet }));
       const res = await fetch("/api/admin/sepet-hatirlat", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sepetler: seciliSepetler, kod }),
       });
       const d = await res.json();

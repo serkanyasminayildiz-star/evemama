@@ -1,11 +1,11 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import { createClient } from "@supabase/supabase-js";
 
 // Pati Kumbarası — pazar dağıtımları (admin yazar). kumbara_dagitim RLS'i
 // anon-yazmaya kapalı → service_role. Auth: diğer admin API'leriyle aynı
-// (Bearer ADMIN_SIFRE).
-const ADMIN_SIFRE = "evemama2025";
+// (lib/adminOturum).
 
 function adminClient() {
   return createClient(
@@ -15,7 +15,7 @@ function adminClient() {
   );
 }
 function yetkili(req: NextRequest) {
-  return (req.headers.get("authorization") || "") === `Bearer ${ADMIN_SIFRE}`;
+  return adminYetkili(req);
 }
 const noStore = { "Cache-Control": "no-store" };
 

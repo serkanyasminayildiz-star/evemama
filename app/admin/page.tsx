@@ -17,7 +17,6 @@ import TerkEdilen from "./components/TerkEdilen";
 import BasarisizOdemeler from "./components/BasarisizOdemeler";
 import Kumbara from "./components/Kumbara";
 
-const ADMIN_SIFRE = "evemama2025";
 const SAYFA_BOYUTU = 50;
 
 // Supabase satır tipleri (admin geneli). Sayısal alanlar form input'larında
@@ -260,9 +259,7 @@ export default function Admin() {
   // siparisler tablosunu göremez (müşteri PII'sı tarayıcı anahtarıyla erişilemez).
   const siparisleriYukle = async (durumFiltre = "") => {
     try {
-      const r = await fetch(`/api/admin/siparisler${durumFiltre ? `?durum=${encodeURIComponent(durumFiltre)}` : ""}`, {
-        headers: { Authorization: `Bearer ${ADMIN_SIFRE}` },
-      });
+      const r = await fetch(`/api/admin/siparisler${durumFiltre ? `?durum=${encodeURIComponent(durumFiltre)}` : ""}`);
       const d = await r.json();
       setSiparisler(d.siparisler || []);
       setSiparisKesildi(!!d.kesildi);
@@ -289,7 +286,7 @@ export default function Admin() {
     try {
       const r = await fetch("/api/admin/siparisler", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, degisiklik }),
       });
       return r.ok;
@@ -354,17 +351,32 @@ export default function Admin() {
       supabase.from("urunler").select("*", { count: "exact", head: true }),
       supabase.from("kategoriler").select("*", { count: "exact", head: true }),
       adminYaz("blog_sorular", "select", { filtre: { onaylandi: false } }).then(r => ({ count: r.data?.length || 0 })),
-      fetch("/api/admin/siparisler?sayilar=1", { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } })
+      fetch("/api/admin/siparisler?sayilar=1")
         .then(r => r.json()).catch(() => ({ toplam: 0, bekleyen: 0, bugun: 0 })),
     ]);
     setIstatistikler({ urunler: uc || 0, siparisler: sayilar.toplam || 0, kategoriler: kc || 0, bekleyenSoru: bc || 0, bekleyen_siparis: sayilar.bekleyen || 0, bugun_siparis: sayilar.bugun || 0 });
   };
 
-  const handleGiris = () => {
-    if (sifre === ADMIN_SIFRE) {
+  // Giriş SUNUCUDA doğrulanır (14 Eki 2026, lib/adminOturum.ts): şifre artık bu
+  // dosyada değil — eskiden burada sabit duruyordu ve herkese giden JS'teydi.
+  // Başarılı girişte sunucu httpOnly oturum çerezi verir; admin API çağrıları
+  // o çerezle yetkilenir (Authorization başlığı gerekmez).
+  const handleGiris = async () => {
+    try {
+      const r = await fetch("/api/admin/giris", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sifre }),
+      });
+      const d = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!r.ok || !d.ok) { setHataMesaji(d.error || "Hatalı şifre!"); return; }
+      setHataMesaji("");
+      setSifre(""); // şifre bellekte tutulmasın
       setGiris(true);
       kategorileriYukle(); markalariYukle(); siteAyarlariYukle(); istatistikleriYukle();
-    } else setHataMesaji("Hatalı şifre!");
+    } catch {
+      setHataMesaji("Sunucuya ulaşılamadı, tekrar deneyin.");
+    }
   };
 
   // Sayfa-init effect'i: giriş veya aktif sekme değişince ilgili sekmenin
@@ -1682,7 +1694,7 @@ export default function Admin() {
                           // Tahsilatı ADMIN onaylayan yöntemler "ödendi"ye geçince: server'da
                           // stok düş + sadakat puanı + onay maili (idempotent).
                           if (ADMIN_ONAYLI_YONTEMLER.has(String(sp.odeme_yontemi || "")) && yeni === "odendi" && sp.odeme_durumu !== "odendi") {
-                            const r = await fetch("/api/admin/havale-onayla", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` }, body: JSON.stringify({ siparis_no: sp.siparis_no }) });
+                            const r = await fetch("/api/admin/havale-onayla", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ siparis_no: sp.siparis_no }) });
                             if (r.ok) { siparisleriYukle(siparisDurumFiltre); goster("✅ Ödeme onaylandı — stok düşüldü, onay maili gönderildi"); }
                             else { goster("❌ Ödeme onaylanamadı"); }
                             return;
@@ -1742,7 +1754,7 @@ export default function Admin() {
                             const win = window.open("about:blank", "_blank");
                             setFaturaIslem(sp.id);
                             try {
-                              const r = await fetch(`/api/admin/fatura-goruntule?siparisId=${sp.id}`, { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } });
+                              const r = await fetch(`/api/admin/fatura-goruntule?siparisId=${sp.id}`);
                               if (!r.ok) {
                                 win?.close();
                                 const d = await r.json().catch(() => ({} as { error?: string }));
@@ -1760,7 +1772,7 @@ export default function Admin() {
                           if (!window.confirm(`#${sp.siparis_no} (${sp.ad || ""} ${sp.soyad || ""}) için e-Arşiv faturası kesilsin mi?`)) return;
                           setFaturaIslem(sp.id);
                           try {
-                            const r = await fetch("/api/admin/fatura-kes", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` }, body: JSON.stringify({ siparisId: sp.id }) });
+                            const r = await fetch("/api/admin/fatura-kes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ siparisId: sp.id }) });
                             const d = await r.json();
                             if (d.ok) {
                               goster(`✅ Fatura ${d.zaten ? "zaten kesilmiş" : "kesildi"} — ${d.faturaNo || d.uuid}`);

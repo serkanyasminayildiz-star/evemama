@@ -1,5 +1,6 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import { kisiselKuponOlustur } from "../../../../lib/kuponUret";
 import { createClient } from "@supabase/supabase-js";
 import { sendKuponMaili } from "../../../../lib/email";
@@ -8,7 +9,6 @@ import { sendKuponMaili } from "../../../../lib/email";
 // kuponu hazır şablonla e-posta gönderir. Şifre Bearer ile doğrulanır
 // (admin paneliyle aynı seviye). Üye e-postaları client'tan gelir ama kupon
 // bilgisi SUNUCUDA kuponlar tablosundan okunur (manipülasyona kapalı).
-const ADMIN_SIFRE = "evemama2025";
 
 function adminClient() {
   return createClient(
@@ -21,7 +21,7 @@ function adminClient() {
 type SeciliUye = { email: string; ad?: string };
 
 export async function POST(req: NextRequest) {
-  if ((req.headers.get("authorization") || "") !== `Bearer ${ADMIN_SIFRE}`) {
+  if (!adminYetkili(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

@@ -1,16 +1,14 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import { createClient } from "@supabase/supabase-js";
 
 // Üyeler Supabase auth.users'da tutuluyor (uye-ol sadece auth.signUp yapıyor,
 // ayrı profil tablosu yok). auth.users SADECE service_role key ile listelenir
 // — anon key yetmez. Bu yüzden bu route server-only + SERVICE_ROLE kullanır.
 //
-// Güvenlik: admin panel şifresi (client'taki ADMIN_SIFRE ile aynı) Bearer
-// olarak beklenir — anonim erişimi engeller (mevcut admin paneliyle aynı
-// güvenlik seviyesi). NOT: ileride Supabase auth admin rolüne taşınması
-// önerilir; şu an client şifresi network'te görünür.
-const ADMIN_SIFRE = "evemama2025";
+// Güvenlik: admin oturumu (lib/adminOturum) — şifre yalnız sunucuda,
+// tarayıcıya httpOnly oturum çerezi verilir (14 Eki 2026).
 
 function adminClient() {
   return createClient(
@@ -21,7 +19,7 @@ function adminClient() {
 }
 
 export async function GET(req: NextRequest) {
-  if ((req.headers.get("authorization") || "") !== `Bearer ${ADMIN_SIFRE}`) {
+  if (!adminYetkili(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {

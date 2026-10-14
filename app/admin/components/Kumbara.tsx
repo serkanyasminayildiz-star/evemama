@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 
-const ADMIN_SIFRE = "evemama2025";
-
 type Dagitim = { id: number; tarih: string; tutar: number; barinak_adi: string | null; sehir: string | null; video_url: string | null; kopek_sayisi: number | null; ogun_sayisi: number | null; not_metni: string | null; created_at: string };
 const bosForm = { tarih: "", tutar: "", barinak_adi: "", sehir: "", video_url: "", kopek_sayisi: "", ogun_sayisi: "", not_metni: "" };
 
@@ -14,7 +12,7 @@ export default function Kumbara() {
   const [kaydediliyor, setKaydediliyor] = useState(false);
 
   const yukle = useCallback(() => {
-    fetch("/api/admin/kumbara", { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } })
+    fetch("/api/admin/kumbara")
       .then(r => r.json())
       .then(adm => { if (adm.error) setHata(adm.error); else setDagitimlar(adm.dagitimlar || []); })
       .catch(() => setHata("Yüklenemedi")).finally(() => setYukleniyor(false));
@@ -26,7 +24,7 @@ export default function Kumbara() {
     if (!form.tarih || !form.tutar) { setHata("Tarih ve tutar zorunlu"); return; }
     setKaydediliyor(true); setHata("");
     try {
-      const r = await fetch("/api/admin/kumbara", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` }, body: JSON.stringify(form) });
+      const r = await fetch("/api/admin/kumbara", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       const d = await r.json();
       if (d.error) setHata(d.error);
       else { setForm({ ...bosForm }); yukle(); }
@@ -36,7 +34,7 @@ export default function Kumbara() {
 
   const sil = async (id: number) => {
     if (!window.confirm("Bu dağıtım kaydı silinsin mi?")) return;
-    await fetch(`/api/admin/kumbara?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } });
+    await fetch(`/api/admin/kumbara?id=${id}`, { method: "DELETE" });
     yukle();
   };
 

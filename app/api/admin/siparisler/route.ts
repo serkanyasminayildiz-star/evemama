@@ -1,12 +1,12 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
+import { adminYetkili } from "../../../../lib/adminOturum";
 import { createClient } from "@supabase/supabase-js";
 
 // Admin sipariş verisi — RLS Faz 2: admin paneli siparisler tablosunu artık
 // tarayıcıdan (anon) DEĞİL bu route üzerinden (service_role) okur/günceller.
 // Böylece siparisler'e RLS açılınca müşteri PII'sı anon key ile erişilemez olur.
-// Auth: Bearer ADMIN_SIFRE (diğer admin API'leriyle aynı desen).
-const ADMIN_SIFRE = "evemama2025";
+// Auth: lib/adminOturum (diğer admin API'leriyle aynı desen).
 const noStore = { "Cache-Control": "no-store" };
 
 function adminClient() {
@@ -17,7 +17,7 @@ function adminClient() {
   );
 }
 function yetkili(req: NextRequest) {
-  return (req.headers.get("authorization") || "") === `Bearer ${ADMIN_SIFRE}`;
+  return adminYetkili(req);
 }
 
 // GET ?sayilar=1 → {toplam, bekleyen, bugun} | GET ?durum=<filtre> → sipariş listesi (200)

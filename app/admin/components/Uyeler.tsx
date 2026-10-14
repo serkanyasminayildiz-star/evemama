@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 
-const ADMIN_SIFRE = "evemama2025";
-
 type Uye = {
   id: string;
   email: string;
@@ -39,7 +37,7 @@ export default function Uyeler({ kuponlar, goster }: { kuponlar: Kupon[]; goster
   const aktifKuponlar = (kuponlar || []).filter((k) => k.aktif !== false);
 
   useEffect(() => {
-    fetch("/api/admin/uyeler", { headers: { Authorization: `Bearer ${ADMIN_SIFRE}` } })
+    fetch("/api/admin/uyeler")
       .then((r) => r.json())
       .then((d) => {
         if (d.error) setHata(d.error);
@@ -86,7 +84,7 @@ export default function Uyeler({ kuponlar, goster }: { kuponlar: Kupon[]; goster
       const seciliUyeler = uyeler.filter((u) => secili.has(u.email)).map((u) => ({ email: u.email, ad: u.ad }));
       const res = await fetch("/api/admin/kupon-gonder", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${ADMIN_SIFRE}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ uyeler: seciliUyeler, kod }),
       });
       const d = await res.json();
