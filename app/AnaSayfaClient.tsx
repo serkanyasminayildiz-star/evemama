@@ -2,13 +2,17 @@
 import Link from "next/link";
 import { ILETISIM } from "../lib/iletisim";
 import { useState, useEffect, useRef, useMemo } from "react";
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import { supabase } from "../lib/supabase";
 import { ELDEN_TESLIMAT } from "../lib/eldenTeslimat";
 import { useCart } from "../context/CartContext";
 import type { User } from "@supabase/supabase-js";
 import KumbaraWidget from "./components/KumbaraWidget";
 import MesaiBilgisi from "./components/MesaiBilgisi";
+
+// Hero görselindeki yazılar resmin içinde — ekran okuyucu ve arama motoru için
+// aynı mesaj metin olarak (masaüstü/mobil görselin ortak içeriği).
+const HERO_ALT = "evemama.net Dostunuzun Dükkânı — Onların mutluluğu bizim işimiz: güvenilir markalar, hızlı teslimat, dostlarınız için en iyisi";
 
 // Supabase satır tipleri (ana sayfa). numeric kolonlar (fiyat/indirimli_fiyat) string döner.
 type Urun = {
@@ -75,9 +79,16 @@ export default function AnaSayfaClient() {
   const { addItem, totalItems } = useCart();
   const [eklendi, setEklendi] = useState<number | null>(null);
   const [hata, setHata] = useState<string | null>(null);
-  const [aktifSlide, setAktifSlide] = useState(0);
-  // Açık mama ürün slaytı görselleri (public/, dikey ~1054×1492).
-  const acikSlaytlar = ["/acik-mama1.jpg", "/acik-mama2.jpg", "/acik-mama3.jpg", "/acik-mama4.jpg", "/acik-mama5.jpg", "/acik-mama6.jpg", "/acik-mama7.jpg", "/acik-mama8.jpg"];
+  // HERO görselleri (14 Eki 2026) — masaüstü ve mobil AYRI tasarım; <picture>
+  // ile ekran genişliğine göre doğru dosya iner, diğeri hiç indirilmez.
+  // getImageProps → Next görsel optimizasyonu (AVIF/WebP + doğru genişlik).
+  // `preload` bilinçli YOK: art-direction'da mobilde de masaüstü dosyasını
+  // önden indirirdi; LCP için fetchPriority yeterli.
+  const heroMobilSrcSet = getImageProps({ src: "/eve-hero-mobil.jpg", alt: "", width: 1122, height: 1402, sizes: "100vw" }).props.srcSet;
+  const { props: heroImg } = getImageProps({
+    src: "/eve-hero.jpg", alt: HERO_ALT, width: 2103, height: 748,
+    sizes: "(max-width: 1400px) 100vw, 1304px", fetchPriority: "high", loading: "eager",
+  });
 
   const getKatGorsel = (slug: string): { bg: string; emoji: string } => {
     const s = slug.toLowerCase();
@@ -147,12 +158,6 @@ export default function AnaSayfaClient() {
         });
     });
   }, [kategoriler]);
-
-  // Açık mama ürün slaytı — otomatik döner (4 sn).
-  useEffect(() => {
-    const id = setInterval(() => setAktifSlide(s => (s + 1) % acikSlaytlar.length), 4000);
-    return () => clearInterval(id);
-  }, [acikSlaytlar.length]);
 
   // Öne Çıkanlar slider'ı otomatik kayar (~3.5 sn'de bir bir sayfa ilerler);
   // fareyle üstüne gelince / dokununca durur, çekilince devam eder.
@@ -288,7 +293,10 @@ export default function AnaSayfaClient() {
         .header-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 16px 48px; max-width: 1400px; margin: 0 auto; }
         .hdr-right { display: flex; justify-content: flex-end; gap: 8px; align-items: center; }
         .hdr-right-mob { display: none; justify-content: flex-end; align-items: center; gap: 6px; }
-        .hero-grid { max-width: 1400px; margin: 0 auto; padding: 0 48px 48px; display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+        .hero-wrap { position: relative; max-width: 1400px; margin: 0 auto; padding: 0 48px 48px; }
+        .hero-link { display: block; border-radius: 28px; overflow: hidden; box-shadow: 0 12px 40px rgba(232,132,90,.22); }
+        /* aspect-ratio: görsel inmeden yer ayrılır (CLS 0); mobilde dikey görselin oranı */
+        .hero-img { display: block; width: 100%; height: auto; aspect-ratio: 2103 / 748; }
         .hero-banner { border-radius: 28px; height: 360px; display: flex; align-items: center; position: relative; overflow: hidden; box-shadow: 0 12px 40px rgba(232,132,90,.22); }
         .banner-title { font-family: Georgia,serif; font-size: 44px; font-weight: 700; color: #5C3D2E; line-height: 1.05; margin-bottom: 10px; }
         .banner-emoji-el { position: absolute; right: 40px; bottom: 0; font-size: 160px; line-height: 1; animation: floatAnim 3s ease-in-out infinite; }
@@ -298,7 +306,6 @@ export default function AnaSayfaClient() {
         .banner-inner { animation: slideIn 0.45s ease; }
         .kayan-icerik { display: inline-flex; animation: kaydir 28s linear infinite; white-space: nowrap; }
         .kayan-icerik:hover { animation-play-state: paused; }
-        .hero-right { display: flex; flex-direction: column; gap: 16px; }
         .kat-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; }
         .kat-card { border-radius: 20px; overflow: hidden; text-decoration: none; transition: transform .2s, box-shadow .2s; display: block; }
         .kat-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(92,61,46,0.15); }
@@ -348,7 +355,9 @@ export default function AnaSayfaClient() {
           .ara-section { padding: 10px 14px !important; }
           .ara-bar { border-radius: 12px !important; padding: 11px 16px !important; }
           .ara-btn-active { display: none; }
-          .hero-grid { grid-template-columns: 1fr !important; padding: 0 14px 24px !important; gap: 12px !important; }
+          .hero-wrap { padding: 0 14px 24px !important; }
+          .hero-link { border-radius: 20px !important; }
+          .hero-img { aspect-ratio: 1122 / 1402 !important; }
           .hero-banner { height: 220px !important; border-radius: 20px !important; }
           .banner-pad { padding: 22px 20px !important; }
           .banner-title { font-size: 24px !important; }
@@ -601,44 +610,22 @@ export default function AnaSayfaClient() {
         </div>
       </div>
 
-      {/* HERO — Açık Mamalar banner (sol) + hızlı erişim kartları (sağ, "şimdilik") */}
-      <div className="hero-grid">
-        {/* Eski gradient carousel kaldırıldı; yerine açık mama banner'ı. Tıklanınca açık mamalar kategorisi. */}
-        <Link href="/kategori/acik-mamalar" aria-label="Açık Mamalar kategorisi — %100 orijinal, minimum 2027 SKT, 14 gün şartsız iade"
-          style={{ display: "block", borderRadius: 28, overflow: "hidden", boxShadow: "0 12px 40px rgba(232,132,90,.22)" }}>
-          <Image
-            src="/acik-mama-banner.jpg"
-            alt="Açık mama alırken en büyük korku son buluyor — evemama.net'te tüm açık mamalar %100 orijinal ve minimum 2027 SKT'li, 14 gün şartsız iade"
-            width={1536}
-            height={1024}
-            priority
-            sizes="(max-width: 768px) 100vw, 900px"
-            style={{ width: "100%", height: "auto", display: "block" }}
-          />
+      {/* HERO — marka görseli (14 Eki 2026; eski açık mama banner'ı + ürün
+          slaytının yerine). Masaüstü 2103×748 / mobil (≤768px) 1122×1402 ayrı
+          tasarım. Tüm alan tıklanır → tüm ürünler (mobil görseldeki "Alışverişe
+          Başla" butonu dahil). Yazılar görselin içinde olduğu için sayfa
+          başlığı (h1) görünmez metin olarak burada — anasayfada başka h1 yok. */}
+      <div className="hero-wrap">
+        <h1 style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>
+          evemama.net — Dostunuzun Dükkânı: kedi ve köpek maması, ödül maması ve aksesuar
+        </h1>
+        <Link href="/urunler" aria-label="Alışverişe başla — tüm ürünler" className="hero-link">
+          <picture>
+            <source media="(max-width: 768px)" srcSet={heroMobilSrcSet} sizes="100vw" width={1122} height={1402} />
+            {/* next/image art direction desteklemez → getImageProps çıktısı düz <img>'e */}
+            <img {...heroImg} alt={HERO_ALT} className="hero-img" />
+          </picture>
         </Link>
-        {/* Açık mama ürün slaytı (8 dikey görsel, otomatik döner) — eski hızlı erişim kartlarının yerine */}
-        <div className="hero-right">
-          <div style={{ position: "relative", width: "100%", aspectRatio: "1054 / 1492", borderRadius: 20, overflow: "hidden", boxShadow: "0 10px 28px rgba(92,61,46,.18)", background: "#fff" }}>
-            {acikSlaytlar.map((src, i) => {
-              // LCP: 8 görseli birden yükleme — yalnız aktif + komşu (önceki/sonraki) slaytlar
-              // render edilir, gerisi sıra gelince. Banner tek "priority" LCP öğesi olarak kalır.
-              const len = acikSlaytlar.length;
-              const yukle = i === aktifSlide || i === (aktifSlide + 1) % len || i === (aktifSlide - 1 + len) % len;
-              return (
-                <Link key={src} href="/kategori/acik-mamalar" aria-label={`Açık mama ürünü ${i + 1} — açık mamalar kategorisine git`}
-                  style={{ position: "absolute", inset: 0, opacity: i === aktifSlide ? 1 : 0, transition: "opacity .6s ease", pointerEvents: i === aktifSlide ? "auto" : "none" }}>
-                  {yukle && <Image src={src} alt={`Royal Canin açık mama ürün görseli ${i + 1}`} fill sizes="(max-width: 768px) 100vw, 380px" style={{ objectFit: "cover" }} />}
-                </Link>
-              );
-            })}
-          </div>
-          <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 12, flexWrap: "wrap" }}>
-            {acikSlaytlar.map((_, i) => (
-              <button key={i} onClick={() => setAktifSlide(i)} aria-label={`${i + 1}. slayta git`}
-                style={{ width: i === aktifSlide ? 22 : 7, height: 7, borderRadius: 4, border: "none", padding: 0, background: i === aktifSlide ? "#E8845A" : "#E8D5B7", cursor: "pointer", transition: "all .3s" }} />
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* GÜVEN ŞERİDİ — orijinallik anasayfada erken; fiyat-karşılaştıran kitleye ilk mesaj */}
