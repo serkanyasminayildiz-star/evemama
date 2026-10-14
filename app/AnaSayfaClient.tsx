@@ -295,8 +295,10 @@ export default function AnaSayfaClient() {
         .hdr-right-mob { display: none; justify-content: flex-end; align-items: center; gap: 6px; }
         .hero-wrap { position: relative; max-width: 1400px; margin: 0 auto; padding: 0 48px 48px; }
         .hero-link { display: block; border-radius: 28px; overflow: hidden; box-shadow: 0 12px 40px rgba(232,132,90,.22); }
-        /* aspect-ratio: görsel inmeden yer ayrılır (CLS 0); mobilde dikey görselin oranı */
-        .hero-img { display: block; width: 100%; height: auto; aspect-ratio: 2103 / 748; }
+        /* aspect-ratio: görsel inmeden yer ayrılır (CLS 0); mobilde dikey görselin oranı.
+           object-fit: tablet döndürülünce yeni dosya inene kadar eskisi kutuda EZİLMESİN
+           (canlıda görüldü); oranlar eşit olduğundan normalde hiçbir şey kırpılmaz. */
+        .hero-img { display: block; width: 100%; height: auto; aspect-ratio: 2103 / 748; object-fit: cover; }
         .hero-banner { border-radius: 28px; height: 360px; display: flex; align-items: center; position: relative; overflow: hidden; box-shadow: 0 12px 40px rgba(232,132,90,.22); }
         .banner-title { font-family: Georgia,serif; font-size: 44px; font-weight: 700; color: #5C3D2E; line-height: 1.05; margin-bottom: 10px; }
         .banner-emoji-el { position: absolute; right: 40px; bottom: 0; font-size: 160px; line-height: 1; animation: floatAnim 3s ease-in-out infinite; }
