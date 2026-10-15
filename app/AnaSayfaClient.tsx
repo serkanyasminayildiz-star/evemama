@@ -337,7 +337,7 @@ export default function AnaSayfaClient() {
         .ara-btn-active { background: #E8845A; color: white; border: none; border-radius: 10px; padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: transform .1s, background .2s; }
         .ara-btn-active:hover { background: #5C3D2E; }
         .ara-btn-active:active { transform: scale(0.94); }
-        .trust-grid { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: repeat(4,1fr); }
+        .trust-grid { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: repeat(3,1fr); }
         .trust-item { display: flex; align-items: center; gap: 16px; padding: 0 32px; border-right: 1px solid rgba(255,255,255,.1); }
         .trust-item:last-child { border-right: none; }
         .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
@@ -375,7 +375,8 @@ export default function AnaSayfaClient() {
           .urun-grid-sabit { grid-template-columns: repeat(3,1fr) !important; gap: 10px !important; }
           .urun-img { height: 130px !important; }
           .trust-section { padding: 26px 16px !important; }
-          .trust-grid { grid-template-columns: repeat(2,1fr) !important; gap: 16px 12px !important; }
+          /* 3 öğe: 2 sütunda biri tek kalıyordu → mobilde alt alta */
+          .trust-grid { grid-template-columns: 1fr !important; gap: 14px !important; }
           .trust-item { padding: 0 !important; border-right: none !important; align-items: flex-start !important; gap: 10px !important; }
           .nl-section { padding: 24px 14px !important; }
           .nl-wrap { padding: 28px 20px !important; border-radius: 22px !important; flex-direction: column !important; gap: 18px !important; text-align: center; }
@@ -721,7 +722,8 @@ export default function AnaSayfaClient() {
             { icon: "🚀", title: "Aynı Gün Kargo", sub: "Saat 13:00'a kadar siparişlerde" },
             { icon: "✅", title: "%100 Orijinal Ürün", sub: "Yetkili distribütörden temin" },
             { icon: "🔒", title: "Güvenli Ödeme", sub: "SSL & 3D Secure korumalı" },
-            { icon: "💬", title: "7/24 Destek", sub: "WhatsApp & e-posta" },
+            // "7/24 Destek" kaldırıldı (15 Eki 2026, kullanıcı isteği): destek
+            // mesai saatlerinde (lib/iletisim.ts MESAI) — 7/24 sözü doğru değildi.
           ].map((t, i) => (
             <div key={i} className="trust-item">
               <span style={{ fontSize: 32 }}>{t.icon}</span>
