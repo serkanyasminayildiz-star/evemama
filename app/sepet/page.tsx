@@ -1,4 +1,5 @@
 "use client";
+import OdemeLogolari from "../components/OdemeLogolari";
 import { useCart } from "../../context/CartContext";
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -376,6 +377,8 @@ export default function Sepet() {
             onMouseUp={e => e.currentTarget.style.transform = "translateY(-2px)"}>
             Ödemeye Geç →
           </Link>
+
+          <OdemeLogolari tema="acik" yukseklik={22} style={{ margin: "14px auto 0" }} />
 
           <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginTop: 16 }}>
             {["🔒 Güvenli Ödeme", "✅ Orijinal Ürün", "🚀 Hızlı Teslimat", "↩️ İade Garantisi"].map((t, i) => (

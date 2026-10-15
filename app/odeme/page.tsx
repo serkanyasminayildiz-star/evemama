@@ -1,4 +1,5 @@
 "use client";
+import OdemeLogolari from "../components/OdemeLogolari";
 import { useState, useEffect, type ChangeEvent } from "react";
 import Link from "next/link";
 import { useCart } from "../../context/CartContext";
@@ -531,8 +532,9 @@ export default function Odeme() {
             {yukleniyor ? "Yükleniyor..." : kapidaMi(odemeYontemi) ? "Siparişi Tamamla 📦" : odemeYontemi === "elden" ? "Siparişi Tamamla 🛵" : odemeYontemi === "havale" ? "Siparişi Tamamla 🏦" : "Ödemeye Geç 🔒"}
           </button>
 
-          <div style={{ textAlign: "center", marginTop: 10, fontSize: 11, color: "#5C3D2E", opacity: 0.4 }}>
-            iyzico güvencesiyle korumalı ödeme
+          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+            <OdemeLogolari tema="acik" yukseklik={24} />
+            <span style={{ fontSize: 11, color: "#5C3D2E", opacity: 0.55 }}>Kart bilgileriniz iyzico güvencesiyle, 3D Secure ile işlenir.</span>
           </div>
 
           <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 12, flexWrap: "wrap" }}>

@@ -1,4 +1,5 @@
 "use client";
+import OdemeLogolari from "./components/OdemeLogolari";
 import Link from "next/link";
 import { ILETISIM } from "../lib/iletisim";
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -796,6 +797,10 @@ export default function AnaSayfaClient() {
                 ))}
               </div>
             ))}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "10px 18px", marginBottom: 24 }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: "#F4C09A", textTransform: "uppercase", letterSpacing: 1 }}>🔒 Güvenli ödeme</span>
+            <OdemeLogolari tema="koyu" yukseklik={28} />
           </div>
           <div className="footer-bot">
             <div>

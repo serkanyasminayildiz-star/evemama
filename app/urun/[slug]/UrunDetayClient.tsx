@@ -1,4 +1,5 @@
 "use client";
+import OdemeLogolari from "../../components/OdemeLogolari";
 import Link from "next/link";
 import { ELDEN_TESLIMAT } from "../../../lib/eldenTeslimat";
 import { useEffect, useState, useRef } from "react";
@@ -357,6 +358,8 @@ export default function UrunDetayClient({ initialUrun = null }: { initialUrun?: 
             style={{ display: "block", width: "100%", background: "white", color: "#5C3D2E", border: "2px solid #E8D5B7", borderRadius: 16, padding: "14px", fontSize: 15, fontWeight: 700, textAlign: "center", textDecoration: "none", boxSizing: "border-box" as const }}>
             Sepete Git →
           </Link>
+
+          <OdemeLogolari tema="acik" yukseklik={22} style={{ margin: "14px auto 0" }} />
 
           {/* PUAN kutusu. Abonelik 24 Ağu 2026'da yeni kayıtlara kapatıldı — yerini
               "her siparişte %5 puan" aldı. MEVCUT abonelere (12 kişi) kendi
