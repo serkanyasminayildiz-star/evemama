@@ -44,8 +44,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, zaten: true });
   }
 
+  // Durum YALNIZ henüz işlenmemişse (beklemede) "hazırlanıyor"a geçer (18 Eki
+  // 2026). Kapıda ödemede tahsilat TESLİMATTA yapılır → "Ödendi" çoğu zaman
+  // kargodan/teslimden SONRA işaretlenir; eskiden durum koşulsuz
+  // "hazirlaniyor" yazılıyor, "kargoda/tamamlandı" geri dönüyordu.
+  const guncelleme: Record<string, string> = { odeme_durumu: "odendi" };
+  if (!sip.durum || sip.durum === "beklemede") guncelleme.durum = "hazirlaniyor";
   await supabaseAdmin.from("siparisler")
-    .update({ odeme_durumu: "odendi", durum: "hazirlaniyor" })
+    .update(guncelleme)
     .eq("siparis_no", siparisNo);
 
   // STOK DÜŞ — sipariş kalemlerini parse et, her ürünün stoğunu adedi kadar azalt.

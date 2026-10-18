@@ -282,16 +282,38 @@ export default function Admin() {
       );
 
   // Sipariş alan güncellemeleri (durum/ödeme/kargo takip) — server API üzerinden.
-  const siparisGuncelle = async (id: number, degisiklik: Record<string, string>): Promise<boolean> => {
+  // Sunucu durum "Kargoda"/"Tamamlandı" olunca ya da kargodayken takip no
+  // girilince müşteriye otomatik e-posta atar; `mail` sonucu bildirimde görünür.
+  type GuncellemeSonucu = { ok: boolean; mail?: "gonderildi" | "gonderilmedi" | "atlandi" };
+  const siparisGuncelle = async (id: number, degisiklik: Record<string, string>): Promise<GuncellemeSonucu> => {
     try {
       const r = await fetch("/api/admin/siparisler", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, degisiklik }),
       });
-      return r.ok;
+      const d = (await r.json().catch(() => ({}))) as { mail?: GuncellemeSonucu["mail"] };
+      return { ok: r.ok, mail: d.mail };
     } catch {
-      return false;
+      return { ok: false };
+    }
+  };
+  const mailNotu = (mail?: GuncellemeSonucu["mail"]) =>
+    mail === "gonderildi" ? " · müşteriye e-posta gönderildi" : mail === "gonderilmedi" ? " · ⚠️ müşteri e-postası GÖNDERİLEMEDİ" : "";
+  // Kargodaki siparişe kargo e-postasını elle gönder (bu özellikten önce
+  // kargoya verilip hiç bildirim almamış siparişler için).
+  const kargoMailiGonder = async (id: number) => {
+    if (!window.confirm("Müşteriye \"Siparişiniz kargoya verildi\" e-postası gönderilsin mi?")) return;
+    try {
+      const r = await fetch("/api/admin/siparisler", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, eylem: "kargo_maili" }),
+      });
+      const d = (await r.json().catch(() => ({}))) as { mail?: string; error?: string };
+      goster(!r.ok ? "❌ " + (d.error || "Gönderilemedi") : d.mail === "gonderildi" ? "✅ Kargo e-postası gönderildi" : "⚠️ E-posta gönderilemedi");
+    } catch {
+      goster("❌ Sunucuya ulaşılamadı");
     }
   };
 
@@ -1609,7 +1631,7 @@ export default function Admin() {
                           <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.6, marginBottom: 6, textTransform: "uppercase" }}>Kargo Takip No</div>
                           <input type="text" autoComplete="off" placeholder="Takip numarası girin..."
                             defaultValue={sp.kargo_takip || ""}
-                            onBlur={async e => { if (e.target.value !== sp.kargo_takip) { const ok = await siparisGuncelle(sp.id, { kargo_takip: e.target.value }); goster(ok ? "✅ Takip no kaydedildi" : "❌ Takip no kaydedilemedi"); } }}
+                            onBlur={async e => { if (e.target.value !== sp.kargo_takip) { const s = await siparisGuncelle(sp.id, { kargo_takip: e.target.value }); goster(s.ok ? "✅ Takip no kaydedildi" + mailNotu(s.mail) : "❌ Takip no kaydedilemedi"); } }}
                             style={{ width: "100%", padding: "8px 12px", border: "2px solid #E8D5B7", borderRadius: 8, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const, background: "white", color: "#2C1A0E" }} />
                         </div>
                       </div>
@@ -1681,7 +1703,7 @@ export default function Admin() {
 
                       {/* Durum güncelleme + Baskı */}
                       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                        <select value={sp.durum || "beklemede"} onChange={async e => { const ok = await siparisGuncelle(sp.id, { durum: e.target.value }); siparisleriYukle(siparisDurumFiltre); goster(ok ? "✅ Sipariş durumu güncellendi" : "❌ Durum güncellenemedi"); }} style={fltSelect}>
+                        <select value={sp.durum || "beklemede"} onChange={async e => { const s = await siparisGuncelle(sp.id, { durum: e.target.value }); siparisleriYukle(siparisDurumFiltre); goster(s.ok ? "✅ Sipariş durumu güncellendi" + mailNotu(s.mail) : "❌ Durum güncellenemedi"); }} style={fltSelect}>
                           <option value="beklemede">⏳ Beklemede</option>
                           <option value="hazirlaniyor">🔧 Hazırlanıyor</option>
                           <option value="kargoda">🚚 Kargoda</option>
@@ -1699,13 +1721,19 @@ export default function Admin() {
                             else { goster("❌ Ödeme onaylanamadı"); }
                             return;
                           }
-                          const ok = await siparisGuncelle(sp.id, { odeme_durumu: yeni }); siparisleriYukle(siparisDurumFiltre); goster(ok ? "✅ Ödeme durumu güncellendi" : "❌ Ödeme durumu güncellenemedi");
+                          const s = await siparisGuncelle(sp.id, { odeme_durumu: yeni }); siparisleriYukle(siparisDurumFiltre); goster(s.ok ? "✅ Ödeme durumu güncellendi" : "❌ Ödeme durumu güncellenemedi");
                         }} style={fltSelect}>
                           <option value="beklemede">⏳ Ödeme Bekliyor</option>
                           <option value="odendi">💳 Ödendi</option>
                           <option value="iptal">❌ İptal</option>
                           <option value="iade">↩️ İade Edildi</option>
                         </select>
+                        {sp.durum === "kargoda" && (
+                          <button onClick={() => kargoMailiGonder(sp.id)} title="Müşteriye kargoya verildi e-postasını (takip no ile) gönderir"
+                            style={{ padding: "8px 14px", border: "2px solid #E8D5B7", background: "white", color: "#5C3D2E", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit" }}>
+                            📧 Kargo e-postası gönder
+                          </button>
+                        )}
                         <button onClick={() => {
                           // Paketleme fisi HTML'i — hem yeni sekmede acilir (yazdir/PDF
                           // olarak kaydet icin) hem de Blob ile direkt HTML dosyasi

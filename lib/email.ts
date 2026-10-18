@@ -265,6 +265,158 @@ export async function sendSiparisOnayMaili(p: SiparisOnayParams): Promise<boolea
   }
 }
 
+// ── Kargo / teslim bildirimleri (18 Eki 2026) ──────────────────────────
+// Onay maili "Kargoya verildiğinde takip numaranızı ileteceğiz" diyordu ama
+// böyle bir mail YOKTU: admin durumu "Kargoda" yapınca müşteriye hiçbir şey
+// gitmiyordu. Misafir müşteri Siparişlerim'e giremediği için elinde
+// "Hazırlanıyor" gösteren onay maili kalıyor, kargosunu sormak için arıyordu.
+// Artık admin durumu değiştirince (api/admin/siparisler PATCH) bunlar gider.
+export type DurumMailParams = {
+  siparisNo: string;
+  ad?: string | null;
+  email: string;
+  kargoTakip?: string | null;
+};
+
+/** Müşteri/admin girdisi HTML'e girmeden önce kaçışlanır. */
+function esc(s: unknown): string {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
+}
+
+/** 4 adımlı durum şeridi — onay mailindekiyle aynı görünüm; `aktif` adıma kadar tamam. */
+function durumSeridi(aktif: 3 | 4): string {
+  const adimlar = ["Alındı", "Hazırlandı", "Kargoda", "Teslim"];
+  return adimlar.map((etiket, i) => {
+    const tamam = i < aktif;
+    return `<td width="25%" style="text-align:center;padding:8px 4px;">
+            <div style="width:32px;height:32px;background:${tamam ? "#ff6b35" : "#e5e7eb"};color:${tamam ? "#fff" : "#9ca3af"};border-radius:50%;line-height:32px;margin:0 auto 6px auto;font-size:14px;font-weight:700;">${tamam ? "✓" : i + 1}</div>
+            <div style="font-size:11px;color:${tamam ? "#ff6b35" : "#9ca3af"};font-weight:${tamam ? 600 : 400};">${etiket}</div>
+          </td>`;
+  }).join("");
+}
+
+function durumMailiHTML(o: { baslik: string; ikon: string; mesaj: string; ekBlok: string; adim: 3 | 4; siparisNo: string }): string {
+  return `<!DOCTYPE html>
+<html lang="tr"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>${esc(o.baslik)} — ${esc(o.siparisNo)}</title></head>
+<body style="margin:0;padding:0;background:#f5f7fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;">
+    <div style="background:linear-gradient(135deg,#ff6b35 0%,#f7931e 100%);padding:32px 24px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:28px;font-weight:700;">evemama.net</h1>
+      <p style="margin:8px 0 0 0;color:rgba(255,255,255,0.95);font-size:14px;">Evcil dostunuzun dükkânı</p>
+    </div>
+    <div style="padding:32px 24px;text-align:center;border-bottom:1px solid #eee;">
+      <div style="font-size:48px;margin-bottom:8px;">${o.ikon}</div>
+      <h2 style="margin:0 0 8px 0;color:#1a1a1a;font-size:22px;">${esc(o.baslik)}</h2>
+      <p style="margin:0;color:#555;font-size:15px;line-height:1.5;">${o.mesaj}</p>
+      <div style="display:inline-block;margin-top:16px;padding:8px 18px;background:#fff5ed;border:1px solid #ff6b35;border-radius:8px;color:#ff6b35;font-weight:600;font-size:15px;">
+        Sipariş No: ${esc(o.siparisNo)}
+      </div>
+    </div>
+    ${o.ekBlok}
+    <div style="padding:24px;">
+      <h3 style="margin:0 0 16px 0;color:#1a1a1a;font-size:16px;">Siparişiniz nerede?</h3>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>${durumSeridi(o.adim)}</tr></table>
+      <div style="text-align:center;margin-top:20px;">
+        <a href="https://www.evemama.net/siparislerim" style="display:inline-block;padding:12px 28px;background:#ff6b35;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;">Siparişlerimi Görüntüle</a>
+      </div>
+    </div>
+    <div style="padding:20px 24px;background:#f9fafb;text-align:center;border-top:1px solid #eee;">
+      <p style="margin:0 0 8px 0;font-size:13px;color:#666;">Sorunuz mu var?</p>
+      <p style="margin:0;font-size:14px;color:#333;"><a href="${ILETISIM.WHATSAPP_LINK}" style="color:#25D366;text-decoration:none;font-weight:600;">WhatsApp: ${ILETISIM.WHATSAPP}</a></p>
+      <p style="margin:6px 0 0 0;font-size:12px;color:#888;">${ILETISIM.MESAI}</p>
+    </div>
+    <div style="padding:20px 24px;text-align:center;background:#1a1a1a;color:#9ca3af;font-size:12px;line-height:1.6;">
+      <p style="margin:0 0 6px 0;">evemama.net — Evcil Dostunuzun Dükkânı</p>
+      <p style="margin:0;">© ${new Date().getFullYear()} Tüm hakları saklıdır.</p>
+    </div>
+  </div>
+</body></html>`;
+}
+
+async function durumMailiGonder(p: DurumMailParams, konu: string, html: string, text: string, etiket: string): Promise<boolean> {
+  const client = getResend();
+  if (!client) {
+    console.warn(`[email] RESEND_API_KEY tanimli degil, ${etiket} gonderilmedi:`, p.siparisNo);
+    return false;
+  }
+  if (!p.email) {
+    console.warn(`[email] email adresi bos, ${etiket} gonderilmedi:`, p.siparisNo);
+    return false;
+  }
+  try {
+    const { data, error } = await client.emails.send({ from: FROM_EMAIL, to: p.email, subject: konu, html, text });
+    if (error) {
+      console.error(`[email] Resend error (${etiket}):`, { siparisNo: p.siparisNo, error });
+      return false;
+    }
+    console.log(`[email] ${etiket} gonderildi:`, { siparisNo: p.siparisNo, id: data?.id });
+    return true;
+  } catch (err) {
+    console.error(`[email] exception (${etiket}):`, { siparisNo: p.siparisNo, err: err instanceof Error ? err.message : String(err) });
+    return false;
+  }
+}
+
+/** "Kargoya verildi" — takip numarası varsa büyük kutuda; yoksa ayrıca iletileceği yazar. */
+export async function sendKargoMaili(p: DurumMailParams): Promise<boolean> {
+  const takip = String(p.kargoTakip || "").trim();
+  const ad = p.ad ? ` ${esc(p.ad)}` : "";
+  const takipBlok = takip
+    ? `<div style="padding:24px 24px 0;text-align:center;">
+        <div style="border:2px dashed #ff6b35;border-radius:14px;padding:18px 16px;background:#fff7ed;">
+          <div style="font-size:12px;color:#9a3412;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Kargo Takip Numaranız</div>
+          <div style="font-family:monospace;font-size:22px;font-weight:700;color:#1a1a1a;letter-spacing:1px;">${esc(takip)}</div>
+          <p style="margin:10px 0 0 0;font-size:12.5px;color:#6b7280;">Bu numarayla kargo firmasının sitesinden gönderinizi takip edebilirsiniz.</p>
+        </div>
+      </div>`
+    : `<div style="padding:24px 24px 0;text-align:center;font-size:13.5px;color:#555;">Kargo takip numaranızı ayrıca ileteceğiz.</div>`;
+  const html = durumMailiHTML({
+    baslik: "Siparişiniz kargoya verildi!",
+    ikon: "🚚",
+    mesaj: `Merhaba${ad},<br>Siparişiniz hazırlandı ve kargoya teslim edildi. Dostunuzun maması yolda!`,
+    ekBlok: takipBlok,
+    adim: 3,
+    siparisNo: p.siparisNo,
+  });
+  const text = `evemama.net - Siparisiniz kargoya verildi
+
+Merhaba${p.ad ? " " + p.ad : ""},
+
+${p.siparisNo} numarali siparisiniz kargoya verildi.
+${takip ? `Kargo takip numaraniz: ${takip}` : "Kargo takip numaranizi ayrica iletecegiz."}
+
+Siparislerim: https://www.evemama.net/siparislerim
+Sorulariniz icin WhatsApp: ${ILETISIM.WHATSAPP} (${ILETISIM.MESAI})
+
+evemama.net
+`;
+  return durumMailiGonder(p, `Siparisiniz kargoya verildi - ${p.siparisNo}`, html, text, "kargo maili");
+}
+
+/** "Teslim edildi" — admin durumu "Tamamlandı" yapınca. */
+export async function sendTeslimMaili(p: DurumMailParams): Promise<boolean> {
+  const ad = p.ad ? ` ${esc(p.ad)}` : "";
+  const html = durumMailiHTML({
+    baslik: "Siparişiniz teslim edildi",
+    ikon: "✅",
+    mesaj: `Merhaba${ad},<br>Siparişiniz teslim edildi. Bizi tercih ettiğiniz için teşekkür ederiz — afiyet olsun!`,
+    ekBlok: `<div style="padding:24px 24px 0;text-align:center;font-size:13.5px;color:#555;line-height:1.6;">Siparişinizle ilgili bir sorun olursa WhatsApp'tan yazmanız yeterli.</div>`,
+    adim: 4,
+    siparisNo: p.siparisNo,
+  });
+  const text = `evemama.net - Siparisiniz teslim edildi
+
+Merhaba${p.ad ? " " + p.ad : ""},
+
+${p.siparisNo} numarali siparisiniz teslim edildi. Bizi tercih ettiginiz icin tesekkur ederiz!
+
+Bir sorun olursa WhatsApp: ${ILETISIM.WHATSAPP} (${ILETISIM.MESAI})
+
+evemama.net
+`;
+  return durumMailiGonder(p, `Siparisiniz teslim edildi - ${p.siparisNo}`, html, text, "teslim maili");
+}
+
 // ── Kampanya / kupon maili ─────────────────────────────────────────────
 // Admin panelindeki "Üyeler" sayfasından seçili üyelere, "Kuponlar"da
 // oluşturulmuş bir kuponu hazır şablonla gönderir.

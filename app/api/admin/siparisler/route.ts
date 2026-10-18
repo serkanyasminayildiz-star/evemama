@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { adminYetkili } from "../../../../lib/adminOturum";
 import { createClient } from "@supabase/supabase-js";
+import { sendKargoMaili, sendTeslimMaili } from "../../../../lib/email";
 
 // Admin sipariş verisi — RLS Faz 2: admin paneli siparisler tablosunu artık
 // tarayıcıdan (anon) DEĞİL bu route üzerinden (service_role) okur/günceller.
@@ -67,12 +68,62 @@ export async function GET(req: NextRequest) {
   }
 }
 
+type BildirimSonucu = "gonderildi" | "gonderilmedi" | "atlandi";
+type OncekiSiparis = { siparis_no: string; email: string | null; ad: string | null; durum: string | null; kargo_takip: string | null };
+
+// Müşteri bildirimi (18 Eki 2026) — durum ya da takip no GERÇEKTEN değişince:
+//  • durum → "kargoda"     : kargoya verildi maili (takip no varsa içinde)
+//  • durum → "tamamlandi"  : teslim edildi maili
+//  • kargodayken takip no ilk kez girildi/değişti : takip numaralı kargo maili
+// Karşılaştırma DB'deki ÖNCEKİ değerle yapılır → aynı değeri tekrar kaydetmek
+// (ör. takip kutusundan her çıkışta onBlur) ikinci mail göndermez.
+async function durumBildirimi(onceki: OncekiSiparis, guncelleme: Record<string, string>): Promise<BildirimSonucu> {
+  if (!onceki.email) return "atlandi";
+  const yeniDurum = guncelleme.durum ?? onceki.durum;
+  const oncekiTakip = (onceki.kargo_takip || "").trim();
+  const yeniTakip = (guncelleme.kargo_takip ?? onceki.kargo_takip ?? "").trim();
+  const p = { siparisNo: onceki.siparis_no, ad: onceki.ad, email: onceki.email, kargoTakip: yeniTakip || null };
+  try {
+    if (guncelleme.durum !== undefined && guncelleme.durum !== onceki.durum) {
+      if (yeniDurum === "kargoda") return (await sendKargoMaili(p)) ? "gonderildi" : "gonderilmedi";
+      if (yeniDurum === "tamamlandi") return (await sendTeslimMaili(p)) ? "gonderildi" : "gonderilmedi";
+      return "atlandi";
+    }
+    if (guncelleme.kargo_takip !== undefined && yeniDurum === "kargoda" && yeniTakip && yeniTakip !== oncekiTakip) {
+      return (await sendKargoMaili(p)) ? "gonderildi" : "gonderilmedi";
+    }
+  } catch (e: unknown) {
+    console.error("[admin/siparisler] bildirim:", e instanceof Error ? e.message : e);
+    return "gonderilmedi";
+  }
+  return "atlandi";
+}
+
 // PATCH {id, degisiklik: {durum? | odeme_durumu? | kargo_takip?}} — alan beyaz listesi.
+// PATCH {id, eylem: "kargo_maili"} — kargodaki siparişe kargo mailini elle (yeniden) gönder
+//       (bu özellikten önce kargoya verilmiş, hiç mail almamış siparişler için).
+// Yanıt: {ok, mail: "gonderildi" | "gonderilmedi" | "atlandi"} — admin bildirimi gösterir.
 export async function PATCH(req: NextRequest) {
   if (!yetkili(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: noStore });
   try {
-    const { id, degisiklik } = (await req.json()) as { id?: number; degisiklik?: Record<string, unknown> };
-    if (!id || !degisiklik) return NextResponse.json({ error: "id ve degisiklik gerekli" }, { status: 400, headers: noStore });
+    const { id, degisiklik, eylem } = (await req.json()) as { id?: number; degisiklik?: Record<string, unknown>; eylem?: string };
+    if (!id) return NextResponse.json({ error: "id gerekli" }, { status: 400, headers: noStore });
+    const sb = adminClient();
+    const oncekiOku = async () => {
+      const { data } = await sb.from("siparisler").select("siparis_no, email, ad, durum, kargo_takip").eq("id", id).maybeSingle();
+      return data as OncekiSiparis | null;
+    };
+
+    if (eylem === "kargo_maili") {
+      const sp = await oncekiOku();
+      if (!sp) return NextResponse.json({ error: "sipariş bulunamadı" }, { status: 404, headers: noStore });
+      if (sp.durum !== "kargoda") return NextResponse.json({ error: "sipariş kargoda değil" }, { status: 400, headers: noStore });
+      if (!sp.email) return NextResponse.json({ error: "siparişte e-posta yok" }, { status: 400, headers: noStore });
+      const ok = await sendKargoMaili({ siparisNo: sp.siparis_no, ad: sp.ad, email: sp.email, kargoTakip: sp.kargo_takip });
+      return NextResponse.json({ ok: true, mail: ok ? "gonderildi" : "gonderilmedi" }, { headers: noStore });
+    }
+
+    if (!degisiklik) return NextResponse.json({ error: "id ve degisiklik gerekli" }, { status: 400, headers: noStore });
     const izinli = ["durum", "odeme_durumu", "kargo_takip"] as const;
     const guncelleme: Record<string, string> = {};
     for (const alan of izinli) {
@@ -81,9 +132,11 @@ export async function PATCH(req: NextRequest) {
     if (Object.keys(guncelleme).length === 0) {
       return NextResponse.json({ error: "güncellenecek geçerli alan yok" }, { status: 400, headers: noStore });
     }
-    const { error } = await adminClient().from("siparisler").update(guncelleme).eq("id", id);
+    const onceki = guncelleme.durum !== undefined || guncelleme.kargo_takip !== undefined ? await oncekiOku() : null;
+    const { error } = await sb.from("siparisler").update(guncelleme).eq("id", id);
     if (error) throw error;
-    return NextResponse.json({ ok: true }, { headers: noStore });
+    const mail: BildirimSonucu = onceki ? await durumBildirimi(onceki, guncelleme) : "atlandi";
+    return NextResponse.json({ ok: true, mail }, { headers: noStore });
   } catch (e: unknown) {
     console.error("[admin/siparisler] PATCH:", e instanceof Error ? e.message : e);
     return NextResponse.json({ error: "sipariş güncellenemedi" }, { status: 500, headers: noStore });
