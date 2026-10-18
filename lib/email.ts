@@ -173,7 +173,7 @@ function buildHTML(p: SiparisOnayParams): string {
         </tr>
       </table>
       <p style="margin:16px 0 0 0;text-align:center;font-size:13px;color:#666;line-height:1.5;">
-        Kargoya verildiğinde size kargo takip numaranızı ileteceğiz.<br>
+        Siparişiniz kargoya verildiğinde size e-posta ile haber vereceğiz.<br>
         Sipariş durumunuzu istediğiniz zaman aşağıdaki butondan takip edebilirsiniz.
       </p>
       <div style="text-align:center;margin-top:20px;">
@@ -266,8 +266,8 @@ export async function sendSiparisOnayMaili(p: SiparisOnayParams): Promise<boolea
 }
 
 // ── Kargo / teslim bildirimleri (18 Eki 2026) ──────────────────────────
-// Onay maili "Kargoya verildiğinde takip numaranızı ileteceğiz" diyordu ama
-// böyle bir mail YOKTU: admin durumu "Kargoda" yapınca müşteriye hiçbir şey
+// Onay maili "Kargoya verildiğinde haber vereceğiz" diyordu ama böyle bir
+// mail YOKTU: admin durumu "Kargoda" yapınca müşteriye hiçbir şey
 // gitmiyordu. Misafir müşteri Siparişlerim'e giremediği için elinde
 // "Hazırlanıyor" gösteren onay maili kalıyor, kargosunu sormak için arıyordu.
 // Artık admin durumu değiştirince (api/admin/siparisler PATCH) bunlar gider.
@@ -275,7 +275,6 @@ export type DurumMailParams = {
   siparisNo: string;
   ad?: string | null;
   email: string;
-  kargoTakip?: string | null;
 };
 
 /** Müşteri/admin girdisi HTML'e girmeden önce kaçışlanır. */
@@ -357,24 +356,15 @@ async function durumMailiGonder(p: DurumMailParams, konu: string, html: string, 
   }
 }
 
-/** "Kargoya verildi" — takip numarası varsa büyük kutuda; yoksa ayrıca iletileceği yazar. */
+/** "Kargoya verildi". Kargo takip numarası mailde YOK (kullanıcı kararı,
+ *  18 Eki 2026) — yalnız durum bilgisi + şerit + Siparişlerim. */
 export async function sendKargoMaili(p: DurumMailParams): Promise<boolean> {
-  const takip = String(p.kargoTakip || "").trim();
   const ad = p.ad ? ` ${esc(p.ad)}` : "";
-  const takipBlok = takip
-    ? `<div style="padding:24px 24px 0;text-align:center;">
-        <div style="border:2px dashed #ff6b35;border-radius:14px;padding:18px 16px;background:#fff7ed;">
-          <div style="font-size:12px;color:#9a3412;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Kargo Takip Numaranız</div>
-          <div style="font-family:monospace;font-size:22px;font-weight:700;color:#1a1a1a;letter-spacing:1px;">${esc(takip)}</div>
-          <p style="margin:10px 0 0 0;font-size:12.5px;color:#6b7280;">Bu numarayla kargo firmasının sitesinden gönderinizi takip edebilirsiniz.</p>
-        </div>
-      </div>`
-    : `<div style="padding:24px 24px 0;text-align:center;font-size:13.5px;color:#555;">Kargo takip numaranızı ayrıca ileteceğiz.</div>`;
   const html = durumMailiHTML({
     baslik: "Siparişiniz kargoya verildi!",
     ikon: "🚚",
     mesaj: `Merhaba${ad},<br>Siparişiniz hazırlandı ve kargoya teslim edildi. Dostunuzun maması yolda!`,
-    ekBlok: takipBlok,
+    ekBlok: "",
     adim: 3,
     siparisNo: p.siparisNo,
   });
@@ -383,7 +373,6 @@ export async function sendKargoMaili(p: DurumMailParams): Promise<boolean> {
 Merhaba${p.ad ? " " + p.ad : ""},
 
 ${p.siparisNo} numarali siparisiniz kargoya verildi.
-${takip ? `Kargo takip numaraniz: ${takip}` : "Kargo takip numaranizi ayrica iletecegiz."}
 
 Siparislerim: https://www.evemama.net/siparislerim
 Sorulariniz icin WhatsApp: ${ILETISIM.WHATSAPP} (${ILETISIM.MESAI})
@@ -838,7 +827,7 @@ export async function sendKapidaOdemeMaili(p: {
       <div style="font-size:15px;margin-bottom:6px;">Kapıda ödenecek toplam: <strong>₺${tutar}</strong></div>
       <div style="font-size:12.5px;opacity:0.7;">${nakit ? "Lütfen teslimat sırasında tutarı nakit hazır bulundur." : "Kurye kart ile tahsilat yapacak."}</div>
     </div>
-    <p style="font-size:12.5px;opacity:0.6;">Kargoya verildiğinde takip numaranı ayrıca ileteceğiz. Sorun/değişiklik için bu maile yanıt verebilirsin.</p>
+    <p style="font-size:12.5px;opacity:0.6;">Siparişin kargoya verildiğinde e-posta ile haber vereceğiz. Sorun/değişiklik için bu maile yanıt verebilirsin.</p>
     <hr style="border:none;border-top:1px solid #E8D5B7;margin:20px 0;">
     <p style="font-size:12px;opacity:0.5;">evemama.net · Dostlarının mama ve ihtiyaçları 🐾</p>
   </div>`;

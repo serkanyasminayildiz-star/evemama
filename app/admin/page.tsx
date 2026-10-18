@@ -282,8 +282,8 @@ export default function Admin() {
       );
 
   // Sipariş alan güncellemeleri (durum/ödeme/kargo takip) — server API üzerinden.
-  // Sunucu durum "Kargoda"/"Tamamlandı" olunca ya da kargodayken takip no
-  // girilince müşteriye otomatik e-posta atar; `mail` sonucu bildirimde görünür.
+  // Sunucu durum "Kargoda"/"Tamamlandı" olunca müşteriye otomatik e-posta
+  // atar; `mail` sonucu bildirimde görünür.
   type GuncellemeSonucu = { ok: boolean; mail?: "gonderildi" | "gonderilmedi" | "atlandi" };
   const siparisGuncelle = async (id: number, degisiklik: Record<string, string>): Promise<GuncellemeSonucu> => {
     try {
@@ -1729,7 +1729,7 @@ export default function Admin() {
                           <option value="iade">↩️ İade Edildi</option>
                         </select>
                         {sp.durum === "kargoda" && (
-                          <button onClick={() => kargoMailiGonder(sp.id)} title="Müşteriye kargoya verildi e-postasını (takip no ile) gönderir"
+                          <button onClick={() => kargoMailiGonder(sp.id)} title="Müşteriye kargoya verildi e-postasını gönderir"
                             style={{ padding: "8px 14px", border: "2px solid #E8D5B7", background: "white", color: "#5C3D2E", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit" }}>
                             📧 Kargo e-postası gönder
                           </button>
