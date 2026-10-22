@@ -58,6 +58,11 @@ function generateAuth(randomString: string, uri: string, body: Record<string, un
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { buyer } = body;
+  // E-posta küçük harfle saklanır (22 Eki 2026): giriş sistemi (Supabase Auth)
+  // e-postayı küçük harf tutuyor; siparişe "Zeliha_…@hotmail.com" gibi büyük
+  // harfle yazılınca harfe duyarlı eşleşmeler (Siparişlerim RLS'i, yorumda
+  // "doğrulanmış müşteri") müşterinin kendi siparişini bulamıyordu.
+  if (buyer && typeof buyer.email === "string") buyer.email = buyer.email.trim().toLowerCase();
 
   // Google tıklama kimliği — istemciden gelir, GÜVENİLMEZ: desen süzgecinden
   // geçer (bkz. lib/gclid.ts). Siparişe yazılır ki callback kaçırıp sipariş

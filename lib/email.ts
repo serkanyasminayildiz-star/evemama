@@ -27,14 +27,21 @@ function getResend(): Resend | null {
   return resend;
 }
 
+// Sipariş kalemi — siparişler sepetin şekliyle (name/quantity/price) kaydedilir;
+// eski/alternatif şekiller (ad/adet/fiyat) de okunur. 22 Eki 2026'ya kadar
+// yalnız ad/adet/fiyat okunuyordu → onay mailinde ürünler "Urun · 1 adet · 0 ₺"
+// görünüyor ya da (urunler JSON METNİ gelince) hiç görünmüyordu.
 export type SiparisUrun = {
   ad?: string;
   isim?: string;
   baslik?: string;
+  name?: string;
   adet?: number;
   miktar?: number;
+  quantity?: number;
   fiyat?: number;
   birim_fiyat?: number;
+  price?: number;
   resim?: string;
   gorsel?: string;
 };
@@ -44,7 +51,7 @@ export type SiparisOnayParams = {
   ad: string;
   soyad?: string;
   email: string;
-  urunler: SiparisUrun[] | null | undefined;
+  urunler: SiparisUrun[] | string | null | undefined; // dizi ya da JSON metni (odeme_gecici)
   toplam: number;
   araToplam?: number;
   adres?: string;
@@ -57,17 +64,25 @@ function tr(n: number): string {
 }
 
 function getUrunAd(u: SiparisUrun): string {
-  return u.ad || u.isim || u.baslik || "Urun";
+  return u.ad || u.isim || u.baslik || u.name || "Ürün";
 }
 function getUrunAdet(u: SiparisUrun): number {
-  return Number(u.adet || u.miktar || 1);
+  return Number(u.adet || u.miktar || u.quantity || 1);
 }
 function getUrunFiyat(u: SiparisUrun): number {
-  return Number(u.fiyat || u.birim_fiyat || 0);
+  return Number(u.fiyat || u.birim_fiyat || u.price || 0);
+}
+
+/** urunler dizi ya da JSON metni olabilir (odeme_gecici/siparisler'e JSON.stringify ile yazılıyor). */
+export function urunleriCoz(urunler: SiparisOnayParams["urunler"]): SiparisUrun[] {
+  if (typeof urunler === "string") {
+    try { const v = JSON.parse(urunler); return Array.isArray(v) ? v : []; } catch { return []; }
+  }
+  return Array.isArray(urunler) ? urunler : [];
 }
 
 function buildHTML(p: SiparisOnayParams): string {
-  const urunler = Array.isArray(p.urunler) ? p.urunler : [];
+  const urunler = urunleriCoz(p.urunler);
   const satirlar = urunler.map((u) => {
     const ad = getUrunAd(u);
     const adet = getUrunAdet(u);
@@ -203,7 +218,7 @@ function buildHTML(p: SiparisOnayParams): string {
 }
 
 function buildText(p: SiparisOnayParams): string {
-  const urunler = Array.isArray(p.urunler) ? p.urunler : [];
+  const urunler = urunleriCoz(p.urunler);
   const satirlar = urunler.map((u) => {
     const ad = getUrunAd(u);
     const adet = getUrunAdet(u);

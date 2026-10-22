@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { adminYetkili } from "../../../../lib/adminOturum";
 import { createClient } from "@supabase/supabase-js";
-import { sendKargoMaili, sendTeslimMaili } from "../../../../lib/email";
+import { sendKargoMaili, sendSiparisOnayMaili, sendTeslimMaili } from "../../../../lib/email";
 
 // Admin sipariş verisi — RLS Faz 2: admin paneli siparisler tablosunu artık
 // tarayıcıdan (anon) DEĞİL bu route üzerinden (service_role) okur/günceller.
@@ -92,6 +92,9 @@ async function durumBildirimi(onceki: OncekiSiparis, yeniDurum: string): Promise
 // PATCH {id, degisiklik: {durum? | odeme_durumu? | kargo_takip?}} — alan beyaz listesi.
 // PATCH {id, eylem: "kargo_maili"} — kargodaki siparişe kargo mailini elle (yeniden) gönder
 //       (bu özellikten önce kargoya verilmiş, hiç mail almamış siparişler için).
+// PATCH {id, eylem: "onay_maili"}  — sipariş onay mailini yeniden gönder (müşteri
+//       "onay maili gelmedi" dediğinde; eski maili-tekrar-gonder aracı anon
+//       istemciyle okuduğu için RLS sonrası hiçbir sipariş bulamıyordu).
 // Yanıt: {ok, mail: "gonderildi" | "gonderilmedi" | "atlandi"} — admin bildirimi gösterir.
 export async function PATCH(req: NextRequest) {
   if (!yetkili(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: noStore });
@@ -110,6 +113,20 @@ export async function PATCH(req: NextRequest) {
       if (sp.durum !== "kargoda") return NextResponse.json({ error: "sipariş kargoda değil" }, { status: 400, headers: noStore });
       if (!sp.email) return NextResponse.json({ error: "siparişte e-posta yok" }, { status: 400, headers: noStore });
       const ok = await sendKargoMaili({ siparisNo: sp.siparis_no, ad: sp.ad, email: sp.email });
+      return NextResponse.json({ ok: true, mail: ok ? "gonderildi" : "gonderilmedi" }, { headers: noStore });
+    }
+
+    if (eylem === "onay_maili") {
+      const { data: s } = await sb.from("siparisler")
+        .select("siparis_no, ad, soyad, email, urunler, toplam, ara_toplam, adres, sehir, telefon")
+        .eq("id", id).maybeSingle();
+      if (!s) return NextResponse.json({ error: "sipariş bulunamadı" }, { status: 404, headers: noStore });
+      if (!s.email) return NextResponse.json({ error: "siparişte e-posta yok" }, { status: 400, headers: noStore });
+      const ok = await sendSiparisOnayMaili({
+        siparisNo: s.siparis_no, ad: s.ad || "", soyad: s.soyad || "", email: s.email,
+        urunler: s.urunler, toplam: Number(s.toplam) || 0, araToplam: Number(s.ara_toplam) || undefined,
+        adres: s.adres || "", sehir: s.sehir || "", telefon: s.telefon || "",
+      });
       return NextResponse.json({ ok: true, mail: ok ? "gonderildi" : "gonderilmedi" }, { headers: noStore });
     }
 

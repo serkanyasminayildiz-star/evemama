@@ -300,18 +300,20 @@ export default function Admin() {
   };
   const mailNotu = (mail?: GuncellemeSonucu["mail"]) =>
     mail === "gonderildi" ? " · müşteriye e-posta gönderildi" : mail === "gonderilmedi" ? " · ⚠️ müşteri e-postası GÖNDERİLEMEDİ" : "";
-  // Kargodaki siparişe kargo e-postasını elle gönder (bu özellikten önce
-  // kargoya verilip hiç bildirim almamış siparişler için).
-  const kargoMailiGonder = async (id: number) => {
-    if (!window.confirm("Müşteriye \"Siparişiniz kargoya verildi\" e-postası gönderilsin mi?")) return;
+  // Müşteriye e-postayı elle (yeniden) gönder:
+  //  "kargo_maili" — bu özellikten önce kargoya verilip bildirim almamış siparişler
+  //  "onay_maili"  — müşteri "onay maili gelmedi" dediğinde
+  const mailiElleGonder = async (id: number, eylem: "kargo_maili" | "onay_maili") => {
+    const ne = eylem === "kargo_maili" ? "\"Siparişiniz kargoya verildi\"" : "sipariş onay";
+    if (!window.confirm(`Müşteriye ${ne} e-postası gönderilsin mi?`)) return;
     try {
       const r = await fetch("/api/admin/siparisler", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, eylem: "kargo_maili" }),
+        body: JSON.stringify({ id, eylem }),
       });
       const d = (await r.json().catch(() => ({}))) as { mail?: string; error?: string };
-      goster(!r.ok ? "❌ " + (d.error || "Gönderilemedi") : d.mail === "gonderildi" ? "✅ Kargo e-postası gönderildi" : "⚠️ E-posta gönderilemedi");
+      goster(!r.ok ? "❌ " + (d.error || "Gönderilemedi") : d.mail === "gonderildi" ? "✅ E-posta gönderildi" : "⚠️ E-posta gönderilemedi");
     } catch {
       goster("❌ Sunucuya ulaşılamadı");
     }
@@ -1667,8 +1669,12 @@ export default function Admin() {
                             {siparisKalemleri[sp.id].map((kalem, ki) => {
                               // Düzeltilmiş ürün bilgisi alma
                               const urunAdi = kalem.urunler?.ad || kalem.urun_adi || kalem.ad || kalem.name || "Ürün";
-                              const fiyat = parseFloat(String(kalem.fiyat || kalem.birim_fiyat || kalem.toplam_fiyat || kalem.price || 0));
                               const adet = kalem.adet || kalem.miktar || kalem.quantity || 1;
+                              // price/fiyat BİRİM fiyattır (sepet şekli name/price/quantity) → satır
+                              // = birim × adet. Eskiden birim satır toplamı sanılıp adede bölünüyordu
+                              // (3 × ₺3.699 → "₺3.699 · ₺1.233/adet"). Yalnız toplam_fiyat varsa o satırdır.
+                              const birimHam = kalem.fiyat ?? kalem.birim_fiyat ?? kalem.price;
+                              const fiyat = birimHam != null ? parseFloat(String(birimHam)) * adet : parseFloat(String(kalem.toplam_fiyat || 0));
                               const resim = kalem.urunler?.resim_url || kalem.resim_url || null;
                               
                               return (
@@ -1729,19 +1735,25 @@ export default function Admin() {
                           <option value="iade">↩️ İade Edildi</option>
                         </select>
                         {sp.durum === "kargoda" && (
-                          <button onClick={() => kargoMailiGonder(sp.id)} title="Müşteriye kargoya verildi e-postasını gönderir"
+                          <button onClick={() => mailiElleGonder(sp.id, "kargo_maili")} title="Müşteriye kargoya verildi e-postasını gönderir"
                             style={{ padding: "8px 14px", border: "2px solid #E8D5B7", background: "white", color: "#5C3D2E", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit" }}>
                             📧 Kargo e-postası gönder
                           </button>
                         )}
+                        <button onClick={() => mailiElleGonder(sp.id, "onay_maili")} title="Müşteriye sipariş onay e-postasını yeniden gönderir"
+                          style={{ padding: "8px 14px", border: "2px solid #E8D5B7", background: "white", color: "#5C3D2E", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit" }}>
+                          📧 Onay e-postası gönder
+                        </button>
                         <button onClick={() => {
                           // Paketleme fisi HTML'i — hem yeni sekmede acilir (yazdir/PDF
                           // olarak kaydet icin) hem de Blob ile direkt HTML dosyasi
                           // olarak indirilebilir.
                           const kalemleriHtml = (siparisKalemleri[sp.id] || []).map(k => {
                             const ad = k.urunler?.ad || k.urun_adi || k.ad || k.name || "Ürün";
-                            const fiyat = parseFloat(String(k.fiyat || k.birim_fiyat || k.toplam_fiyat || k.price || 0));
                             const adet = k.adet || k.miktar || k.quantity || 1;
+                            // Satır tutarı = birim × adet (kalem listesiyle aynı kural).
+                            const birimHam = k.fiyat ?? k.birim_fiyat ?? k.price;
+                            const fiyat = birimHam != null ? parseFloat(String(birimHam)) * adet : parseFloat(String(k.toplam_fiyat || 0));
                             return `<div class="row"><span>${ad} x${adet}</span><span>₺${fiyat.toFixed(2)}</span></div>`;
                           }).join("") || "<div class='row'><span>Kalem yok</span><span>—</span></div>";
                           const odemeYazi = odemeRozet(sp.odeme_yontemi).etiket.replace(/^\S+\s/, "");
@@ -1757,8 +1769,10 @@ export default function Admin() {
                           // tarayicida acip Yazdir > PDF olarak kaydet diyebilir.
                           const kalemleriHtml = (siparisKalemleri[sp.id] || []).map(k => {
                             const ad = k.urunler?.ad || k.urun_adi || k.ad || k.name || "Ürün";
-                            const fiyat = parseFloat(String(k.fiyat || k.birim_fiyat || k.toplam_fiyat || k.price || 0));
                             const adet = k.adet || k.miktar || k.quantity || 1;
+                            // Satır tutarı = birim × adet (kalem listesiyle aynı kural).
+                            const birimHam = k.fiyat ?? k.birim_fiyat ?? k.price;
+                            const fiyat = birimHam != null ? parseFloat(String(birimHam)) * adet : parseFloat(String(k.toplam_fiyat || 0));
                             return `<div class="row"><span>${ad} x${adet}</span><span>₺${fiyat.toFixed(2)}</span></div>`;
                           }).join("") || "<div class='row'><span>Kalem yok</span><span>—</span></div>";
                           const odemeYazi = odemeRozet(sp.odeme_yontemi).etiket.replace(/^\S+\s/, "");
