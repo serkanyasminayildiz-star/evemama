@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { sendSiparisOnayMaili } from "../../../../lib/email";
 import { SADAKAT, KARGO, kazanilacakPuan, kargoUcretiKg, sepetAgirligiKg } from "../../../../lib/indirim";
 import { SITE_KOK } from "../../../../lib/site";
+import { retSebebi } from "../../../../lib/odemeTeshis";
 
 const IYZICO_API_KEY = process.env.IYZICO_API_KEY || "";
 const IYZICO_SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
@@ -267,6 +268,13 @@ export async function POST(req: NextRequest) {
     } else {
       // BAŞARISIZ/YARIM ÖDEME — neden + tutar logla (gelir kaybı ölçümü).
       // Best-effort: log hatası ödeme akışını/redirect'i ASLA bozmasın.
+      // Sebep: iyzico mesajı yoksa mdStatus + kart ailesinden (lib/odemeTeshis.ts).
+      const teshis = retSebebi(data);
+      console.log("[odeme/sonuc] ret teshisi:", {
+        paymentStatus: data.paymentStatus, errorCode: data.errorCode ?? null, mdStatus: data.mdStatus ?? null,
+        phase: data.phase ?? null, fraudStatus: data.fraudStatus ?? null, cardFamily: data.cardFamily ?? null,
+        cardAssociation: data.cardAssociation ?? null, cardType: data.cardType ?? null, sebep: teshis.sebep,
+      });
       try {
         // supabaseAdmin ŞART: odeme_gecici RLS korumalı (14 Tem'de açıldı) →
         // anon istemci HİÇBİR satır göremez. Bu satır anon kaldığı için başarısız
@@ -284,10 +292,10 @@ export async function POST(req: NextRequest) {
           iyzico_status: data.status || null,
           payment_status: data.paymentStatus || null,
           error_code: data.errorCode != null ? String(data.errorCode) : null,
-          error_message: data.errorMessage || null,
+          error_message: teshis.sebep || null,
           urunler: gecici?.urunler ?? null,
         });
-        console.log("[odeme/sonuc] basarisiz odeme loglandi:", { paymentStatus: data.paymentStatus, errorMessage: data.errorMessage, toplam: gecici?.toplam });
+        console.log("[odeme/sonuc] basarisiz odeme loglandi:", { paymentStatus: data.paymentStatus, sebep: teshis.sebep, toplam: gecici?.toplam });
       } catch (e) {
         console.error("[odeme/sonuc] basarisiz odeme log hatasi:", e);
       }
@@ -297,7 +305,7 @@ export async function POST(req: NextRequest) {
       // bunlar yalnız basarisiz_odemeler tablosuna yazılıyordu; müşteri sadece
       // "Ödeme tamamlanamadı" görüp ayrılıyordu. Sebebi bilmeyen müşteri
       // düzeltemez. Mesaj URL'de taşınır; sonuç sayfası eyleme çevirir.
-      const hataMesaji = String(data.errorMessage || "").slice(0, 200);
+      const hataMesaji = teshis.musteriMesaji.slice(0, 200);
       const hataKodu = data.errorCode != null ? String(data.errorCode).slice(0, 20) : "";
       const ek = [
         hataMesaji ? `hata=${encodeURIComponent(hataMesaji)}` : "",

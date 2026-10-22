@@ -146,9 +146,14 @@ function OdemeSonucIcerik() {
           ? "Kartınız internetten alışverişe kapalı. Bankanızın yukarıdaki talimatıyla açtırıp tekrar deneyebilirsiniz."
           : kucuk.includes("cvc") || kucuk.includes("cvv") || kucuk.includes("güvenlik kodu")
             ? "Kartın arkasındaki 3 haneli güvenlik kodunu kontrol edip tekrar deneyin."
-            : kucuk.includes("şifre") || kucuk.includes("3d")
-              ? "3D Secure doğrulaması tamamlanamadı. Bankanızdan gelen SMS şifresini girerek tekrar deneyin."
-              : "";
+            // 3D Secure sebepleri (lib/odemeTeshis.ts) — genel "3d" dalından ÖNCE.
+            : kucuk.includes("kayıtlı değil")
+              ? "Kartınız SMS onayıyla (3D Secure) internet alışverişine açık değil. Bankanızdan açtırabilir ya da farklı bir kartla deneyebilirsiniz."
+              : kucuk.includes("yanıt vermedi")
+                ? "Bankanızın onay sistemi şu an yanıt vermiyor. Birkaç dakika sonra tekrar deneyin ya da farklı bir kart kullanın."
+                : kucuk.includes("şifre") || kucuk.includes("3d")
+                  ? "Bankanızdan gelen SMS şifresini doğru ve süresi dolmadan girerek tekrar deneyin. SMS gelmiyorsa bankanızı arayın ya da farklı bir kart deneyin."
+                  : "";
 
   return (
     <main style={{ minHeight: "100vh", background: "#FDF6EE", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif", padding: 20 }}>
