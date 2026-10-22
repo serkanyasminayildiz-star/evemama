@@ -102,27 +102,30 @@ export default function Siparislerim() {
       setAcikSiparis(acikSiparis === siparisId ? null : siparisId);
       return;
     }
+    // siparisler.urunler JSON kolonu — siparişin kendi kalem listesi (name/price/quantity).
+    const jsonKalemler = (): Kalem[] => {
+      const s = siparisler.find(x => x.id === siparisId) as (Siparis & { urunler?: unknown }) | undefined;
+      if (!s || !s.urunler) return [];
+      try {
+        const arr = typeof s.urunler === "string" ? JSON.parse(s.urunler) : s.urunler;
+        return Array.isArray(arr) ? (arr as Kalem[]) : [];
+      } catch { return []; }
+    };
     try {
       const { data, error } = await supabase
         .from("siparis_kalemleri")
         .select("*, urunler(ad, resim_url)")
         .eq("siparis_id", siparisId);
       if (error) throw error;
-      setSiparisKalemleri(prev => ({ ...prev, [String(siparisId)]: (data || []) as Kalem[] }));
+      // siparis_kalemleri'ne artık hiçbir akış yazmıyor → BOŞ gelirse siparişin
+      // JSON listesine düşülür (22 Eki 2026). Eskiden yalnız HATA'da düşülüyordu;
+      // boş sonuçta müşteri "Detay Göster"de ürünlerini hiç görmüyordu.
+      const liste = data && data.length ? (data as Kalem[]) : jsonKalemler();
+      setSiparisKalemleri(prev => ({ ...prev, [String(siparisId)]: liste }));
       setAcikSiparis(siparisId);
     } catch (err) {
       console.error("[siparis kalemleri]", err);
-      // siparisler.urunler JSON kolonunu da deneyelim (alternatif sema)
-      const s = siparisler.find(x => x.id === siparisId) as (Siparis & { urunler?: unknown }) | undefined;
-      if (s && s.urunler) {
-        try {
-          const arr = typeof s.urunler === "string" ? JSON.parse(s.urunler) : s.urunler;
-          setSiparisKalemleri(prev => ({ ...prev, [String(siparisId)]: (arr || []) as Kalem[] }));
-          setAcikSiparis(siparisId);
-          return;
-        } catch {}
-      }
-      setSiparisKalemleri(prev => ({ ...prev, [String(siparisId)]: [] }));
+      setSiparisKalemleri(prev => ({ ...prev, [String(siparisId)]: jsonKalemler() }));
       setAcikSiparis(siparisId);
     }
   };
