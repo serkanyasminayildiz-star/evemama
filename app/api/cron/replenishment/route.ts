@@ -7,8 +7,11 @@ import { kisiselKuponOlustur } from "../../../../lib/kuponUret";
 
 // "Maman bitiyor" otomatik hatırlatma (replenishment).
 // Vercel cron her gün çağırır (vercel.json). ~28 gün önce ödeme yapıp DAHA
-// SONRA sipariş vermemiş (yani hâlâ "son siparişi o olan") müşterilere %10
-// kuponlu yenileme e-postası atar.
+// SONRA sipariş vermemiş (yani hâlâ "son siparişi o olan") müşterilere
+// yenileme e-postası atar. KUPONSUZ (30 Eki 2026, kullanıcı kararı): eskiden
+// kişiye özel %10 kupon üretiliyordu; maliyete yakın ürünlerde (ör. geliş
+// ₺4.400 / satış ₺4.999) komisyon + ücretsiz kargoyla zarar ettiriyordu.
+// Abonelik hatırlatması (aşağıda 1b) AYRI karar — ABONE10 kuponu sürüyor.
 //
 // TEKRAR GÖNDERMEZ: 1 günlük bant (28-29 gün önce) + günlük cron = her sipariş
 // tam olarak bir kez yakalanır; ekstra "gönderildi" tablosuna gerek yok.
@@ -27,24 +30,27 @@ const supabaseAdmin = createClient(
 );
 
 const HATIRLATMA_GUN = 28;
-// Bu kodlar artık müşteriye GÖNDERİLMEZ — yalnız şablon adıdır. Her alıcı
-// için kişiye bağlı, tek kullanımlık kod üretilir (bkz. lib/kuponUret.ts).
-const KUPON_KOD = "YENILE10";
+// Abonelik kupon şablonu — kod müşteriye GÖNDERİLMEZ, yalnız şablon adıdır;
+// her aboneye kişiye bağlı, tek kullanımlık kod üretilir (lib/kuponUret.ts).
 const ABONE_KOD = "ABONE10";
-const YENILE_SABLON = { kod: KUPON_KOD, indirim_tipi: "yuzde", indirim_degeri: 10, min_sepet: 0 };
 const ABONE_SABLON = { kod: ABONE_KOD, indirim_tipi: "yuzde", indirim_degeri: 10, min_sepet: 0 };
 const GUN_MS = 24 * 60 * 60 * 1000;
 
 type SiparisRow = { siparis_no: string; ad: string | null; email: string | null; urunler: unknown; created_at: string };
 
-// Siparişteki ilk ürünün adını (kişiselleştirme için) güvenle çıkar.
-function ilkUrunAdi(urunler: unknown): string | undefined {
+// Siparişteki ilk ürünün adını + slug'ını (kişiselleştirme ve "Hemen Sipariş
+// Ver" butonunu doğrudan o ürüne götürmek için) güvenle çıkar.
+function ilkUrun(urunler: unknown): { ad?: string; slug?: string } {
   let arr: unknown = urunler;
-  if (typeof arr === "string") { try { arr = JSON.parse(arr); } catch { return undefined; } }
-  if (!Array.isArray(arr) || arr.length === 0) return undefined;
+  if (typeof arr === "string") { try { arr = JSON.parse(arr); } catch { return {}; } }
+  if (!Array.isArray(arr) || arr.length === 0) return {};
   const u = arr[0] as Record<string, unknown>;
   const ad = (u.ad || u.isim || u.name || u.baslik) as string | undefined;
-  return typeof ad === "string" && ad.trim() ? ad.trim() : undefined;
+  const slug = u.slug as string | undefined;
+  return {
+    ad: typeof ad === "string" && ad.trim() ? ad.trim() : undefined,
+    slug: typeof slug === "string" && slug.trim() ? slug.trim() : undefined,
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -72,7 +78,7 @@ export async function GET(req: NextRequest) {
     const tip = url.searchParams.get("tip"); // "abone" → abonelik maili; aksi → replenishment
     const ok = tip === "abone"
       ? await sendAbonelikHatirlatma({ email: onizleme, ad: "Değerli Müşterimiz", urunAdi: "Royal Canin Kitten 10 Kg", urunSlug: "", kod: ABONE_KOD })
-      : await sendReplenishmentMaili({ email: onizleme, ad: "Değerli Müşterimiz", sonUrun: "Royal Canin Kitten 10 Kg", kod: KUPON_KOD });
+      : await sendReplenishmentMaili({ email: onizleme, ad: "Değerli Müşterimiz", sonUrun: "Royal Canin Kitten 10 Kg" });
     return NextResponse.json({ ok, onizleme, tip: tip === "abone" ? "abonelik" : "replenishment", mesaj: "Örnek mail gönderildi (gelen kutunu/spam'i kontrol et)" }, { headers: { "Cache-Control": "no-store" } });
   }
 
@@ -150,15 +156,14 @@ export async function GET(req: NextRequest) {
       .gt("created_at", s.created_at);
     if (count && count > 0) { atlandi++; continue; }
 
-    const sonUrun = ilkUrunAdi(s.urunler);
+    const { ad: sonUrun, slug: sonUrunSlug } = ilkUrun(s.urunler);
     if (dry) {
       gidecekler.push(`${email} (${s.siparis_no}${sonUrun ? " · " + sonUrun : ""})`);
       gonderildi++;
       continue;
     }
-    const kisiselKodu = await kisiselKuponOlustur(supabaseAdmin, YENILE_SABLON, s.email!);
-    if (!kisiselKodu) { console.error("[cron] yenile kuponu uretilemedi:", s.email); continue; }
-    const ok = await sendReplenishmentMaili({ email: s.email!, ad: s.ad || undefined, sonUrun, kod: kisiselKodu });
+    // Kupon ÜRETİLMEZ (30 Eki 2026) — yalnız hatırlatma.
+    const ok = await sendReplenishmentMaili({ email: s.email!, ad: s.ad || undefined, sonUrun, sonUrunSlug });
     if (ok) gonderildi++; else atlandi++;
     await new Promise((r) => setTimeout(r, 600)); // Resend rate limit (~2/sn)
   }
